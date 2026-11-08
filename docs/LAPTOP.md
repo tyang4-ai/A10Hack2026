@@ -94,7 +94,7 @@ If there isn't enough time between beats, ask the build machine to raise `STAGE_
 - [ ] `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com/healthz` shows `{"ok":true,"version":"0.3.1","mode":"live"}`.
 - [ ] The home page lists run_20261108_rzpoj7 and run_20261108_pin2ve.
 - [ ] Open the three tabs. Tab 2 on Read.
-- [ ] One warm-up run: `axelrod run ...`, approve, STOP at once (about $0.15). It warms Bedrock and checks the whole path. Delete it from the home page afterwards if Delete works (it needs the EC2 role's `s3:DeleteObject`).
+- [ ] One warm-up run: `axelrod run ...`, approve, STOP at once (about $0.15). It warms Bedrock and checks the whole path. Then delete it from the home page (Delete on its row, then confirm).
 - [ ] The build machine confirms `STAGE_PACING=3` and `DEMO_FAULTS=fetch,judge` (command above).
 - [ ] Notifications off (Windows: Do not disturb). Slack and Discord closed.
 - [ ] Charger in. Phone hotspot ready.
