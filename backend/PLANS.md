@@ -484,6 +484,27 @@ Stage W2, in parallel with the builders. Agent: `aws-operator`.
 
 ---
 
+## B-testpage
+
+Stage W2. Agent: `builder`. Added 2026-11-07 8:00 PM because the repo stays private until submission, so the raw GitHub URL of the planted page returns 404.
+
+**Goal.** Axelrod's own API serves the planted test page, and S-010 points there, so the live demo's flagged-and-quarantined step works without GitHub.
+
+**Read first.** `backend/data/shl/plan.json` (S-010), `backend/data/test_pages/injection.html`, `axelrod/api.py`, `axelrod/stages/plan.py`, `axelrod/config.py`, `axelrod/gateway.py` (how rules are built from a source URL), `axelrod/stages/collect.py`.
+
+**Owns.** `axelrod/api.py` (one new route only), `axelrod/stages/plan.py` (S-010 URL override only), `axelrod/config.py` (one new field), `backend/.env.example` (one new key), `data/shl/SOURCES.md` (S-010 line), `scripts/check_plan.py` (S-010 check), `tests/test_testpage.py`.
+
+**Tasks.**
+1. `Settings.test_page_url: str | None = None` (`TEST_PAGE_URL`), with a line in `.env.example`.
+2. `GET /test-pages/{name}` outside `/api/v1`: serves only files in `backend/data/test_pages/` whose name matches `^[a-z0-9_-]+\.html$`, as `text/html; charset=utf-8`, with the header `X-Axelrod-Simulated: true`. Exempt it from the `X-Axelrod-Key` check, as `/healthz` is, because the fetcher sends no key. No path traversal.
+3. Plan stage: when `TEST_PAGE_URL` is set, the planted-page source (S-010) gets that URL before `plan.source` is emitted, and its rationale and `Run.notes` say it is served by Axelrod's own API and is simulated. Unset keeps the URL in plan.json.
+4. `check_plan.py`: with `TEST_PAGE_URL` set, check that URL instead of the GitHub one.
+5. Prove the whole path in a test: a real uvicorn on a free port serves the page, a run whose plan uses `TEST_PAGE_URL=http://127.0.0.1:<port>/test-pages/injection.html` fetches it through the real Gateway (allowed by `R-allow-S-010`), the fake scan flags it, the document is quarantined, and the example.org link is blocked. If the gateway refuses loopback or private hosts, say so in the REPORT (EC2 will use the public API Gateway URL instead).
+
+**Acceptance.** Tests green. `curl localhost:<port>/test-pages/injection.html` returns the page with the simulated header. A path-traversal name returns 404.
+
+---
+
 ## W3 plans
 
 Written loosely on purpose. The orchestrator sharpens them after G5 with what the full run showed.
