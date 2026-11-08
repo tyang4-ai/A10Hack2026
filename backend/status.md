@@ -56,11 +56,16 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:15 PM: start S1 right after G0 instead of at 8:00 PM (Gordon's call). Cutoffs stay at their clock times.
 - Sat 7:15 PM: venv is Python 3.12 via uv (no pip inside, so installs use `uv pip install --python .venv/Scripts/python.exe`). Code targets 3.11 for EC2.
 - Sat 7:16 PM: no git identity on this machine. Commits use `git -c user.name=Claude -c user.email=noreply@anthropic.com`, matching the earlier backend commits. Git config is not changed.
+- Sat 7:33 PM: Gordon's call: from now on commits are authored only as `tyang4-ai` (repo-local git config, GitHub no-reply email), with no Claude co-author line. S0 and G1 stay as pushed (rewriting them would need a force push).
 - Sat 7:25 PM: build on Sonnet 5 (large) and Haiku 4.5 (small), since the 5.5 models are denied. Swap is one `.env` change plus `infra/ec2_role.py` if organizers allow 5.5.
+
+- Sat 7:31 PM: Gordon is away for a while. Bash is allowed without prompts in `.claude/settings.local.json` (personal, not committed). The guard hook and the deny rules still apply.
 
 ## Known issues
 
 ## Needs Gordon
+
+- (7:31 PM, needed in W2, about 10:45 PM to 12:45 AM) A-deploy opens port 8000 on the EC2 security group. The guard asks you before that. If nobody answers in about 10 minutes, A-deploy builds everything except the open port and we use the G4 fallback (API on the laptop) until you're back.
 
 - (7:25 PM, not blocking) The workshop blocks Claude Sonnet 5.5 and Haiku 5.5 (policy `ws-bedrock-model-allowlist-policy-1`). We are building on Sonnet 5 and Haiku 4.5, which work. If you want 5.5, ask an ACM organizer to allow `anthropic.claude-sonnet-5-5` and `anthropic.claude-haiku-5-5`. Either way, Devpost and the pitch should name the models we really use.
 

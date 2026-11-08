@@ -499,3 +499,17 @@ Written loosely on purpose. The orchestrator sharpens them after G5 with what th
 ## Interface notes
 
 Dated notes from the orchestrator when an interface changes during the build. Newest last.
+
+**2026-11-07 7:30 PM, after S1 (P-scaffold and A-setup REPORTs).**
+- Models: `MODEL_LARGE=us.anthropic.claude-sonnet-5`, `MODEL_SMALL=us.anthropic.claude-haiku-4-5-20251001-v1:0`. The 5.5 models are denied by the workshop allowlist. Never hard-code model ids; read them from Settings. `PRICES_JSON` in `.env` has all four ids.
+- Concurrency: `MAX_CONCURRENCY_SMALL=32`, `MAX_CONCURRENCY_LARGE=8` (no throttles at 50 and 8 parallel). botocore's default `max_pool_connections` is 10, so `bedrock.py` must set `Config(max_pool_connections >= small + large)`. Sonnet 5 writes more output tokens than the schema suggests (236 on a tiny call), so budget estimates should allow for it.
+- Guardrail: `GUARDRAIL_ID` and `GUARDRAIL_VERSION=1` are in `.env`. Live tests read real settings, offline tests don't.
+- ids.py: role agent ids get 2 digits (`ids.next("extractor")` gives `extractor-01`). A trailing `-` in a prefix is dropped.
+- config.py extras: `load_settings(env_file, environ)` (no cache), `set_settings(s | None)`, `get_settings.cache_clear()`. An empty `AXELROD_ENV_FILE` means no `.env` is read. Empty values in `.env` count as unset.
+- Offline tests (conftest): `STORE=local`, temp `DATA_DIR`, `FAKE_MODELS=1`, no `.env`, AWS and price variables removed. Budget tests set their own prices. Fixtures: `settings`, `fixture_bundle` (session, `mock/build_fixtures.build()`), `fixture_report` (fresh `m.AgentReport`). `tests/conftest.py` is frozen: define extra fixtures in your own test file.
+- RunState types: `documents: list[m.Document]`, `items: dict[str, m.Item]`, `agents: dict[str, m.Agent]`, `extract_pages: dict[str, list[list[int]]]`, `need_pages: dict[str, dict[str, list[list[int]]]]`, `ids: IdAllocator`.
+- `Store(settings)`, `Vault(settings)`, `Gateway(ctx)` only store their argument in `__init__`. `Vault.put_bytes` and `put_text` return the vault path (str). `Store.export_run` returns None.
+- Suggested helpers (owners may change them, add a note if so): `orchestrator.run_pipeline(ctx)`, `store/events.events_page(state, after=0, limit=500)`, `Gateway.decide(agent, action, target) -> (decision, rule_id, reason)`, `bedrock.converse(...)`, `bedrock.apply_guardrail(...)`, `fetch/http.get_once(...)`, `fetch/pdf.pdf_pages(data)`, `fetch/html.html_pages(html, target_chars=3000)`, `async fetch/ingest.ingest(ctx, source, result)`.
+- `finalize.finalize_report(ctx)` is sync. `demo.inject_errors` and `demo.patch_item` are async, `patch_item` returns `m.Item`. `verify/checks.py` takes `items: dict[str, m.Item]` and `sources: dict[str, m.Source]`.
+- PyMuPDF: use `import pymupdf` (`import fitz` warns now). Heavy packages (pymupdf, pypdf, trafilatura, typer, rich) are imported inside functions, never at module load.
+- Test data folders: `tests/data/planted/` (B-verify), `tests/data/store/` (B-store-api), `tests/data/ingest/` (B-ingest), `tests/data/plan/` (B-shl-plan) if needed.
