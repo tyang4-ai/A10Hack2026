@@ -27,20 +27,21 @@ export function formatAxis(n: number, unit: string, scale: Value["scale"]): stri
 }
 
 export const usd = (n: number) => `$${n < 1 ? n.toFixed(4) : n.toFixed(2)}`;
+export const count = (n: number) => (n >= 10000 ? `${roundHalfUp(n / 1000, 1)}k` : n.toLocaleString("en-US"));
 export const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour12: false });
 
 export const STAGES: Stage[] = ["plan", "approve", "collect", "extract", "draft", "verify", "repair", "summarize", "verify_summary", "complete"];
 export const STAGE_LABEL: Record<Stage, string> = {
-  plan: "PLAN",
-  approve: "APPROVE",
-  collect: "COLLECT",
-  extract: "EXTRACT",
-  draft: "DRAFT",
-  verify: "VERIFY",
-  repair: "REPAIR",
-  summarize: "SUMMARIZE",
-  verify_summary: "CHECK BRIEF",
-  complete: "COMPLETE",
+  plan: "Plan",
+  approve: "Approve",
+  collect: "Collect",
+  extract: "Extract",
+  draft: "Draft",
+  verify: "Verify",
+  repair: "Repair",
+  summarize: "Summarize",
+  verify_summary: "Check brief",
+  complete: "Complete",
 };
 
 export type Module = "sources" | "report" | "brief";
@@ -49,14 +50,14 @@ export const moduleFor = (s: Stage): Module =>
 
 // Certainty bands. Light backgrounds for the brief, text colours elsewhere.
 export const BAND_BG: Record<CertaintyBand, string> = {
-  high: "bg-[#DDF3E6]",
-  medium: "bg-[#FFEFC7]",
-  low: "bg-[#FADADA]",
-  none: "bg-[#E9E9E9]",
+  high: "bg-[#DCFCE7]",
+  medium: "bg-[#FEF3C7]",
+  low: "bg-[#FEE2E2]",
+  none: "bg-[#F1F5F9]",
 };
 export const BAND_TEXT: Record<CertaintyBand, string> = {
   high: "text-good",
-  medium: "text-[#8A5A00]",
+  medium: "text-warn",
   low: "text-bad",
   none: "text-muted",
 };
@@ -64,9 +65,9 @@ export const BAND_TEXT: Record<CertaintyBand, string> = {
 export const STATUS_TEXT: Record<VerificationStatus, string> = {
   pending: "text-muted",
   pass: "text-good",
-  fixed: "text-[#1A6FB0]",
+  fixed: "text-link",
   fail: "text-bad",
-  blocked: "text-[#8A5A00]",
+  blocked: "text-warn",
 };
 
 export const CERTAINTY_HELP = "How well this is supported by checked evidence. Not the probability it is true.";

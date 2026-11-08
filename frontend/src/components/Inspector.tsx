@@ -11,13 +11,13 @@ import { btn, CertaintyPill, KindBadge, Label, SourceChip, StatusText } from "./
 export function Inspector() {
   const selected = useRunStore((s) => s.selected);
   return (
-    <aside aria-label="Inspector" className="flex h-full flex-col bg-desk font-mono text-xs text-desk-ink">
+    <aside aria-label="Inspector" className="flex h-full flex-col bg-desk text-[12px] text-desk-ink">
       <div className="flex flex-none items-center justify-between border-b border-desk-line px-3.5 py-2.5">
-        <span className="font-bold tracking-[0.14em]">INSPECTOR</span>
-        <span className="text-desk-muted">{selected ? selected.id : ""}</span>
+        <span className="text-[13px] font-semibold text-white">Inspector</span>
+        <span className="font-mono text-desk-muted">{selected ? selected.id : ""}</span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {!selected && <p className="p-3.5 text-desk-muted">Select a source, report item or brief sentence to see its evidence, checks and certainty.</p>}
+        {!selected && <p className="p-3.5 text-[13px] text-desk-muted">Select a source, a report item or a brief sentence to see its evidence, checks and certainty.</p>}
         {selected?.type === "item" && <ItemInspector id={selected.id} />}
         {selected?.type === "source" && <SourceInspector id={selected.id} />}
         {selected?.type === "sentence" && <SentenceInspector id={selected.id} />}
@@ -29,7 +29,7 @@ export function Inspector() {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border-b border-desk-line px-3.5 py-3">
-      <div className="mb-1.5 text-[10px] tracking-[0.12em] text-desk-muted">{title}</div>
+      <div className="mb-1.5 text-[11px] font-semibold text-desk-muted">{title}</div>
       {children}
     </div>
   );
@@ -40,12 +40,12 @@ function Ref({ id }: { id: string }) {
   const select = useRunStore((s) => s.select);
   if (id === "rollup") return <span className="text-desk-muted">rollup (scorecard)</span>;
   if (id.startsWith("HOLE-")) return <span className="text-amber">{id} (declared gap)</span>;
-  if (id.startsWith("S-")) return <button onClick={() => select({ type: "source", id })} className="text-[#6CB6FF] hover:underline">{id}</button>;
+  if (id.startsWith("S-")) return <button onClick={() => select({ type: "source", id })} className="text-desk-link hover:underline">{id}</button>;
   const base = id.split(":")[0];
   const it = items[base];
   if (!it) return <span className="text-desk-muted italic">{id} (missing)</span>;
   return (
-    <button onClick={() => select({ type: "item", id: base })} className="text-left text-[#6CB6FF] hover:underline">
+    <button onClick={() => select({ type: "item", id: base })} className="text-left text-desk-link hover:underline">
       {id}
     </button>
   );
@@ -54,12 +54,12 @@ function Ref({ id }: { id: string }) {
 export function CertaintyBlock({ c }: { c: Certainty | null }) {
   if (!c) return null;
   return (
-    <Block title="CERTAINTY">
+    <Block title="Certainty">
       <div className="flex items-baseline gap-3" title={CERTAINTY_HELP}>
         <span className="text-[26px] text-white">{c.score ?? "—"}</span>
-        <span className="uppercase">{c.band}</span>
+        <span className="capitalize">{c.band}</span>
       </div>
-      <div className="mt-1 tabular-nums">
+      <div className="mt-1 font-mono tabular-nums">
         support {c.support.toFixed(2)} × inherited {c.inherited.toFixed(2)} × completeness {c.completeness.toFixed(2)}
       </div>
       <div className="mt-1 text-desk-muted">{c.basis}</div>
@@ -165,16 +165,16 @@ function ItemInspector({ id }: { id: string }) {
       <CertaintyBlock c={it.certainty} />
 
       {it.kind === "data" && (
-        <Block title="EVIDENCE">
+        <Block title="Evidence">
           {it.citations.map((c, i) => (
             <div key={i} className="mb-2">
               <div className="text-desk-muted">
                 {c.role.replace("_", " ")} · {c.doc_id} · {c.locator.type === "text" ? `page ${c.locator.page}, chars ${c.locator.char_start}–${c.locator.char_end}` : c.locator.pointer}
               </div>
-              <div className="border-l-2 border-[#555] px-2 py-1 text-white">“{c.quote}”</div>
+              <div className="border-l-2 border-desk-muted px-2 py-1 font-serif text-[14px] text-white">“{c.quote}”</div>
               {c.locator.type === "text" && (
-                <button onClick={() => setDoc(c)} className="mt-1 text-[#6CB6FF] hover:underline">
-                  OPEN SOURCE ▸
+                <button onClick={() => setDoc(c)} className="mt-1 text-desk-link hover:underline">
+                  Open the source page
                 </button>
               )}
             </div>
@@ -183,7 +183,7 @@ function ItemInspector({ id }: { id: string }) {
       )}
 
       {it.kind === "conclusion" && it.computations.length > 0 && (
-        <Block title="COMPUTATIONS">
+        <Block title="Computations">
           {it.computations.map((c) => (
             <div key={c.name} className="mb-1">
               <span className="text-white">{c.name}</span> = {c.expr} → <span className="text-white">{c.display}</span>
@@ -192,13 +192,13 @@ function ItemInspector({ id }: { id: string }) {
         </Block>
       )}
 
-      <Block title="CHAIN">
+      <Block title="Citation chain">
         <div>
-          <span className="text-desk-muted">Cites </span>
+          <span className="text-desk-muted">Cites: </span>
           {citesOf(it).length ? citesOf(it).map((r, i) => <span key={r}>{i > 0 && ", "}<Ref id={r} /></span>) : "—"}
         </div>
         <div className="mt-1">
-          <span className="text-desk-muted">Cited by </span>
+          <span className="text-desk-muted">Cited by: </span>
           {[...citedBy.items, ...citedBy.sentences].length
             ? [...citedBy.items, ...citedBy.sentences].map((r, i) => (
                 <span key={r}>
@@ -210,12 +210,12 @@ function ItemInspector({ id }: { id: string }) {
         </div>
       </Block>
 
-      <Block title="CHECKS">
+      <Block title="Checks">
         <Checks checks={it.verification.checks} />
       </Block>
 
       {it.verification.attempts.length > 0 && (
-        <Block title="REPAIR HISTORY">
+        <Block title="Repair history">
           {it.verification.attempts.map((a) => (
             <div key={a.attempt} className="mb-3">
               <div>
@@ -244,7 +244,7 @@ function ItemInspector({ id }: { id: string }) {
 function SentenceRef({ id }: { id: string }) {
   const select = useRunStore((s) => s.select);
   return (
-    <button onClick={() => select({ type: "sentence", id })} className="text-[#6CB6FF] hover:underline">
+    <button onClick={() => select({ type: "sentence", id })} className="text-desk-link hover:underline">
       {id}
     </button>
   );
@@ -269,10 +269,10 @@ function SentenceInspector({ id }: { id: string }) {
         <div className="mt-2 font-serif text-[16px] text-white">{s.text}</div>
       </div>
       <CertaintyBlock c={s.certainty} />
-      <Block title="DERIVED FROM · FOLLOW IT DOWN">
+      <Block title="Derived from (follow it down)">
         <ChainTree refs={s.derived_from} items={items} depth={0} />
       </Block>
-      <Block title="CHECKS">
+      <Block title="Checks">
         <Checks checks={s.verification.checks} />
       </Block>
       <CommentBox targetType="summary_sentence" targetId={s.id} runId={runId} />
@@ -284,7 +284,7 @@ function SentenceInspector({ id }: { id: string }) {
 function ChainTree({ refs, items, depth }: { refs: string[]; items: Record<string, Item>; depth: number }) {
   const select = useRunStore((s) => s.select);
   return (
-    <ul className={depth ? "ml-3 border-l border-[#3A3A3A] pl-2.5" : ""}>
+    <ul className={depth ? "ml-3 border-l border-[#334155] pl-2.5" : ""}>
       {refs.map((r) => {
         const base = r.split(":")[0];
         const it = items[base];
@@ -298,7 +298,7 @@ function ChainTree({ refs, items, depth }: { refs: string[]; items: Record<strin
         return (
           <li key={r} className="py-0.5">
             <button onClick={() => select({ type: "item", id: base })} className="text-left hover:text-white">
-              <span className="text-[#6CB6FF]">{r}</span> <CertaintyPill c={it.certainty} />{" "}
+              <span className="text-desk-link">{r}</span> <CertaintyPill c={it.certainty} />{" "}
               <span className="text-desk-muted">{itemText(it).slice(0, 90)}{itemText(it).length > 90 ? "…" : ""}</span>
             </button>
             {it.kind === "data" && it.citations[0] && <div className="ml-3 text-desk-ink">“{it.citations[0].quote}”</div>}
@@ -327,11 +327,11 @@ function SourceInspector({ id }: { id: string }) {
           </span>
         </div>
         <div className="mt-2 font-serif text-[16px] text-white">{s.title}</div>
-        <a href={s.url} target="_blank" rel="noreferrer" className="break-all text-[#6CB6FF] hover:underline">
+        <a href={s.url} target="_blank" rel="noreferrer" className="break-all text-desk-link hover:underline">
           {s.url}
         </a>
       </div>
-      <Block title="WHY THIS SOURCE">
+      <Block title="Why this source">
         <div>{s.rationale}</div>
         <div className="mt-1 text-desk-muted">
           reliability {s.scores.reliability.toFixed(2)} · relevance {s.scores.relevance.toFixed(2)} · approval {s.approval.replace("_", " ")} · {s.access.method}
@@ -339,14 +339,14 @@ function SourceInspector({ id }: { id: string }) {
         </div>
         <div className="mt-1 text-desk-muted">Criteria: {s.criteria.map(human).join(", ") || "—"}</div>
       </Block>
-      <Block title="COLLECTED">
+      <Block title="Collected">
         <div>
           {s.stats.pages} pages · {s.stats.bytes.toLocaleString()} bytes · {s.stats.data_items_verified}/{s.stats.data_items} items verified
         </div>
         <div className="text-desk-muted">Docs: {s.doc_ids.join(", ") || "—"}</div>
         {s.error && <div className="text-desk-bad">{s.error}</div>}
       </Block>
-      <Block title={`GATEWAY REQUESTS · ${reqs.length}`}>
+      <Block title={`Gateway requests (${reqs.length})`}>
         {reqs.slice(-12).map((t) => (
           <div key={t.seq} className={t.data.decision === "blocked" ? "text-desk-bad" : t.data.decision === "flagged" ? "text-amber" : ""}>
             {t.data.decision.toUpperCase()} · {t.data.reason}
@@ -366,7 +366,7 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
   const [err, setErr] = useState<string | null>(null);
   const thread = Object.values(comments).filter((c) => c.target_id === targetId);
   return (
-    <Block title="COMMENT TO THE AGENTS">
+    <Block title="Comment to the agents">
       {thread.map((c) => (
         <div key={c.comment_id} className="mb-2">
           <div className="text-white">“{c.text}”</div>
@@ -398,10 +398,10 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
           onChange={(e) => setText(e.target.value)}
           disabled={status === "stopped"}
           placeholder={targetType === "item" ? "Tell the agents what to change. The item is revised and re-checked." : "Note for the agents"}
-          className="w-full resize-y border border-[#555] bg-transparent px-2 py-1 text-desk-ink outline-none placeholder:text-desk-muted focus:border-desk-ink"
+          className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink outline-none placeholder:text-desk-muted focus:border-desk-muted"
         />
-        <button disabled={!text.trim() || status === "stopped"} className="mt-1 border border-desk-ink px-2 py-0.5 disabled:opacity-40">
-          SEND
+        <button disabled={!text.trim() || status === "stopped"} className="mt-1.5 h-7 rounded-[4px] bg-desk-ink px-3 text-[12px] font-medium text-desk disabled:opacity-40">
+          Send
         </button>
         {err && <div className="text-desk-bad">{err}</div>}
       </form>
@@ -446,9 +446,9 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
 
   return (
     <div role="dialog" aria-label={`${citation.doc_id} page ${page}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={onClose}>
-      <div className="flex max-h-full w-full max-w-3xl flex-col bg-white text-ink" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-ink px-4 py-2 font-mono text-xs">
-          <span className="font-bold">{citation.doc_id}</span>
+      <div className="flex max-h-full w-full max-w-3xl flex-col rounded-[6px] bg-white text-ink" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 border-b border-rule px-4 py-2 text-[13px]">
+          <span className="font-mono font-semibold">{citation.doc_id}</span>
           <span>
             page {page}
             {data ? ` of ${data.pages}` : ""} · {data?.content_type}
@@ -459,7 +459,7 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
           <button className={btn} disabled={!data || page >= data.pages} onClick={() => setPage((p) => p + 1)}>
             ▸
           </button>
-          <span className="ml-auto text-muted">Exactly the text the checker matched against</span>
+          <span className="ml-auto text-muted">The exact text the checker matched against</span>
           <button className={btn} onClick={onClose} aria-label="Close">
             ✕
           </button>
@@ -471,7 +471,7 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
             if (!s.h) return <span key={i}>{s.text}</span>;
             const mine = s.h.item_id === itemId;
             const ctx = s.h.role !== "evidence";
-            const cls = mine ? (ctx ? "bg-[#FFF2B8]" : "bg-[#FFD54A] outline-2 outline-ink") : ctx ? "bg-[#F1F1F1]" : "bg-[#E4E4E4]";
+            const cls = mine ? (ctx ? "bg-[#FEF3C7]" : "bg-[#FCD34D] outline-2 outline-ink") : ctx ? "bg-[#F1F5F9]" : "bg-[#E2E8F0]";
             return (
               <mark key={i} ref={mine && !ctx ? (el) => { mark.current = el; } : undefined} title={`${s.h.item_id} · ${s.h.role} · ${s.h.status}`} className={`${cls} text-ink`}>
                 {s.text}
@@ -479,9 +479,9 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
             );
           })}
         </div>
-        <div className="border-t border-rule px-4 py-1.5 font-mono text-[10px] text-muted">
-          <mark className="bg-[#FFD54A] px-1">{itemId} evidence</mark> <mark className="bg-[#FFF2B8] px-1">unit or period context</mark>{" "}
-          <mark className="bg-[#E4E4E4] px-1">other cited items</mark> · Esc to close
+        <div className="border-t border-rule px-4 py-1.5 text-[11px] text-muted">
+          <mark className="bg-[#FCD34D] px-1">{itemId} evidence</mark> <mark className="bg-[#FEF3C7] px-1">unit or period context</mark>{" "}
+          <mark className="bg-[#E2E8F0] px-1">other cited items</mark>. Press Esc to close.
         </div>
       </div>
     </div>

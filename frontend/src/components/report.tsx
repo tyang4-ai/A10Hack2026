@@ -22,21 +22,21 @@ export function Gauge({ c, label }: { c: ReportCertainty | null; label: string }
   return (
     <div className="flex flex-wrap items-stretch gap-6">
       <div title={`${CERTAINTY_HELP}\n${c.method}`}>
-        <Label>{label} CERTAINTY</Label>
+        <Label>{label} certainty</Label>
         <div className="font-mono text-[28px] font-medium tabular-nums">{c.mean ?? "—"}</div>
         <div className="mt-1 flex h-2 w-48 overflow-hidden">
           {segs.map(([b, v]) => (
             <div key={b} className={`${BAND_BG[b]} border-r border-white last:border-r-0`} style={{ width: `${(v / total) * 100}%` }} />
           ))}
         </div>
-        <div className="mt-1 font-mono text-[10px] text-muted">{c.high_pct}% in the high band</div>
+        <div className="mt-1 text-[11px] text-muted">{c.high_pct}% in the high band</div>
       </div>
       <div className="border-l border-rule pl-6">
-        <Label>COVERAGE</Label>
+        <Label>Coverage</Label>
         <div className="font-mono text-[28px] font-medium tabular-nums">
           {c.coverage_scored} <span className="text-base text-muted">of {c.coverage_in_scope}</span>
         </div>
-        <div className="mt-1 font-mono text-[10px] text-muted">screen criteria scored</div>
+        <div className="mt-1 text-[11px] text-muted">screen criteria scored</div>
       </div>
     </div>
   );
@@ -45,54 +45,68 @@ export function Gauge({ c, label }: { c: ReportCertainty | null; label: string }
 export function Scorecard({ rollup }: { rollup: Rollup | null }) {
   const items = useRunStore((s) => s.items);
   const select = useRunStore((s) => s.select);
-  if (!rollup) return <div className="font-mono text-xs text-muted">The scorecard appears when the report is final.</div>;
+  if (!rollup) return <div className="text-muted">The scorecard appears when the report is final.</div>;
   const scores = Object.values(items).filter((i) => i.kind === "extrapolation");
   const fmt = (n: number | null) => (n === null ? "N/A" : `${n > 0 ? "+" : ""}${roundHalfUp(n, 2).toFixed(2)}`);
   return (
     <div>
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
         <div>
-          <Label>WEIGHTED AVERAGE</Label>
-          <div className="font-mono text-[28px] font-medium">{fmt(rollup.weighted_average)}</div>
+          <Label>Weighted average (lead with this)</Label>
+          <div className="font-mono text-[28px] font-medium tabular-nums">{fmt(rollup.weighted_average)}</div>
         </div>
-        <div className="font-mono text-xs">
-          {rollup.normalized_pct !== null && <span>{rollup.normalized_pct}% normalized </span>}
-          {rollup.percent_of_max_pct !== null && <span>· {rollup.percent_of_max_pct}% of max </span>}
-          <span className="text-muted">(both inference)</span>
-        </div>
-        <div className="font-mono text-xs">
-          Coverage <strong>{rollup.scored} of {rollup.in_scope}</strong> scored
-          {rollup.na_criteria.length > 0 && <span className="text-muted"> · N/A: {rollup.na_criteria.map(human).join(", ")}</span>}
+        {(rollup.normalized_pct !== null || rollup.percent_of_max_pct !== null) && (
+          <div title="Both are inferences about the original scoresheet, so they are shown together">
+            <Label>As a percentage (inferred)</Label>
+            <div className="text-[13px]">
+              <span className="font-mono tabular-nums">{rollup.normalized_pct}%</span> normalized, <span className="font-mono tabular-nums">{rollup.percent_of_max_pct}%</span> of the maximum
+            </div>
+          </div>
+        )}
+        <div>
+          <Label>Coverage</Label>
+          <div className="text-[13px]">
+            <span className="font-mono tabular-nums">
+              {rollup.scored} of {rollup.in_scope}
+            </span>{" "}
+            criteria scored
+            {rollup.na_criteria.length > 0 && <span className="text-muted">, not available: {rollup.na_criteria.map(human).join(", ")}</span>}
+          </div>
         </div>
       </div>
-      <table className="mt-2 w-full border-y border-ink font-mono text-xs">
+      <table className="mt-3 w-full border-y border-ink text-[13px]">
         <thead>
-          <tr className="border-b border-ink text-left text-[10px] tracking-[0.1em] text-muted">
-            <th className="py-1 font-medium">CATEGORY</th>
-            <th className="font-medium">WEIGHT</th>
-            <th className="font-medium">SCORE</th>
-            <th className="font-medium">SCORED</th>
-            <th className="font-medium">CRITERIA</th>
+          <tr className="border-b border-ink text-left text-[11px] text-muted">
+            <th className="py-1.5 font-medium">Category</th>
+            <th className="text-right font-medium">Weight</th>
+            <th className="text-right font-medium">Score</th>
+            <th className="pr-4 text-right font-medium">Scored</th>
+            <th className="font-medium">Criteria (score, certainty)</th>
           </tr>
         </thead>
         <tbody>
           {rollup.categories.map((c) => (
             <tr key={c.category} className="border-t border-rule align-top">
-              <td className="py-1">{human(c.category)}</td>
-              <td>{c.weight}</td>
-              <td className="font-bold">{fmt(c.score)}</td>
-              <td>
+              <td className="py-1.5 capitalize">{human(c.category)}</td>
+              <td className="text-right font-mono tabular-nums">{c.weight}</td>
+              <td className={`text-right font-mono font-semibold tabular-nums ${c.score === null ? "text-muted" : ""}`}>{fmt(c.score)}</td>
+              <td className="pr-4 text-right font-mono tabular-nums">
                 {c.scored}/{c.in_scope}
               </td>
-              <td>
-                {scores
-                  .filter((e) => e.category === c.category)
-                  .map((e) => (
-                    <button key={e.id} onClick={() => select({ type: "item", id: e.id })} className="mr-2 hover:underline">
-                      {e.kind === "extrapolation" && `${human(e.criterion)} ${e.score === null ? "N/A" : (e.score > 0 ? "+" : "") + e.score}`}{" "}
-                      <CertaintyPill c={e.certainty} />
-                    </button>
-                  ))}
+              <td className="py-1">
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                  {scores
+                    .filter((e) => e.category === c.category)
+                    .map((e) =>
+                      e.kind === "extrapolation" ? (
+                        <button key={e.id} onClick={() => select({ type: "item", id: e.id })} className="flex items-baseline gap-1.5 hover:underline">
+                          <span>{human(e.criterion)}</span>
+                          <span className="font-mono font-semibold">{e.score === null ? "N/A" : (e.score > 0 ? "+" : "") + e.score}</span>
+                          <CertaintyPill c={e.certainty} />
+                        </button>
+                      ) : null,
+                    )}
+                </div>
               </td>
             </tr>
           ))}
@@ -109,7 +123,7 @@ export function ChartView({ chart, compact }: { chart: Chart; compact?: boolean 
   const pts = chart.series.flatMap((s) => s.points.map((p) => ({ ...p, series: s.name })));
   if (chart.chart_type === "table" || pts.length === 0)
     return (
-      <table className="w-full font-mono text-xs">
+      <table className="w-full text-[13px]">
         <tbody>
           {pts.map((p) => (
             <tr key={p.series + p.x} className="border-t border-rule">
@@ -135,7 +149,7 @@ export function ChartView({ chart, compact }: { chart: Chart; compact?: boolean 
     <svg viewBox={`0 0 ${W} ${H}`} className="block w-full font-mono text-[10px]" role="img" aria-label={`${chart.title}: ${pts.map((p) => `${p.x} ${p.y}`).join(", ")}`}>
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={left} x2={W - 8} y1={y(t)} y2={y(t)} stroke={t === 0 ? "#000" : "#E2E2E2"} />
+          <line x1={left} x2={W - 8} y1={y(t)} y2={y(t)} stroke={t === 0 ? "#000" : "#E2E8F0"} />
           <text x={left - 5} y={y(t) + 3} textAnchor="end" className="fill-muted">
             {formatAxis(t, chart.unit, chart.scale)}
           </text>
@@ -150,9 +164,9 @@ export function ChartView({ chart, compact }: { chart: Chart; compact?: boolean 
           <g key={p.series + p.x} onClick={() => select({ type: "item", id: p.ref })} className="cursor-pointer">
             <title>{`${p.x}: ${formatAxis(p.y, chart.unit, chart.scale)} (${p.ref})`}</title>
             {chart.chart_type === "bar" ? (
-              <rect x={x(i) - bw / 2} y={y(p.y)} width={bw} height={bottom - y(p.y)} className="fill-ink hover:fill-[#1A6FB0]" />
+              <rect x={x(i) - bw / 2} y={y(p.y)} width={bw} height={bottom - y(p.y)} className="fill-ink hover:fill-link" />
             ) : (
-              <circle cx={x(i)} cy={y(p.y)} r={4} className="fill-white stroke-ink hover:fill-[#1A6FB0]" strokeWidth={1.5} />
+              <circle cx={x(i)} cy={y(p.y)} r={4} className="fill-white stroke-ink hover:fill-link" strokeWidth={1.5} />
             )}
             <text x={x(i)} y={y(p.y) - 5} textAnchor="middle">
               {roundHalfUp(p.y, 1).toLocaleString("en-US")}
@@ -185,29 +199,30 @@ export function ReportModule() {
     if (!placed.has(i.id) && !sections.some((s) => s.category === i.category)) sections.push({ category: i.category, title: human(i.category), item_ids: [i.id] });
 
   return (
-    <div className="animate-[fade-in_200ms_ease-out]">
-      <Label>STAGES EXTRACT · DRAFT · VERIFY · REPAIR · AGENT-FACING</Label>
-      <h1 className="mt-0.5 text-[26px]">Agent report</h1>
-      <div className="mt-1 font-mono text-xs">
-        <span className="uppercase">{report.status.replace("_", " ")}</span> · {list.length} items ·{" "}
-        <span className={STATUS_TEXT.pass}>{status("pass")} pass</span> · <span className={STATUS_TEXT.fixed}>{status("fixed")} fixed</span> ·{" "}
-        <span className={STATUS_TEXT.fail}>{status("fail")} fail</span> · <span className="text-muted">{status("pending")} pending</span>
-      </div>
-      <div className="mt-4">
-        <Gauge c={report.certainty} label="REPORT" />
+    <div className="">
+            <h1 className="text-[22px] font-semibold">Agent report</h1>
+      <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Every number is quoted from a stored source and checked by code. Conclusions cite data, and scores cite conclusions. This report is written for the agents; the brief is the human version.</p>
+      <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px]">
+        <div className="flex gap-1.5"><dt className="text-muted">Status</dt><dd className="font-medium capitalize">{report.status.replace("_", " ")}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-muted">Items</dt><dd className="font-mono tabular-nums">{list.length}</dd></div>
+        <div className="flex gap-1.5"><dt className={STATUS_TEXT.pass}>Pass</dt><dd className="font-mono tabular-nums">{status("pass")}</dd></div>
+        <div className="flex gap-1.5"><dt className={STATUS_TEXT.fixed}>Fixed</dt><dd className="font-mono tabular-nums">{status("fixed")}</dd></div>
+        <div className="flex gap-1.5"><dt className={STATUS_TEXT.fail}>Fail</dt><dd className="font-mono tabular-nums">{status("fail")}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-muted">Pending</dt><dd className="font-mono tabular-nums">{status("pending")}</dd></div>
+      </dl>
+      <div className="mt-5">
+        <Gauge c={report.certainty} label="Report" />
       </div>
 
       <section className="mt-6">
-        <h2 className="mb-2 text-lg font-bold">
-          <span className="mr-2.5 font-mono text-[13px]">01</span>Scorecard
+        <h2 className="mb-2 text-[15px] font-semibold">Scorecard
         </h2>
         <Scorecard rollup={report.rollup} />
       </section>
 
       {sections.map((sec, k) => (
         <section key={sec.category} className="mt-6">
-          <h2 className="mb-1.5 text-lg font-bold">
-            <span className="mr-2.5 font-mono text-[13px]">{String(k + 2).padStart(2, "0")}</span>
+          <h2 className="mb-1.5 text-[15px] font-semibold">
             {sec.title}
           </h2>
           <ul className="border-y border-ink">
@@ -235,14 +250,14 @@ export function ReportModule() {
                   </li>
                 );
               return (
-                <li key={id} className={`animate-[fade-in_250ms_ease-out] border-b border-rule last:border-b-0 ${on ? "bg-zebra" : "hover:bg-[#FAFAFA]"}`}>
+                <li key={id} className={` border-b border-rule last:border-b-0 ${on ? "bg-zebra" : "hover:bg-zebra"}`}>
                   <button onClick={() => select({ type: "item", id })} className="flex w-full items-start gap-2 px-1 py-1.5 text-left">
                     <KindBadge kind={it.kind} />
                     <span className="w-12 flex-none pt-0.5 font-mono text-[11px] text-muted">{id}</span>
-                    <span className={`min-w-0 flex-1 text-[15px] ${it.verification.status === "fail" ? "text-bad line-through decoration-1" : ""}`}>{itemText(it)}</span>
-                    {it.kind === "data" && <span className="flex-none pt-0.5 font-mono text-xs tabular-nums">{formatValue(it.value)}</span>}
+                    <span className={`min-w-0 flex-1 font-serif text-[15px] leading-snug ${it.verification.status === "fail" ? "text-bad line-through decoration-1" : ""}`}>{itemText(it)}</span>
+                    {it.kind === "data" && <span className="flex-none pt-0.5 font-mono text-[12px] tabular-nums">{formatValue(it.value)}</span>}
                     {it.kind === "extrapolation" && (
-                      <span className="flex-none pt-0.5 font-mono text-xs font-bold">{it.score === null ? "N/A" : (it.score > 0 ? "+" : "") + it.score}</span>
+                      <span className="flex-none pt-0.5 font-mono text-[12px] font-semibold">{it.score === null ? "N/A" : (it.score > 0 ? "+" : "") + it.score}</span>
                     )}
                     <span className="w-14 flex-none pt-0.5 text-right">
                       <StatusText status={it.verification.status} />
@@ -259,8 +274,7 @@ export function ReportModule() {
       ))}
 
       <section className="mt-6">
-        <h2 className="mb-1.5 text-lg font-bold">
-          <span className="mr-2.5 font-mono text-[13px]">{String(sections.length + 2).padStart(2, "0")}</span>What we could not determine
+        <h2 className="mb-1.5 text-[15px] font-semibold">What we could not determine
         </h2>
         <Holes />
       </section>
@@ -273,7 +287,7 @@ export function Holes() {
   const report = useRunStore((s) => s.report);
   const select = useRunStore((s) => s.select);
   const holes = report?.holes ?? [];
-  if (!holes.length) return <div className="font-mono text-xs text-muted">No declared gaps{report?.status === "final" ? "." : " yet."}</div>;
+  if (!holes.length) return <div className="text-muted">No declared gaps{report?.status === "final" ? "." : " yet."}</div>;
   return (
     <ul className="border-y border-ink">
       {holes.map((h) => (

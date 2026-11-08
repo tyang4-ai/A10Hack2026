@@ -1,28 +1,32 @@
 @import "tailwindcss";
 
-/* Design tokens from the Axelrod canvas (variant A: typeset article,
-   variant B: trading desk). Colour only carries meaning. */
+/* Tokens: see frontend/DESIGN.md. Colour only carries meaning. */
 @theme {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --font-serif: "KaTeX_Main", "Latin Modern Roman", "CMU Serif", Georgia, serif;
-  --font-mono: var(--font-jetbrains-mono), "KaTeX_Typewriter", ui-monospace, monospace;
 
   --color-paper: #ffffff;
-  --color-ink: #000000;
-  --color-muted: #555555;
-  --color-rule: #d0d0d0;
-  --color-zebra: #f7f7f7;
+  --color-ink: #0f172a;
+  --color-muted: #475569;
+  --color-rule: #e2e8f0;
+  --color-zebra: #f8fafc;
 
-  --color-good: #007a3d;
-  --color-bad: #c00000;
-  --color-link: #1a0dab;
+  --color-good: #15803d;
+  --color-bad: #b91c1c;
+  --color-warn: #b45309;
+  --color-link: #1d4ed8;
 
-  --color-desk: #0b0b0c;
-  --color-desk-ink: #e6e6e6;
-  --color-desk-muted: #9a9a9a;
-  --color-desk-line: #2a2a2a;
-  --color-amber: #ffb000;
-  --color-desk-good: #3ddc84;
-  --color-desk-bad: #ff5a5a;
+  --color-desk: #0f172a;
+  --color-desk-raised: #16213a;
+  --color-desk-line: #1e293b;
+  --color-desk-ink: #e2e8f0;
+  --color-desk-muted: #94a3b8;
+  --color-amber: #f59e0b;
+  --color-desk-good: #4ade80;
+  --color-desk-bad: #f87171;
+  --color-desk-warn: #fbbf24;
+  --color-desk-link: #93c5fd;
 }
 
 html {
@@ -32,19 +36,27 @@ html {
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+/* Visible keyboard focus on every control. */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 @keyframes tape-in {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
-}
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@media print {
+  @page { size: letter; margin: 0.6in; }
+  body { font-size: 11pt; }
 }
 
 /* Painted text must match pretext's model (see src/lib/textLayout.ts). */

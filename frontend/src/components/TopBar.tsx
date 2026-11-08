@@ -5,12 +5,12 @@ import { api, ApiError } from "@/lib/api";
 import { STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 
-const STATUS_CLS = {
-  running: "text-[#6CB6FF]",
-  awaiting_approval: "text-amber",
-  done: "text-desk-good",
-  stopped: "text-desk-bad",
-  failed: "text-desk-bad",
+const STATUS = {
+  running: { label: "Running", dot: "bg-desk-link" },
+  awaiting_approval: { label: "Waiting for your approval", dot: "bg-amber" },
+  done: { label: "Done", dot: "bg-desk-good" },
+  stopped: { label: "Stopped", dot: "bg-desk-bad" },
+  failed: { label: "Failed", dot: "bg-desk-bad" },
 } as const;
 
 function StopButton() {
@@ -37,19 +37,28 @@ function StopButton() {
     <div className="flex items-center gap-1.5">
       {confirm ? (
         <>
-          <button onClick={stop} className="min-h-9 bg-desk-bad px-4 font-bold tracking-[0.08em] text-desk">
-            ■ CONFIRM STOP
+          <button onClick={stop} className="h-8 rounded-[4px] bg-desk-bad px-3.5 text-[13px] font-semibold text-desk">
+            Confirm stop
           </button>
-          <button onClick={() => setConfirm(false)} className="min-h-9 border border-[#555] px-2.5 text-desk-ink">
-            CANCEL
+          <button onClick={() => setConfirm(false)} className="h-8 rounded-[4px] px-2.5 text-[13px] text-desk-muted hover:text-white">
+            Cancel
           </button>
         </>
       ) : (
-        <button onClick={() => setConfirm(true)} className="min-h-9 border-2 border-desk-bad px-4 font-bold tracking-[0.1em] text-desk-bad transition-colors hover:bg-desk-bad hover:text-desk">
-          ■ STOP
+        <button
+          onClick={() => setConfirm(true)}
+          title="Kill switch: the gateway denies every request after this"
+          className="flex h-8 items-center gap-2 rounded-[4px] border border-desk-bad px-3.5 text-[13px] font-semibold text-desk-bad transition-colors hover:bg-desk-bad hover:text-desk"
+        >
+          <span aria-hidden className="h-2.5 w-2.5 bg-current" />
+          Stop run
         </button>
       )}
-      {err && <span className="text-desk-bad">{err}</span>}
+      {err && (
+        <span role="alert" className="text-desk-bad">
+          {err}
+        </span>
+      )}
     </div>
   );
 }
@@ -61,8 +70,8 @@ function NewRun() {
   const { openRun, loadRuns } = useRunStore.getState();
   if (!open)
     return (
-      <button onClick={() => setOpen(true)} className="border border-[#555] px-2 py-1 text-desk-ink hover:border-desk-ink">
-        + NEW RUN
+      <button onClick={() => setOpen(true)} className="h-8 rounded-[4px] border border-desk-line px-2.5 text-desk-ink hover:border-desk-muted">
+        New run
       </button>
     );
   return (
@@ -81,17 +90,20 @@ function NewRun() {
         }
       }}
     >
+      <label className="sr-only" htmlFor="new-company">
+        Company to research
+      </label>
       <input
-        aria-label="Company"
+        id="new-company"
         autoFocus
         value={company}
         onChange={(e) => setCompany(e.target.value)}
-        className="w-48 border-b border-[#555] bg-transparent py-0.5 text-desk-ink outline-none focus:border-amber"
+        className="h-8 w-52 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink outline-none focus:border-amber"
       />
-      <button disabled={busy || !company.trim()} className="border border-amber px-2 py-1 font-bold text-amber disabled:opacity-40">
-        START
+      <button disabled={busy || !company.trim()} className="h-8 rounded-[4px] bg-amber px-3 font-semibold text-desk disabled:opacity-40">
+        Start
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="px-1 text-desk-muted">
+      <button type="button" onClick={() => setOpen(false)} className="h-8 px-1.5 text-desk-muted hover:text-white" aria-label="Cancel new run">
         ✕
       </button>
     </form>
@@ -105,81 +117,99 @@ export function TopBar() {
   const openRun = useRunStore((s) => s.openRun);
   const stageIdx = run ? STAGES.indexOf(run.stage) : -1;
   const c = run?.counts;
+  const st = run ? STATUS[run.status] : null;
 
   return (
-    <header className="flex-none bg-desk font-mono text-xs text-desk-ink">
-      <div className="flex min-h-12 flex-wrap items-center gap-x-5 gap-y-1.5 px-4">
-        <span className="text-sm font-bold tracking-[0.2em] text-amber">AXELROD</span>
+    <header className="flex-none bg-desk text-[13px] text-desk-ink">
+      <div className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1.5 px-4">
+        <span className="font-mono text-sm font-semibold tracking-[0.18em] text-amber">AXELROD</span>
+        <label className="sr-only" htmlFor="run-picker">
+          Run
+        </label>
         <select
-          aria-label="Run"
+          id="run-picker"
           value={runId ?? ""}
           onChange={(e) => openRun(e.target.value || null)}
-          className="max-w-64 border border-[#555] bg-desk px-1.5 py-1 text-desk-ink"
+          className="h-8 max-w-64 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink"
         >
-          <option value="">Select a run…</option>
+          <option value="">Select a run</option>
           {runs.map((r) => (
             <option key={r.run_id} value={r.run_id}>
-              {r.company} · {r.run_id} · {r.status}
+              {r.company} ({r.run_id})
             </option>
           ))}
         </select>
         <NewRun />
-        {run && (
-          <>
-            <span className="text-sm text-white">
+        {run && st && (
+          <div className="flex items-center gap-3 border-l border-desk-line pl-4">
+            <span className="font-semibold text-white">
               {run.company}
-              {run.ticker && <span className="ml-1.5 text-desk-muted">{run.ticker}</span>}
+              {run.ticker && <span className="ml-1.5 font-mono font-normal text-desk-muted">{run.ticker}</span>}
             </span>
             {run.mode !== "live" && (
-              <span title="Simulated data, not a live run" className="bg-amber px-1.5 font-bold tracking-[0.1em] text-desk">
+              <span title="Simulated data, not a live run" className="rounded-[3px] bg-amber px-1.5 font-mono text-[11px] font-semibold text-desk">
                 {run.mode.toUpperCase()}
               </span>
             )}
-            <span className={STATUS_CLS[run.status]}>● {run.status.replace("_", " ").toUpperCase()}</span>
-          </>
+            <span className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full ${st.dot} ${run.status === "running" ? "animate-pulse" : ""}`} />
+              {st.label}
+            </span>
+          </div>
         )}
-        <div className="ml-auto flex flex-wrap items-center gap-4">
-          {run && (
-            <>
-              <span title="AWS spend for this run, from the gateway meter">
-                <span className="text-desk-muted">COST </span>
-                <span className="tabular-nums text-white">{usd(run.usage.cost_usd)}</span>
-                {run.usage.budget_usd !== null && <span className="text-desk-muted"> / {usd(run.usage.budget_usd)}</span>}
-              </span>
-              {c && (
-                <span className="text-desk-muted">
-                  ITEMS <span className="text-white tabular-nums">{c.items_total}</span> · AGENTS{" "}
-                  <span className="text-white tabular-nums">{c.agents_active}/{c.agents_total}</span> · BLOCKED{" "}
-                  <span className={`tabular-nums ${c.gateway_blocked ? "text-desk-bad" : "text-white"}`}>{c.gateway_blocked}</span>
-                  {c.gateway_flagged > 0 && (
-                    <>
-                      {" "}
-                      · FLAGGED <span className="tabular-nums text-amber">{c.gateway_flagged}</span>
-                    </>
-                  )}
-                </span>
+        <div className="ml-auto flex flex-wrap items-center gap-5">
+          {run && c && (
+            <dl className="flex items-center gap-4 text-desk-muted">
+              <div className="flex gap-1.5" title="AWS spend for this run, from the gateway meter">
+                <dt>Cost</dt>
+                <dd className="font-mono text-white tabular-nums">
+                  {usd(run.usage.cost_usd)}
+                  {run.usage.budget_usd !== null && <span className="text-desk-muted"> of {usd(run.usage.budget_usd)}</span>}
+                </dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt>Items</dt>
+                <dd className="font-mono text-white tabular-nums">{c.items_total}</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt>Agents</dt>
+                <dd className="font-mono text-white tabular-nums">
+                  {c.agents_active}/{c.agents_total}
+                </dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt>Blocked</dt>
+                <dd className={`font-mono tabular-nums ${c.gateway_blocked ? "text-desk-bad" : "text-white"}`}>{c.gateway_blocked}</dd>
+              </div>
+              {c.gateway_flagged > 0 && (
+                <div className="flex gap-1.5">
+                  <dt>Flagged</dt>
+                  <dd className="font-mono text-desk-warn tabular-nums">{c.gateway_flagged}</dd>
+                </div>
               )}
-            </>
+            </dl>
           )}
           <StopButton />
         </div>
       </div>
       {run && (
-        <ol aria-label="Run stage" className="grid grid-cols-10 gap-px border-t border-desk-line bg-desk-line text-[10px]">
+        <ol aria-label="Run stage" className="grid grid-cols-10 border-t border-desk-line text-[12px]">
           {STAGES.map((s, i) => {
             const done = i < stageIdx || run.stage === "complete";
             const now = i === stageIdx && run.stage !== "complete";
             const halted = now && (run.status === "stopped" || run.status === "failed");
+            const waiting = now && run.status === "awaiting_approval";
             return (
               <li
                 key={s}
                 aria-current={now ? "step" : undefined}
-                className={`truncate px-2 py-1 transition-colors duration-500 ${
-                  halted ? "bg-desk-bad text-desk" : now ? (run.status === "awaiting_approval" ? "bg-amber text-desk" : "bg-white text-desk") : done ? "bg-[#1C1C1C] text-desk-good" : "bg-desk text-desk-muted"
+                className={`relative truncate border-r border-desk-line px-2.5 py-1.5 last:border-r-0 ${
+                  halted ? "bg-desk-bad font-semibold text-desk" : waiting ? "bg-amber font-semibold text-desk" : now ? "font-semibold text-white" : done ? "text-desk-ink" : "text-desk-muted/60"
                 }`}
               >
-                {done ? "✓ " : now ? "▶ " : ""}
+                <span className={`mr-1.5 font-mono text-[10px] ${done ? "text-desk-good" : ""}`}>{done ? "✓" : String(i + 1).padStart(2, "0")}</span>
                 {STAGE_LABEL[s]}
+                {now && !halted && !waiting && <span className="absolute inset-x-0 bottom-0 h-0.5 animate-pulse bg-desk-link" />}
               </li>
             );
           })}
@@ -196,16 +226,17 @@ export function Banner() {
   if (run.status === "stopped") {
     const after = traffic.filter((t) => t.data.decision === "blocked" && t.data.rule_id === null && /kill|stop/i.test(t.data.reason)).length;
     return (
-      <div role="alert" className="flex-none bg-desk-bad px-4 py-2 font-mono text-xs font-bold tracking-[0.06em] text-desk">
-        ■ KILL SWITCH ON · run stopped{run.stop_reason ? `: ${run.stop_reason}` : ""}. The gateway now denies every request
-        {after > 0 ? ` (${after} blocked since)` : ""}.
+      <div role="alert" className="flex flex-none items-center gap-2 bg-desk-bad px-4 py-2 text-[13px] font-semibold text-desk">
+        <span aria-hidden className="h-2.5 w-2.5 bg-desk" />
+        Kill switch on. The run was stopped{run.stop_reason ? ` (${run.stop_reason})` : ""} and the gateway now denies every request
+        {after > 0 ? `: ${after} blocked so far` : ""}.
       </div>
     );
   }
   if (run.status === "failed")
     return (
-      <div role="alert" className="flex-none bg-[#5A0000] px-4 py-2 font-mono text-xs text-white">
-        RUN FAILED · {run.error ?? "Backend error"}
+      <div role="alert" className="flex-none bg-[#7F1D1D] px-4 py-2 text-[13px] text-white">
+        The run failed: {run.error ?? "the backend reported an error without details"}.
       </div>
     );
   return null;

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Agent, AgentRole, VaultFile, VaultNode } from "@contract/types";
 import { api } from "@/lib/api";
-import { fmtTime, usd } from "@/lib/format";
+import { count, fmtTime, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 
 type Tab = "traffic" | "agents" | "vault" | "log";
@@ -15,13 +15,13 @@ export function Drawer() {
   const agents = useRunStore((s) => s.agents);
   const bad = traffic.filter((t) => t.data.decision !== "allowed").length;
   const tabs: [Tab, string, string][] = [
-    ["traffic", "TRAFFIC", `${traffic.length}${bad ? ` · ${bad} ⚑` : ""}`],
-    ["agents", "AGENTS", String(Object.keys(agents).length)],
-    ["vault", "VAULT", ""],
-    ["log", "LOG", ""],
+    ["traffic", "Traffic", String(traffic.length)],
+    ["agents", "Agents", String(Object.keys(agents).length)],
+    ["vault", "Vault", ""],
+    ["log", "Log", ""],
   ];
   return (
-    <section aria-label="Run drawer" className={`flex flex-none flex-col border-t-2 border-ink bg-desk font-mono text-xs text-desk-ink ${open ? "h-[34vh] min-h-56" : ""}`}>
+    <section aria-label="Run drawer" className={`flex flex-none flex-col border-t border-desk-line bg-desk text-[12px] text-desk-ink ${open ? "h-[34vh] min-h-56" : ""}`}>
       <div className="flex flex-none items-center gap-1 border-b border-desk-line px-2">
         {tabs.map(([id, label, n]) => (
           <button
@@ -31,9 +31,10 @@ export function Drawer() {
               setTab(id);
               setOpen(true);
             }}
-            className={`border-b-2 px-3 py-1.5 ${tab === id && open ? "border-amber text-white" : "border-transparent text-desk-muted hover:text-white"}`}
+            className={`border-b-2 px-3 py-2 text-[13px] ${tab === id && open ? "border-amber font-semibold text-white" : "border-transparent text-desk-muted hover:text-white"}`}
           >
-            {label} {n && <span className={id === "traffic" && bad ? "text-desk-bad" : "text-desk-muted"}>{n}</span>}
+            {label} {n && <span className="ml-1 font-mono text-[11px] font-normal text-desk-muted">{n}</span>}
+            {id === "traffic" && bad > 0 && <span className="ml-1.5 rounded-[3px] bg-desk-bad px-1 font-mono text-[11px] font-semibold text-desk">{bad}</span>}
           </button>
         ))}
         <button onClick={() => setOpen((o) => !o)} className="ml-auto px-2 text-desk-muted hover:text-white" aria-label={open ? "Collapse drawer" : "Expand drawer"}>
@@ -52,7 +53,7 @@ export function Drawer() {
   );
 }
 
-const DECISION_CLS = { allowed: "", blocked: "bg-[#3A0F0F] text-desk-bad", flagged: "bg-[#3A2A00] text-amber" } as const;
+const DECISION_CLS = { allowed: "", blocked: "bg-[#450A0A] text-desk-bad", flagged: "bg-[#422006] text-amber" } as const;
 
 function Traffic() {
   const traffic = useRunStore((s) => s.traffic);
@@ -66,15 +67,15 @@ function Traffic() {
       <div className="sticky top-0 z-10 flex items-center gap-3 bg-desk px-3 py-1.5">
         <label className="flex items-center gap-1.5">
           <input type="checkbox" checked={onlyBad} onChange={(e) => setOnlyBad(e.target.checked)} />
-          Blocked and flagged only
+          Show only blocked and flagged
         </label>
-        <span className="text-desk-muted">Every agent request passes the gateway: approved sources only, default deny.</span>
+        <span className="text-desk-muted">Every agent request goes through the gateway. Only approved sources are allowed; everything else is denied.</span>
       </div>
       <table className="w-full border-collapse">
-        <thead className="sticky top-[30px] bg-desk text-left text-[10px] tracking-[0.1em] text-desk-muted">
+        <thead className="sticky top-[30px] bg-desk text-left text-[11px] text-desk-muted">
           <tr>
-            {["TIME", "AGENT", "ROLE", "ACTION", "TARGET", "DECISION", "RULE", "MS", "TOKENS", "COST"].map((h) => (
-              <th key={h} className="px-2 py-1 font-medium">
+            {["Time", "Agent", "Role", "Action", "Target", "Decision", "Rule", "ms", "Tokens in/out", "Cost"].map((h, i) => (
+              <th key={h} className={`px-2 py-1 font-medium ${i >= 7 ? "text-right" : ""}`}>
                 {h}
               </th>
             ))}
@@ -84,7 +85,7 @@ function Traffic() {
           {rows.map((e) => {
             const d = e.data;
             return (
-              <tr key={e.seq} title={d.reason} className={`animate-[tape-in_240ms_ease-out] border-t border-[#1C1C1C] ${DECISION_CLS[d.decision]}`}>
+              <tr key={e.seq} title={d.reason} className={`animate-[tape-in_240ms_ease-out] border-t border-desk-line font-mono ${DECISION_CLS[d.decision]}`}>
                 <td className="px-2 py-1 whitespace-nowrap text-desk-muted tabular-nums">{fmtTime(e.ts)}</td>
                 <td className="px-2 whitespace-nowrap">{e.agent_id ?? "—"}</td>
                 <td className="px-2 text-desk-muted">{d.role}</td>
@@ -92,10 +93,10 @@ function Traffic() {
                 <td className="max-w-[380px] truncate px-2" title={d.target}>
                   {d.target}
                 </td>
-                <td className="px-2 font-bold">{d.decision.toUpperCase()}</td>
+                <td className="px-2 font-semibold">{d.decision.toUpperCase()}</td>
                 <td className="px-2 whitespace-nowrap text-desk-muted">{d.rule_id ?? (/kill|stop/i.test(d.reason) ? "kill switch" : "default deny")}</td>
                 <td className="px-2 text-right tabular-nums">{d.latency_ms}</td>
-                <td className="px-2 text-right tabular-nums">{d.tokens_in !== null ? `${d.tokens_in}/${d.tokens_out ?? 0}` : ""}</td>
+                <td className="px-2 text-right tabular-nums">{d.tokens_in !== null ? `${count(d.tokens_in)} / ${count(d.tokens_out ?? 0)}` : ""}</td>
                 <td className="px-2 text-right tabular-nums">{d.cost_usd !== null ? usd(d.cost_usd) : ""}</td>
               </tr>
             );
@@ -114,7 +115,7 @@ function Traffic() {
 }
 
 const ROLES: AgentRole[] = ["planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer", "reviser"];
-const AGENT_CLS = { queued: "bg-[#3A3A3A]", working: "bg-[#6CB6FF] animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-amber" } as const;
+const AGENT_CLS = { queued: "bg-[#334155]", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-amber" } as const;
 
 function Agents() {
   const agents = useRunStore((s) => s.agents);
@@ -130,17 +131,19 @@ function Agents() {
         {ROLES.filter((r) => byRole.has(r)).map((r) => (
           <div key={r} className="mb-2 flex items-start gap-3">
             <span className="w-24 flex-none text-desk-muted">
-              {r.toUpperCase()} {byRole.get(r)!.length}
+              {r} <span className="font-mono">{byRole.get(r)!.length}</span>
             </span>
-            <div className="flex flex-wrap gap-[3px]">
+            <div className="flex flex-wrap">
               {byRole.get(r)!.map((a) => (
                 <button
                   key={a.agent_id}
                   aria-label={`${a.agent_id} ${a.status}`}
                   title={`${a.agent_id} · ${a.status} · ${a.task}`}
                   onClick={() => setPick(a)}
-                  className={`h-3 w-3 rounded-full transition-colors ${AGENT_CLS[a.status]} ${pick?.agent_id === a.agent_id ? "outline-2 outline-offset-1 outline-white" : ""}`}
-                />
+                  className="grid h-6 w-6 place-items-center rounded-[4px] hover:bg-desk-raised"
+                >
+                  <span className={`h-3 w-3 rounded-full transition-colors ${AGENT_CLS[a.status]} ${pick?.agent_id === a.agent_id ? "outline-2 outline-offset-1 outline-white" : ""}`} />
+                </button>
               ))}
             </div>
           </div>
@@ -159,11 +162,11 @@ function Agents() {
         <div className="w-80 flex-none border-l border-desk-line p-3">
           <div className="text-white">{pick.agent_id}</div>
           <div className="text-desk-muted">
-            {pick.role} · {pick.model_id ?? "code"} · {pick.status}
+            {pick.role}, {pick.model_id ?? "code only"}, {pick.status}
           </div>
           <div className="mt-2">{agents[pick.agent_id]?.task ?? pick.task}</div>
           <div className="mt-2 text-desk-muted">
-            {pick.usage.model_calls} calls · {pick.usage.tokens_in + pick.usage.tokens_out} tokens · {usd(pick.usage.cost_usd)}
+            {pick.usage.model_calls} model calls, {count(pick.usage.tokens_in + pick.usage.tokens_out)} tokens, {usd(pick.usage.cost_usd)}
           </div>
           {pick.transcript_path && <div className="mt-2 break-all text-desk-muted">{pick.transcript_path}</div>}
         </div>
@@ -185,13 +188,13 @@ function Vault() {
     <div className="flex h-full">
       <div className="w-80 flex-none overflow-auto border-r border-desk-line p-2">
         {err && <div className="text-desk-bad">{err}</div>}
-        {tree ? <Node n={tree} depth={0} onOpen={open} active={file?.path} /> : <div className="text-desk-muted">Loading vault…</div>}
+        {tree ? <Node n={tree} depth={0} onOpen={open} active={file?.path} /> : <div aria-busy="true" className="text-desk-muted">Loading the vault</div>}
       </div>
       <div className="min-w-0 flex-1 overflow-auto p-3">
         {file ? (
           <>
             <div className="mb-2 text-desk-muted">
-              {file.path} · {file.content_type} · {file.size.toLocaleString()} bytes
+              {file.path} ({file.content_type}, {file.size.toLocaleString()} bytes)
             </div>
             {file.text !== null ? (
               <pre className="whitespace-pre-wrap text-desk-ink">
@@ -203,7 +206,7 @@ function Vault() {
             )}
           </>
         ) : (
-          <span className="text-desk-muted">Raw downloads, extracted text, agent transcripts and verification files. Pick a file.</span>
+          <span className="text-desk-muted">Raw downloads, extracted text, agent transcripts and verification files. Pick a file to preview it.</span>
         )}
       </div>
     </div>

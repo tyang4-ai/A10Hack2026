@@ -4,53 +4,80 @@ import type { Certainty, Item, SourceStatus, VerificationStatus } from "@contrac
 import { BAND_TEXT, CERTAINTY_HELP, STATUS_TEXT } from "@/lib/format";
 
 export const KIND_LETTER: Record<Item["kind"], string> = { data: "D", conclusion: "C", extrapolation: "E", chart: "G" };
+const KIND_NAME: Record<Item["kind"], string> = { data: "Data", conclusion: "Conclusion", extrapolation: "Score", chart: "Chart" };
 
 export function KindBadge({ kind }: { kind: Item["kind"] }) {
   return (
-    <span title={kind} className="inline-grid h-5 w-5 flex-none place-items-center border border-ink font-mono text-[10px] font-bold">
+    <span title={KIND_NAME[kind]} aria-label={KIND_NAME[kind]} className="inline-grid h-5 w-5 flex-none place-items-center rounded-[3px] border border-current font-mono text-[10px] font-semibold">
       {KIND_LETTER[kind]}
     </span>
   );
 }
 
+// Status is a word in its colour, never colour alone.
 export function StatusText({ status }: { status: VerificationStatus }) {
-  return <span className={`font-mono text-[11px] font-bold tracking-[0.06em] ${STATUS_TEXT[status]}`}>{status.toUpperCase()}</span>;
+  return <span className={`font-mono text-[11px] font-semibold ${STATUS_TEXT[status]}`}>{status.toUpperCase()}</span>;
 }
 
 export function CertaintyPill({ c }: { c: Certainty | null }) {
-  if (!c || c.score === null) return <span className="font-mono text-[11px] text-muted" title={CERTAINTY_HELP}>—</span>;
+  if (!c || c.score === null)
+    return (
+      <span className="font-mono text-[11px] text-muted" title={CERTAINTY_HELP}>
+        —
+      </span>
+    );
   return (
-    <span title={`${CERTAINTY_HELP}\n${c.basis}`} className={`font-mono text-[11px] font-bold tabular-nums ${BAND_TEXT[c.band]}`}>
+    <span title={`Certainty ${c.score} (${c.band}). ${CERTAINTY_HELP}\n${c.basis}`} className={`font-mono text-[11px] font-semibold tabular-nums ${BAND_TEXT[c.band]}`}>
       {c.score}
     </span>
   );
 }
 
 const SOURCE_STATUS_CLS: Partial<Record<SourceStatus, string>> = {
-  fetching: "text-[#1A6FB0] animate-pulse",
-  extracting: "text-[#1A6FB0] animate-pulse",
+  fetching: "text-link animate-pulse",
+  extracting: "text-link animate-pulse",
   fetched: "text-good",
   extracted: "text-good",
   failed: "text-bad",
   blocked: "text-bad",
   revoked: "text-bad",
-  quarantined: "bg-[#8A5A00] text-white px-1",
+  quarantined: "rounded-[3px] bg-warn px-1 text-white",
   skipped: "text-muted",
 };
 
 export function SourceChip({ status }: { status: SourceStatus }) {
-  return <span className={`font-mono text-[10px] font-bold tracking-[0.08em] ${SOURCE_STATUS_CLS[status] ?? "text-muted"}`}>{status.toUpperCase()}</span>;
+  return <span className={`font-mono text-[11px] font-semibold ${SOURCE_STATUS_CLS[status] ?? "text-muted"}`}>{status.toUpperCase()}</span>;
+}
+
+export function Chip({ children, title }: { children: React.ReactNode; title?: string }) {
+  return (
+    <span title={title} className="rounded-[3px] bg-zebra px-1.5 py-px text-[11px] text-muted outline outline-1 outline-rule">
+      {children}
+    </span>
+  );
 }
 
 export function Label({ children }: { children: React.ReactNode }) {
-  return <div className="font-mono text-[10px] tracking-[0.12em] text-muted">{children}</div>;
+  return <div className="text-[11px] font-medium text-muted">{children}</div>;
 }
 
 export function Missing({ id }: { id: string }) {
   return <span className="font-mono text-[11px] text-muted italic">{id} (missing)</span>;
 }
 
-export const btn =
-  "border border-ink px-2.5 py-1 font-mono text-[11px] tracking-[0.06em] transition-colors hover:bg-ink hover:text-white disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink";
-export const btnPrimary =
-  "border border-ink bg-ink px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.08em] text-white transition-opacity hover:opacity-85 disabled:opacity-30";
+export function Skeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div aria-busy="true" aria-label="Loading" className="grid gap-2">
+      <div className="h-6 w-56 rounded-[3px] bg-zebra" />
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="h-5 rounded-[3px] bg-zebra" style={{ width: `${92 - ((i * 13) % 30)}%` }} />
+      ))}
+    </div>
+  );
+}
+
+const base = "inline-flex items-center justify-center gap-1.5 rounded-[4px] text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+export const btn = `${base} h-8 border border-[#CBD5E1] bg-white px-3 text-ink hover:border-ink disabled:hover:border-[#CBD5E1]`;
+export const btnSm = `${base} h-7 border border-[#CBD5E1] bg-white px-2 text-[12px] text-ink hover:border-ink`;
+export const btnPrimary = `${base} h-8 bg-ink px-3.5 text-white hover:bg-[#1E293B]`;
+export const btnDanger = `${base} h-7 border border-bad/50 bg-white px-2 text-[12px] text-bad hover:bg-bad hover:text-white`;
