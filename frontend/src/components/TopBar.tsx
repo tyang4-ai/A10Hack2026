@@ -137,8 +137,8 @@ export function TopBar() {
   return (
     <header className="flex-none bg-desk text-[13px] text-desk-ink">
       <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1.5 px-4">
-        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-logo text-[18px] leading-none font-semibold tracking-[0.12em] text-accent hover:text-white">
-          AXELROD
+        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-logo text-[20px] leading-none font-semibold tracking-[0.02em] text-accent hover:text-white">
+          Axelrod
         </Link>
         <RunSwitcher />
         {run && st && (
