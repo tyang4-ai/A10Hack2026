@@ -277,10 +277,6 @@ export const Window = memo(function Window({ id }: { id: string }) {
       setGeo(clampGeo({ x, y, w, h }, TITLE_PX / d.desk.height, KEEP_PX / d.desk.width));
       const px = e.clientX - d.desk.left;
       const py = e.clientY - d.desk.top;
-      // The space a window was just lifted from looks empty, so the fill target waits
-      // until the pointer has left the window's original area.
-      const o = d.orig;
-      const leftHome = !(px >= o.x * d.desk.width && px <= (o.x + o.w) * d.desk.width && py >= o.y * d.desk.height && py <= (o.y + o.h) * d.desk.height);
       let snap: Geo | null;
       if (useWindows.getState().auto) {
         // Auto tiling: preview the tile under the pointer; dropping there swaps the two windows.
@@ -297,10 +293,10 @@ export const Window = memo(function Window({ id }: { id: string }) {
         snap =
           edge ??
           (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ??
-          (leftHome ? fillTarget(id, px, py, d.desk) : null);
+          fillTarget(id, px, py, d.desk);
       }
       const cur = useWindows.getState();
-      const hint = !snap && !cur.auto && leftHome ? hintAt(id, px, py, d.desk) : null;
+      const hint = !snap && !cur.auto ? hintAt(id, px, py, d.desk) : null;
       if (JSON.stringify(snap) !== JSON.stringify(cur.snap) || JSON.stringify(hint) !== JSON.stringify(cur.snapHint)) useWindows.setState({ snap, snapHint: hint });
     } else {
       const res = applyGroups(d.groups, d.wins, dx, dy, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));

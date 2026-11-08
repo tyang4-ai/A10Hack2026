@@ -77,10 +77,11 @@ function SnapPreview() {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (target) {
+      // The entrance is a keyframe animation (snap-in), so it plays even when this
+      // update lands before the browser's next paint, as pointer events make it do.
       setShown({ g: target, solid: !!snap });
-      // Mount first at opacity 0, then fade in on the next frame.
-      const f = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(f);
+      setVisible(true);
+      return;
     }
     setVisible(false);
     const t = setTimeout(() => setShown(null), 160);
@@ -94,7 +95,7 @@ function SnapPreview() {
     <div
       aria-hidden
       style={{ left: `${g.x * 100}%`, top: `${g.y * 100}%`, width: `${g.w * 100}%`, height: `${g.h * 100}%` }}
-      className={`pointer-events-none absolute z-[100000] transition-[left,top,width,height,opacity,transform,background-color] duration-150 ease-out print:hidden ${
+      className={`pointer-events-none absolute z-[100000] animate-[snap-in_160ms_ease-out] transition-[left,top,width,height,opacity,transform,background-color] duration-150 ease-out print:hidden ${
         visible ? "scale-100 opacity-100" : "scale-[0.96] opacity-0"
       } ${solid ? "rounded-[2px] border border-accent bg-accent/15" : "rounded-[4px] border border-dashed border-accent bg-accent/10"}`}
     />
