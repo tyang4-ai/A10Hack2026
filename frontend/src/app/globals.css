@@ -275,10 +275,13 @@ body {
   font-size: 13px;
 }
 
-/* Visible keyboard focus on every control. */
-:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+/* Visible keyboard focus on every control. In the base layer so a component can
+   move the ring elsewhere (the home search box rings the whole pill, not the input). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
 }
 
 @keyframes tape-in {

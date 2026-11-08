@@ -99,7 +99,7 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && text.trim()) void start();
           }}
           placeholder={EXAMPLES[stage]}
-          className="mt-1 w-full resize-y rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 py-1.5 text-desk-ink outline-none placeholder:text-desk-muted focus:border-accent"
+          className="mt-1 w-full resize-y rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 py-1.5 text-desk-ink placeholder:text-desk-muted focus:border-accent"
         />
         {unsupported && (
           <div role="status" className="mt-2 rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">

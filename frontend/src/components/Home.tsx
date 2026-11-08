@@ -3,13 +3,13 @@
 // The home page: every run, grouped by company. Each company is a project and
 // each run is one session of the harness on it. Click a run to open its desk.
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Run } from "@contract/types";
 import type { RerunInfo } from "@/lib/agentApi";
 import { api } from "@/lib/api";
-import { STAGE_LABEL, usd } from "@/lib/format";
+import { MODE_HELP, MODE_LABEL, STAGE_LABEL, usd } from "@/lib/format";
 import { ago, STATUS_DOT, STATUS_WORD, ThemeSwitcher } from "./Switchers";
-import { NewRun } from "./TopBar";
 import { Skeleton } from "./ui";
 
 // Fixed widths so every company's table lines up with the others.
@@ -63,20 +63,20 @@ export function Home() {
   const spend = runs?.reduce((s, r) => s + r.usage.cost_usd, 0) ?? 0;
 
   return (
-    <div className="min-h-screen bg-paper">
-      <header className="bg-desk text-[13px] text-desk-ink">
-        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <span className="font-logo text-[30px] leading-none font-semibold tracking-[0.02em] text-accent">Axelrod</span>
-          <span className="text-desk-muted">Self-verifying research harness</span>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <ThemeSwitcher />
-            <NewRun startOpen />
-          </div>
-        </div>
+    <div className="relative min-h-screen bg-paper text-ink">
+      <div className="absolute top-3 right-4">
+        <ThemeSwitcher />
+      </div>
+
+      {/* Search-first, like a search engine: the wordmark, then one box to start researching a company. */}
+      <header className="mx-auto flex max-w-2xl flex-col items-center px-4 pt-[14vh] pb-10 text-center">
+        <h1 className="font-logo text-[64px] leading-none font-semibold tracking-[0.01em] text-ink">Axelrod</h1>
+        <p className="mt-3 text-[14px] text-muted">Self-verifying research harness</p>
+        <StartSearch />
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <h1 className="text-[22px] font-semibold text-ink">Runs</h1>
+      <main className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+        <h2 className="text-[22px] font-semibold text-ink">Runs</h2>
         <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Every run of the harness, grouped by company. Open one to see its sources, agents, gateway traffic, report and brief.</p>
 
         {runs && (
@@ -115,9 +115,9 @@ export function Home() {
         {projects.map((p) => (
           <section key={p.company} aria-labelledby={`p-${p.company}`} className="mt-8">
             <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
-              <h2 id={`p-${p.company}`} className="text-[15px] font-semibold text-ink">
+              <h3 id={`p-${p.company}`} className="text-[15px] font-semibold text-ink">
                 {p.company}
-              </h2>
+              </h3>
               {p.ticker && <span className="font-mono text-[12px] text-muted">{p.ticker}</span>}
               <span className="text-[12px] text-muted">
                 {p.runs.length} run{p.runs.length > 1 ? "s" : ""}
@@ -163,6 +163,59 @@ function Lineage({ r }: { r: Run }) {
   );
 }
 
+// The search box starts a run on the company typed in, then opens its desk.
+function StartSearch() {
+  const router = useRouter();
+  const [company, setCompany] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <form
+      className="mt-8 w-full"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!company.trim()) return;
+        setBusy(true);
+        setErr(null);
+        try {
+          const run = await api.createRun({ company: company.trim(), created_via: "ui" });
+          router.push(`/runs/${encodeURIComponent(run.run_id)}`);
+        } catch (x) {
+          setErr(x instanceof Error ? x.message : String(x));
+          setBusy(false);
+        }
+      }}
+    >
+      <label htmlFor="start-company" className="sr-only">
+        Company to research
+      </label>
+      <div className="flex h-12 items-center gap-2 rounded-full border border-control bg-paper pr-1.5 pl-5 focus-within:border-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
+        <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" className="flex-none text-muted">
+          <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+        <input
+          id="start-company"
+          autoFocus
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          placeholder="Research a company, for example Siemens Healthineers"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
+        />
+        <button disabled={busy || !company.trim()} className="h-9 flex-none rounded-full bg-ink px-4 text-[13px] font-semibold text-paper disabled:opacity-40">
+          {busy ? "Starting" : "Start run"}
+        </button>
+      </div>
+      {err && (
+        <p role="alert" className="mt-2 text-bad">
+          {err}
+        </p>
+      )}
+      <p className="mt-3 text-[12px] text-muted">The planner proposes sources first. Nothing is fetched until you approve them.</p>
+    </form>
+  );
+}
+
 function RunRow({ r }: { r: Run }) {
   const c = r.counts;
   const checked = c.items_pass + c.items_fixed;
@@ -175,8 +228,8 @@ function RunRow({ r }: { r: Run }) {
         </Link>
         <Lineage r={r} />
         {r.mode !== "live" && (
-          <span title="Simulated data, not a live run" className="mt-0.5 inline-block rounded-[3px] bg-warn-bg px-1 font-mono text-[10px] font-semibold text-warn">
-            {r.mode.toUpperCase()}
+          <span title={MODE_HELP[r.mode]} className="mt-0.5 inline-block rounded-[3px] bg-warn-bg px-1 font-mono text-[10px] font-semibold text-warn">
+            {MODE_LABEL}
           </span>
         )}
       </td>

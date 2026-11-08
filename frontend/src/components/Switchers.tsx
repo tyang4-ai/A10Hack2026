@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@contract/types";
-import { STAGE_LABEL } from "@/lib/format";
+import { MODE_HELP, MODE_LABEL, STAGE_LABEL } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { applyTheme, readTheme, THEMES, type ThemeId } from "@/lib/theme";
 
@@ -156,7 +156,7 @@ export function RunSwitcher() {
                     <span className="flex items-baseline gap-2">
                       <span className="truncate font-semibold text-white">{r.company}</span>
                       {r.ticker && <span className="font-mono text-[11px] text-desk-muted">{r.ticker}</span>}
-                      {r.mode !== "live" && <span className="rounded-[3px] bg-desk-warn px-1 font-mono text-[10px] font-semibold text-desk">{r.mode.toUpperCase()}</span>}
+                      {r.mode !== "live" && <span title={MODE_HELP[r.mode]} className="rounded-[3px] bg-desk-warn px-1 font-mono text-[10px] font-semibold text-desk">{MODE_LABEL}</span>}
                     </span>
                     <span className="mt-0.5 flex gap-2 text-[12px] text-desk-muted">
                       <span>{STATUS_WORD[r.status]}</span>

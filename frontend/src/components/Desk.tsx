@@ -225,7 +225,7 @@ export function LayoutControl() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setNaming(false)}
             placeholder="Layout name"
-            className="h-7 w-32 rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 text-[12px] text-desk-ink outline-none placeholder:text-desk-muted focus:border-accent"
+            className="h-7 w-32 rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 text-[12px] text-desk-ink placeholder:text-desk-muted focus:border-accent"
           />
           <button className="h-7 rounded-[4px] bg-accent px-2.5 text-[12px] font-semibold text-accent-ink">Save</button>
           <button type="button" onClick={() => setNaming(false)} aria-label="Cancel saving the layout" className="h-7 px-1.5 text-desk-muted hover:text-white">

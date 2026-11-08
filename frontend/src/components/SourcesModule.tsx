@@ -330,7 +330,7 @@ function AddSource({ runId }: { runId: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [added, setAdded] = useState<Source | null>(null);
   const refreshPlan = useRunStore((s) => s.refreshPlan);
-  const field = "h-8 rounded-[4px] border border-control bg-paper px-2 text-[13px] text-ink outline-none focus:border-ink";
+  const field = "h-8 rounded-[4px] border border-control bg-paper px-2 text-[13px] text-ink focus:border-ink";
   return (
     <form
       className="mt-6"

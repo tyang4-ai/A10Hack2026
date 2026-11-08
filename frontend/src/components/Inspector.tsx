@@ -421,7 +421,7 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
           onChange={(e) => setText(e.target.value)}
           disabled={status === "stopped"}
           placeholder={targetType === "item" ? "Tell the agents what to change. The item is revised and re-checked." : "Note for the agents"}
-          className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink outline-none placeholder:text-desk-muted focus:border-desk-muted"
+          className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink placeholder:text-desk-muted focus:border-desk-muted"
         />
         <button disabled={!text.trim() || status === "stopped"} className="mt-1.5 h-7 rounded-[4px] bg-desk-ink px-3 text-[12px] font-medium text-desk disabled:opacity-40">
           Send

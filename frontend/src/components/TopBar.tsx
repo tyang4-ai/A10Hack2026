@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Stage } from "@contract/types";
 import { api, ApiError } from "@/lib/api";
-import { STAGES, STAGE_LABEL, usd } from "@/lib/format";
+import { MODE_HELP, MODE_LABEL, STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { LayoutControl } from "./Desk";
 import { RerunDialog } from "./RerunDialog";
@@ -108,7 +108,7 @@ export function NewRun({ startOpen = false }: { startOpen?: boolean }) {
         autoFocus={!startOpen}
         value={company}
         onChange={(e) => setCompany(e.target.value)}
-        className="h-8 w-52 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink outline-none focus:border-accent"
+        className="h-8 w-52 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink focus:border-accent"
       />
       <button disabled={busy || !company.trim()} className="h-8 rounded-[4px] bg-accent px-3 font-semibold text-accent-ink disabled:opacity-40">
         Start
@@ -144,8 +144,8 @@ export function TopBar() {
         {run && st && (
           <div className="flex items-center gap-3">
             {run.mode !== "live" && (
-              <span title="Simulated data, not a live run" className="rounded-[3px] bg-desk-warn px-1.5 font-mono text-[11px] font-semibold text-desk">
-                {run.mode.toUpperCase()}
+              <span title={MODE_HELP[run.mode]} className="rounded-[3px] bg-desk-warn px-1.5 font-mono text-[11px] font-semibold text-desk">
+                {MODE_LABEL}
               </span>
             )}
             {/* Done needs no label: every step in the stage bar is ticked. */}

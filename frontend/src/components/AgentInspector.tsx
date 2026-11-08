@@ -184,7 +184,7 @@ function Chat({
               }
             }}
             placeholder={runStopped ? "The run is stopped." : `Message ${agentId}. Enter to send, Shift+Enter for a new line.`}
-            className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink outline-none placeholder:text-desk-muted focus:border-desk-muted"
+            className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink placeholder:text-desk-muted focus:border-desk-muted"
           />
           <button disabled={busy || !text.trim() || runStopped} className="mt-1.5 h-7 rounded-[4px] bg-desk-ink px-3 text-[12px] font-medium text-desk disabled:opacity-40">
             Send
