@@ -44,7 +44,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 - **Invoke URL: https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com** (API at `/api/v1`, health at `/healthz`, test page at `/test-pages/injection.html`). Frontend: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`.
 - Deploy: `bash backend/infra/deploy.sh` (committed HEAD through S3, prints the deployed sha). Env: `bash backend/infra/remote.sh --set-env KEY=VALUE`. Logs: `bash backend/infra/remote.sh 'journalctl -u axelrod --no-pager -n 50'`.
-- EC2 env now: `DEMO_PACING=2`, `MAX_CONCURRENCY_SMALL=8`, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`, `STORE=aws`.
+- EC2 env now (12:30 AM, full-run settings): `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`, `MAX_CONCURRENCY_SMALL=32`, `DEMO_PACING=0`, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`, `STORE=aws`. Deployed a4ab693 (contract 0.3.0). contract_smoke on EC2: 76/76.
 - Models: large `us.anthropic.claude-sonnet-5`, small `us.anthropic.claude-haiku-4-5-20251001-v1:0` (the 5.5 models are denied by the workshop allowlist). Prices per Mtok: Sonnet 5 2.20 / 11.00, Haiku 4.5 1.10 / 5.50.
 - Live spend so far: about $25, all in the workshop account (runs about $2 each, plus tuning).
 
@@ -110,3 +110,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:13 AM: V7-chat done and committed.
 - Sun 12:20 AM: V2-gateway done and committed. V8-fork started.
 - Sun 12:28 AM: V3-rework done and committed. contract_smoke picks a goon with a model for the rerun check.
+- Sun 12:30 AM: deployed a4ab693. contract_smoke 76/76 on EC2. Pre-R2 run run_20261108_5zqdvb started (cache_mode documents, 16 sources).
