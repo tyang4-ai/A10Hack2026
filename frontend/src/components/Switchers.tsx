@@ -5,7 +5,7 @@ import type { Run } from "@contract/types";
 import { applyTheme, readTheme, THEMES, type ThemeId } from "@/lib/theme";
 
 // Close a popover on outside click or Escape, and return focus to its trigger.
-function usePopover() {
+export function usePopover() {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);

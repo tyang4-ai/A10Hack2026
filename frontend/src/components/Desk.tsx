@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { useRunStore } from "@/lib/store";
 import { LAYOUTS, useWindows, type Win } from "@/lib/windows";
 import { Window } from "./Window";
+import { usePopover } from "./Switchers";
 import { KIND_META, KIND_ORDER, winTitle } from "./WindowContent";
 
 // "A, B and C"
@@ -175,20 +176,9 @@ const seg = (on: boolean, first: boolean) =>
 export function LayoutControl() {
   const layout = useWindows((s) => s.layout);
   const suggest = useWindows((s) => s.suggest);
-  const dirty = useWindows((s) => s.dirty);
-  const auto = useWindows((s) => s.auto);
   const customs = useWindows((s) => s.customs);
-  const { applyLayout, toggleAuto, saveAs, deleteLayout } = useWindows.getState();
-  const [naming, setNaming] = useState(false);
-  const [name, setName] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  useEffect(() => {
-    if (!confirmDelete) return;
-    const t = setTimeout(() => setConfirmDelete(false), 4000);
-    return () => clearTimeout(t);
-  }, [confirmDelete]);
+  const { applyLayout } = useWindows.getState();
   const label = (id: string) => LAYOUTS.find((l) => l.id === id)?.label ?? customs.find((c) => c.id === id)?.label ?? id;
-  const custom = customs.find((c) => c.id === layout);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div role="group" aria-label="Layout presets, one per pipeline phase" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
@@ -207,64 +197,142 @@ export function LayoutControl() {
           ))}
         </div>
       )}
-      {naming ? (
-        <form
-          className="flex items-center gap-1"
-          onSubmit={(e) => {
-            e.preventDefault();
-            saveAs(name);
-            setName("");
-            setNaming(false);
-          }}
-        >
-          <label htmlFor="layout-name" className="sr-only">
-            Name for this layout
-          </label>
-          <input
-            id="layout-name"
-            autoFocus
-            value={name}
-            maxLength={24}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setNaming(false)}
-            placeholder="Layout name"
-            className="h-7 w-32 rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 text-[12px] text-desk-ink placeholder:text-desk-muted focus:border-accent"
-          />
-          <button className="h-7 rounded-[4px] bg-accent px-2.5 text-[12px] font-semibold text-accent-ink">Save</button>
-          <button type="button" onClick={() => setNaming(false)} aria-label="Cancel saving the layout" className="h-7 px-1.5 text-desk-muted hover:text-white">
-            ✕
-          </button>
-        </form>
-      ) : (
-        <button onClick={() => setNaming(true)} className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white">
-          Save layout as…
-        </button>
-      )}
-      {custom && (
-        <button
-          onClick={() => (confirmDelete ? (deleteLayout(custom.id), setConfirmDelete(false)) : setConfirmDelete(true))}
-          className={`h-7 rounded-[4px] px-1.5 text-[12px] ${confirmDelete ? "bg-desk-bad font-semibold text-desk" : "text-desk-muted hover:text-desk-bad"}`}
-        >
-          {confirmDelete ? `Confirm delete ${custom.label}` : `Delete ${custom.label}`}
-        </button>
-      )}
-      <button
-        aria-pressed={auto}
-        onClick={toggleAuto}
-        title="Windows never overlap. Drag one onto another to swap."
-        className={`h-7 rounded-[4px] border px-2.5 text-[12px] ${auto ? "border-accent bg-accent font-semibold text-accent-ink" : "border-desk-line-strong text-desk-ink hover:bg-desk-raised"}`}
-      >
-        Auto tile
-      </button>
-      {dirty && !auto && (
-        <button onClick={() => applyLayout(layout, { reset: true })} className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white">
-          Reset
-        </button>
-      )}
+      <LayoutMenu />
       {suggest && (
         <button onClick={() => applyLayout(suggest)} className="h-7 rounded-[4px] border border-accent px-2.5 text-[12px] font-medium text-accent hover:bg-desk-raised">
           Switch to {label(suggest)}
         </button>
+      )}
+    </div>
+  );
+}
+
+const menuItem = "flex h-8 w-full items-center gap-2 rounded-[4px] px-2.5 text-left text-[13px] hover:bg-desk-raised focus:bg-desk-raised";
+
+// The + button: everything about layouts that isn't picking one.
+function LayoutMenu() {
+  const layout = useWindows((s) => s.layout);
+  const dirty = useWindows((s) => s.dirty);
+  const auto = useWindows((s) => s.auto);
+  const customs = useWindows((s) => s.customs);
+  const { applyLayout, toggleAuto, saveAs, deleteLayout } = useWindows.getState();
+  const { open, setOpen, root, trigger } = usePopover();
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const menu = useRef<HTMLDivElement | null>(null);
+  const custom = customs.find((c) => c.id === layout);
+
+  // Each time it opens, start on the menu, not the name form.
+  useEffect(() => {
+    if (!open) {
+      setNaming(false);
+      setConfirmDelete(false);
+    } else menu.current?.querySelector<HTMLElement>("[role^=menuitem]")?.focus();
+  }, [open]);
+
+  const close = () => {
+    setOpen(false);
+    trigger.current?.focus();
+  };
+
+  // Up and down arrows move between items.
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const items = [...(menu.current?.querySelectorAll<HTMLElement>("[role^=menuitem]") ?? [])];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    e.preventDefault();
+    items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+  };
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        ref={trigger}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Layout options"
+        onClick={() => setOpen((o) => !o)}
+        className={`grid h-7 w-7 place-items-center rounded-[4px] border border-desk-line-strong text-[16px] leading-none text-desk-ink hover:bg-desk-raised ${open ? "bg-desk-raised" : ""}`}
+      >
+        +
+      </button>
+      {open && (
+        <div ref={menu} role="menu" aria-label="Layout options" onKeyDown={onKey} className="absolute top-full left-0 z-50 mt-1 w-60 rounded-[6px] border border-desk-line-strong bg-desk p-1 text-desk-ink">
+          {naming ? (
+            <form
+              className="flex items-center gap-1 p-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveAs(name);
+                setName("");
+                close();
+              }}
+            >
+              <label htmlFor="layout-name" className="sr-only">
+                Name for this layout
+              </label>
+              <input
+                id="layout-name"
+                autoFocus
+                value={name}
+                maxLength={24}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Layout name"
+                className="h-8 min-w-0 flex-1 rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 text-[13px] text-desk-ink placeholder:text-desk-muted focus:border-accent"
+              />
+              <button className="h-8 rounded-[4px] bg-accent px-2.5 text-[12px] font-semibold text-accent-ink">Save</button>
+            </form>
+          ) : (
+            <>
+              <button role="menuitem" onClick={() => setNaming(true)} className={menuItem}>
+                Save layout as…
+              </button>
+              <button
+                role="menuitemcheckbox"
+                aria-checked={auto}
+                title="Windows never overlap. Drag one onto another to swap."
+                onClick={() => {
+                  toggleAuto();
+                  close();
+                }}
+                className={menuItem}
+              >
+                <span className="flex-1">Auto tile</span>
+                {auto && (
+                  <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" className="text-accent">
+                    <path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
+                  </svg>
+                )}
+              </button>
+              {dirty && !auto && (
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    applyLayout(layout, { reset: true });
+                    close();
+                  }}
+                  className={menuItem}
+                >
+                  Reset layout
+                </button>
+              )}
+              {custom && (
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    if (!confirmDelete) return setConfirmDelete(true);
+                    deleteLayout(custom.id);
+                    close();
+                  }}
+                  className={`${menuItem} ${confirmDelete ? "bg-desk-bad font-semibold text-desk hover:bg-desk-bad focus:bg-desk-bad" : "text-desk-bad"}`}
+                >
+                  {confirmDelete ? `Confirm delete ${custom.label}` : `Delete ${custom.label}`}
+                </button>
+              )}
+            </>
+          )}
+        </div>
       )}
     </div>
   );
