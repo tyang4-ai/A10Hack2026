@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V1-shapes (step 1), V4-archive (step 7 script), V5-plan2 (step 8). B-fix-judge (signed values for judges, statement years).
+- Running: V1-shapes (step 1), V4-archive (step 7 script), V5-plan2 (step 8). 
 - Next: after V1, V2-gateway (steps 2 and 6), V3-rework (steps 3 to 5, after B-fix-yield), V7-chat (10). Then V6-resume (9) and V8-fork (11), R2, G6b.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -25,7 +25,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 ## v1 plans (all done)
 
-P-scaffold, A-setup, B-store-api, B-gateway, B-verify, B-ingest, B-shl-plan, B-extract, B-reason, B-brief, B-cli, A-deploy, B-g2fix, B-testpage, B-live, B-baseline, B-fix-brief, B-fix-extract, B-fix-draft, B-fix-repair, B-fix-checks, B-fix-cite, B-fix-holes, B-fix-polish. B-fix-yield partial (3 of 5 scored in its one full live run, composite 4 of 5; committed, R2 is the real test). Running: B-fix-judge. Not started: B-p1. Details are in PLANS.md "Interface notes" and in git history.
+P-scaffold, A-setup, B-store-api, B-gateway, B-verify, B-ingest, B-shl-plan, B-extract, B-reason, B-brief, B-cli, A-deploy, B-g2fix, B-testpage, B-live, B-baseline, B-fix-brief, B-fix-extract, B-fix-draft, B-fix-repair, B-fix-checks, B-fix-cite, B-fix-holes, B-fix-polish. B-fix-yield partial (3 of 5 scored in its one full live run, composite 4 of 5; committed, R2 is the real test). B-fix-judge done (judges see signed values; period_match checks statement years, replay flips only G5b D-262, a real mismatch). Not started: B-p1. Details are in PLANS.md "Interface notes" and in git history.
 
 ## Gates
 
@@ -75,6 +75,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Guard quirk: a redirect or pipe after `git push` (or any `>`, `2>&1` in a git command) is read as a path or push target. Use plain git commands.
 
 ## Needs Gordon
+
+- (11:50 PM, not blocking) Facts without a number ("strong growth in fiscal year 2025") are not year-checked, because their statements add the report's own year, which no quote repeats (checking them wrongly flagged 13 items). Say if you want them checked against the source's period instead.
 
 - (11:35 PM, decision, asked again by docs/INTEGRATE.md) **API key** on the deployed API? Today anyone with the URL can start runs (capped at $5 each). With a key, the webapp sends `X-Axelrod-Key` from `NEXT_PUBLIC_AXELROD_KEY`. My default: no key until you say so.
 - (10:05 PM, not blocking) No Elastic IP: the API Gateway integration points at the instance's public DNS, so don't stop the instance. The one-line fix is in AWS_RESOURCES.md.
