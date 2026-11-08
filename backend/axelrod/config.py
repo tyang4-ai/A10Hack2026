@@ -70,7 +70,9 @@ class Settings(BaseModel):
     demo_faults: str = ""                                     # DEMO_FAULTS: planted faults (simulated), from fetch,judge
     test_page_url: str | None = None                         # TEST_PAGE_URL (planted page S-010, served by our own API)
     cache_documents: bool = False                            # CACHE_DOCUMENTS on/off: serve fetch bodies from the S3 cache
-    cache_models: Literal["off", "record", "replay"] = "off"  # CACHE_MODELS: record or replay model answers
+    # CACHE_MODELS: record or replay model answers. replay_only never calls a model on a miss (the call is
+    # blocked and becomes a hole); agent chat is always live in every mode.
+    cache_models: Literal["off", "record", "replay", "replay_only"] = "off"
 
 
 def _env_file_from_environ() -> Path | None:
@@ -103,7 +105,9 @@ def load_settings(env_file: Path | None = ENV_FILE, environ: Mapping[str, str] |
                 values[field] = json.loads(value)
             except json.JSONDecodeError as e:
                 raise ValueError(f"PRICES_JSON is not valid JSON: {e}") from e
-        elif field in ("store", "cache_models", "cache_documents"):
+        elif field == "cache_models":
+            values[field] = value.lower().replace("-", "_")     # replay-only reads as replay_only
+        elif field in ("store", "cache_documents"):
             values[field] = value.lower()
         elif field == "protected_runs":
             values[field] = [x.strip() for x in value.split(",") if x.strip()]

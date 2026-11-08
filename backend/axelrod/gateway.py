@@ -14,7 +14,9 @@ bucket) and only ever served from the cache, so a miss fails clearly instead of 
 
 Model cache (v0.2, CACHE_MODELS=record|replay): again the decision comes first. record stores every live
 answer, replay serves a recorded one (cache "hit", cost 0, the tokens as recorded) and calls live on a miss,
-storing that answer too. The key strips run ids, agent ids and timestamps from the prompts (cache.model_key).
+storing that answer too. replay_only serves a hit the same way but blocks a miss (no model call), so a demo
+run costs $0. Agent chat always skips the model cache (LIVE_ONLY). The key strips run ids, agent ids,
+timestamps and run-time money and duration figures from the prompts (cache.model_key).
 """
 from __future__ import annotations
 
@@ -25,6 +27,9 @@ import json
 import re
 import socket
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 from urllib.parse import urljoin
@@ -48,6 +53,21 @@ REDIRECT_CODES = frozenset({301, 302, 303, 307, 308})
 KILL_REASON = "Kill switch: run stopped. Every request is denied."
 STOP_ORIGIN = "user_agent_stop"
 STOP_REASON = "Agent stopped by the analyst"
+REPLAY_ONLY_REASON = "No recorded answer for this call (replay only)"
+
+# B-replay: set while agent chat calls the model, so the model cache is skipped (no read, no record) in every
+# CACHE_MODELS mode. Chat still goes through the gateway decision like any call. Set it with live_model_calls().
+LIVE_ONLY: ContextVar[bool] = ContextVar("axelrod_live_model_calls", default=False)
+
+
+@contextmanager
+def live_model_calls() -> Iterator[None]:
+    """Model calls made inside this block skip the model cache and always go live (agent chat)."""
+    token = LIVE_ONLY.set(True)
+    try:
+        yield
+    finally:
+        LIVE_ONLY.reset(token)
 
 # EC2 instance metadata: the IPv6 endpoint (not link-local by prefix) and its DNS names.
 IMDS_V6 = ipaddress.IPv6Address("fd00:ec2::254")
@@ -699,11 +719,16 @@ class Gateway:
                 self._emit_request(agent, rid, "model.invoke", model_id, "blocked", rule_id, reason, t0)
                 raise Blocked(rid, rule_id, reason)
             # Model cache (v0.2, V8): only an allowed call gets here, so a blocked one never reads or writes it.
+            # Agent chat (LIVE_ONLY) skips the cache in every mode: no read, no record, always live.
             slot = self._model_slot(model_id, system, user, tool, max_tokens)
-            if slot is not None and settings.cache_models == "replay":
+            if slot is not None and settings.cache_models in cache.REPLAY_MODES:
                 rec = await self._models().aget(*slot)
                 if rec is not None:
                     return self._serve_model_hit(agent, rid, model_id, rule_id, reason, t0, rec)
+            if settings.cache_models == "replay_only" and not LIVE_ONLY.get():
+                # B-replay: strict replay never calls a model on a miss. A plain deny, so the work becomes a hole.
+                self._emit_request(agent, rid, "model.invoke", model_id, "blocked", None, REPLAY_ONLY_REASON, t0)
+                raise Blocked(rid, None, REPLAY_ONLY_REASON)
             self._reserved += est
             try:
                 reply = await bedrock.converse(settings, model_id, system=system, user=user, tool=tool,
@@ -746,8 +771,10 @@ class Gateway:
                     max_tokens: int) -> tuple[str, int] | None:
         """(key, n) for this allowed call when CACHE_MODELS is record or replay: n counts the calls with the
         same key in this run, so repeated identical prompts (three judges) each get their own recorded answer.
-        None when the cache is off, or when the key can't be built (the call then just goes live)."""
-        if self.ctx.settings.cache_models not in ("record", "replay"):
+        None when the cache is off, for agent chat (LIVE_ONLY), or when the key can't be built (the call then
+        just goes live, except under replay_only, where it is blocked). Chat never counts, so a chat call in the
+        middle of a run can't shift the n of the calls after it."""
+        if self.ctx.settings.cache_models not in cache.MODEL_CACHE_MODES or LIVE_ONLY.get():
             return None
         try:
             key = cache.model_key(model_id, system, user, tool_name=tool.name, tool_description=tool.description,

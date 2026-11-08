@@ -189,10 +189,16 @@ def build_digest(ctx: RunContext, stage: str) -> str:
     st = ctx.state
     run = st.run
     spent, budget, left = budget_left(ctx)
+    free = max(0.0, left - REST_OF_RUN_USD.get(stage, 0.0))
+    if getattr(ctx.settings, "cache_models", "off") != "off":
+        # B-replay: spend differs between a recorded run and its replay ($0 hits), so it stays out of Bobby's
+        # prompt or his gate call would never be found. Code still checks every rework against the budget.
+        money = f"Budget: ${budget:.2f}. Code checks every rework against what is left."
+    else:
+        money = (f"Budget: ${spent:.2f} spent of ${budget:.2f}, ${left:.2f} left, "
+                 f"${free:.2f} of it free for reworks after the rest of the run.")
     lines = [f"Stage gate: after {stage}. {run.company}" + (f" ({run.ticker})" if run.ticker else "")
-             + f", {run.depth} depth.",
-             f"Budget: ${spent:.2f} spent of ${budget:.2f}, ${left:.2f} left, "
-             f"${max(0.0, left - REST_OF_RUN_USD.get(stage, 0.0)):.2f} of it free for reworks after the rest of the run."]
+             + f", {run.depth} depth.", money]
     goons: list[str] = []
     if stage == "plan":
         tiers = Counter(s.tier for s in st.sources)
@@ -357,9 +363,12 @@ async def after_stage(ctx: RunContext, stage: str) -> None:
 
 async def run_reworks(ctx: RunContext, orders: list[m.ReworkOrder]) -> None:
     """Start every accepted rework (recheck on, by the orchestrator) and wait for them all. STOP wins."""
-    from . import rework
+    from . import cache, rework
 
-    tasks = []
+    # With the model cache on (record, replay, replay_only), reworks run one at a time in Bobby's order, so a
+    # recording and its replay hand out the same new D- ids and later prompts match. Live, they run in parallel.
+    serial = ctx.settings.cache_models in cache.MODEL_CACHE_MODES
+    tasks, results = [], []
     for o in orders:
         try:
             _, task = rework.start_rerun(ctx, o.agent_id, o.instructions, True, by="orchestrator")
@@ -367,7 +376,10 @@ async def run_reworks(ctx: RunContext, orders: list[m.ReworkOrder]) -> None:
             _log(ctx, f"Rework of {o.agent_id} not started: {e}", level="warn")
             continue
         tasks.append(task)
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+        if serial:
+            results += await asyncio.gather(task, return_exceptions=True)
+    if not serial:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
     stop = next((r for r in results if isinstance(r, StopRequested)), None)
     if stop is not None:
         raise stop
