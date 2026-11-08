@@ -176,6 +176,11 @@ async def serve_test_page(name: str):
     Outside /api/v1, so the X-Axelrod-Key check never applies (the gateway's fetcher sends no key). Only a plain
     lowercase file name in that one folder is served. Anything else is a 404, which rules out path traversal.
     """
+    from . import faults
+
+    planted = faults.test_page_response(name)      # planted faults (simulated), e.g. a broken download
+    if planted is not None:
+        return planted
     if not TEST_PAGE_NAME.fullmatch(name):
         raise ApiError(404, "not_found", "No such test page")
     path = TEST_PAGES_DIR / name
@@ -209,6 +214,9 @@ def _install_routes(app: FastAPI) -> None:
     app.get(f"{p}/runs/{{run_id}}/documents", response_model=m.DocumentList)(list_documents)
     app.get(f"{p}/runs/{{run_id}}/documents/{{doc_id}}", response_model=m.Document)(read_document)
     app.get(f"{p}/runs/{{run_id}}/documents/{{doc_id}}/pages/{{page}}", response_model=m.DocumentPage)(read_page)
+    app.get(f"{p}/runs/{{run_id}}/documents/{{doc_id}}/pages/{{page}}/image",
+            response_class=Response)(read_page_image)                      # v0.3.1, image/png
+    app.delete(f"{p}/runs/{{run_id}}")(delete_run)                       # v0.3.1, RunDeleted
     app.get(f"{p}/runs/{{run_id}}/vault/tree", response_model=m.VaultNode)(vault_tree)
     app.get(f"{p}/runs/{{run_id}}/vault/file", response_model=m.VaultFile)(vault_file)
     app.get(f"{p}/runs/{{run_id}}/comments", response_model=m.CommentList)(list_comments)
@@ -430,6 +438,33 @@ async def read_page(run_id: str, doc_id: str, page: int, rt: RT):
         raise ApiError(409, "invalid_state", "not built yet: the page viewer is not available in this build") from None
     except (KeyError, IndexError):
         raise ApiError(404, "not_found", f"{doc_id} page {page} has no stored text") from None
+
+
+async def read_page_image(run_id: str, doc_id: str, page: int, rt: RT, item_id: Optional[str] = Query(None)):
+    """v0.3.1: the stored PDF page as a PNG, with item_id's quotes highlighted. 404 when no PDF is stored."""
+    from . import docimage
+
+    state = rt.state(run_id)
+    doc = _document(state, doc_id)
+    if not 1 <= page <= doc.pages:
+        raise ApiError(404, "not_found", f"{doc_id} has pages 1 to {doc.pages}")
+    try:
+        png = await docimage.page_image(rt, state, doc, page, item_id)
+    except docimage.NoPdf as e:
+        raise ApiError(404, "not_found", str(e)) from None
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, max-age=300"})
+
+
+async def delete_run(run_id: str, rt: RT):
+    """v0.3.1: delete a finished run's own data. The shared caches stay. 409 while it runs, for replays and
+    for protected runs."""
+    from . import rundelete
+
+    state = rt.state(run_id)
+    try:
+        return await rundelete.delete_run(rt, state)
+    except rundelete.CannotDelete as e:
+        raise ApiError(409, "invalid_state", str(e)) from None
 
 
 async def vault_tree(run_id: str, rt: RT):
