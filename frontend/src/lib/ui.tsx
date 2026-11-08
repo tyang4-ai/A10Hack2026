@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CodeCheck, RunStatus, StepStatus, Tier, Verdict } from "./api";
+import type { CodeCheck, RunStatus, StepStatus, Tier, Verdict } from "@/lib/api";
 
 export function Badge({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
   return <span className={`badge tone-${tone}`} title={title}>{children}</span>;

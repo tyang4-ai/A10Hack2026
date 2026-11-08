@@ -1,6 +1,8 @@
+"use client";
+
 import { useState } from "react";
-import type { RunEvent } from "../api";
-import { fmtTime } from "../ui";
+import type { RunEvent } from "@/lib/api";
+import { fmtTime } from "@/lib/ui";
 
 const KIND_LABEL = { human: "H", agent: "A", code: "C", gateway: "GW" } as const;
 

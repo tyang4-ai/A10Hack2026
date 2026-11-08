@@ -1,8 +1,8 @@
 # API contract (dashboard ↔ backend)
 
-Draft contract so the dashboard and backend can be built in parallel. The dashboard currently runs against an in-browser mock that follows this contract (`frontend/src/api/mock.ts`). Types live in `frontend/src/api/types.ts`; keep the two in sync.
+Draft contract so the dashboard and backend can be built in parallel. The dashboard currently runs against an in-browser mock that follows this contract (`frontend/src/lib/api/mock.ts`). Types live in `frontend/src/lib/api/types.ts`; keep the two in sync.
 
-- Base URL: `VITE_API_URL` (e.g. the API Gateway stage URL). If unset, the dashboard uses the mock.
+- Base URL: `NEXT_PUBLIC_API_URL` (e.g. the API Gateway stage URL). If unset, the dashboard uses the mock.
 - JSON everywhere, `snake_case` fields, ISO-8601 UTC timestamps.
 - Live updates use polling (`GET /runs/{id}/events?after=`), which works with API Gateway + Lambda. A WebSocket can replace it later without changing the event shape.
 

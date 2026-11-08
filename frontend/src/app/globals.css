@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Design tokens from the Axelrod canvas (variant A: typeset article,
+   variant B: trading desk). Colour only carries meaning. */
+@theme {
+  --font-serif: "KaTeX_Main", "Latin Modern Roman", "CMU Serif", Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), "KaTeX_Typewriter", ui-monospace, monospace;
+
+  --color-paper: #ffffff;
+  --color-ink: #000000;
+  --color-muted: #555555;
+  --color-rule: #d0d0d0;
+  --color-zebra: #f7f7f7;
+
+  --color-good: #007a3d;
+  --color-bad: #c00000;
+  --color-link: #1a0dab;
+
+  --color-desk: #0b0b0c;
+  --color-desk-ink: #e6e6e6;
+  --color-desk-muted: #9a9a9a;
+  --color-desk-line: #2a2a2a;
+  --color-amber: #ffb000;
+  --color-desk-good: #3ddc84;
+  --color-desk-bad: #ff5a5a;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+}
+
+/* Painted text must match pretext's model (see src/lib/textLayout.ts). */
+.measured {
+  overflow-wrap: break-word;
+  white-space: normal;
+}

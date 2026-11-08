@@ -1,5 +1,7 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Claim, type Report, type RunDetail, type RunEvent, type Source } from "./api";
+import { api, type Claim, type Report, type RunDetail, type RunEvent, type Source } from "@/lib/api";
 
 export interface RunData {
   run: RunDetail | null;

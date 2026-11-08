@@ -8,7 +8,7 @@ A harness for AI-written financial market reports: every number traces to an exa
 ## Layout
 | Folder | What |
 |---|---|
-| `frontend/` | Web dashboard (Vite + React + TypeScript) |
+| `frontend/` | Web dashboard (Next.js 16 + React 19 + Tailwind 4 + TypeScript) |
 | `backend/` | Gateway, pipeline and checks (AWS) |
 
 ## Run the dashboard
@@ -17,7 +17,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Without `VITE_API_URL` set, the dashboard runs against a built-in mock backend that plays through a full run. To use the real backend:
+Without `NEXT_PUBLIC_API_URL` set, the dashboard runs against a built-in mock backend that plays through a full run. To use the real backend:
 ```bash
-VITE_API_URL=https://<api-id>.execute-api.<region>.amazonaws.com/prod npm run dev
+NEXT_PUBLIC_API_URL=https://<api-id>.execute-api.<region>.amazonaws.com/prod npm run dev
 ```

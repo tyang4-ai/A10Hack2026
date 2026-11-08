@@ -1,4 +1,4 @@
-import type { Step } from "../api";
+import type { Step } from "@/lib/api";
 
 const STAGES = { 1: "Sources", 2: "Initial report", 3: "Output" } as const;
 const ACTOR_TITLE: Record<string, string> = { H: "Human", A: "Agent", C: "Code" };

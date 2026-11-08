@@ -51,7 +51,8 @@ interface State {
   nextSource: number;
 }
 
-const SPEED = Number(new URLSearchParams(location.search).get("speed") ?? "1") || 1;
+const SPEED =
+  typeof window === "undefined" ? 1 : Number(new URLSearchParams(window.location.search).get("speed") ?? "1") || 1;
 const rand = (a: number, b: number) => Math.round(a + Math.random() * (b - a));
 const hash = () =>
   Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
