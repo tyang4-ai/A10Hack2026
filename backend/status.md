@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V6-resume, B-fix-score, B-fix-s015.
+- Running: V6-resume, B-fix-s015, B-rehearse, B-fix-score2.
 - Next: deploy, then R2 on EC2 (`CACHE_MODELS=record`) and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -22,6 +22,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V7-chat | 10 | builder | done | 23 passed, 2 live | chat with any goon or Bobby through the gateway, read only, labeled not checked. About $0.003 (Haiku) and $0.006 (Sonnet), 2 to 4 s |
 | V8-fork | 11 | builder | done | 41 passed (suite 798) | rerun from a step (new run, own policy and log, ids kept, parent unchanged), `orchestrator.start_from`, model cache (`CACHE_MODELS=record/replay`, decision first, a hit costs $0, the n-th identical call gets its own record) |
 | pre-R2 | 12 | orchestrator | done | | run_20261108_5zqdvb on EC2, cache_mode documents, 16 sources (13 cache hits, 10 from the archive). 659 items (522 pass, 88 fixed, 49 fail = 92.6%), 52 holes, certainty 93, rollup +0.4 (4 of 6: rotic_level 0, rotic_vs_peers +1, secular_growth +1, leverage -1), brief 2.8 pages, $3.03, 6 min. Bobby: plan escalate, extract rework (S-015 extractors), repair proceed, brief proceed. **Bug: rotic_vs_peers +1 while its text says SHL trails both peers.** Fixes: B-fix-score, B-fix-s015 |
+| B-fix-score | 12 | builder | done | 93 passed (suite 824), 3 live | judges check a score's direction against its text and rubric (`score_direction`). Live on r2a rotic_vs_peers +1: 0 of 3, all naming "trails both peers". Same text at -1: 3 of 3. Bobby's plan gate proceeds on the r2a digest. $0.034 live |
+| B-fix-score2 | 12 | builder | running | | wire the drafter's direction pre-check, swap every drafter key for its id (E-002 kept "(c_sh_fy2025_rotic)"), plan-gate digest lists criteria with no need and needs with no source |
+| B-rehearse | 12 | builder | running | | demo_live.py `--webapp`: reorder and reject at approval, cache labels, stop one goon, launch to STOP at most 55 s, suggested DEMO_PACING |
 | R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
 
 ## v1 plans (all done)
@@ -116,3 +119,5 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:30 AM: deployed a4ab693. contract_smoke 76/76 on EC2. Pre-R2 run run_20261108_5zqdvb started (cache_mode documents, 16 sources).
 - Sun 12:37 AM: pre-R2 run done on EC2 ($3.03, 6 min, 4 of 6 scored). Found a judgment score whose sign contradicts its text. Launched B-fix-score and B-fix-s015.
 - Sun 12:46 AM: V8-fork done and committed (fork, start_from, model cache). Two stale stub tests updated. V6-resume started.
+- Sun 12:50 AM: B-rehearse started (webapp beats for the G6b rehearsal).
+- Sun 12:58 AM: B-fix-score done and committed. B-fix-score2 started (its three follow-ups, before R2).
