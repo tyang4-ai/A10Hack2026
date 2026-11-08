@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V1-shapes (step 1), V4-archive (step 7 script), V5-plan2 (step 8). B-fix-yield (v1 fix: granular conclusions) is finishing.
+- Running: V1-shapes (step 1), V4-archive (step 7 script), V5-plan2 (step 8). B-fix-judge (signed values for judges, statement years).
 - Next: after V1, V2-gateway (steps 2 and 6), V3-rework (steps 3 to 5, after B-fix-yield), V7-chat (10). Then V6-resume (9) and V8-fork (11), R2, G6b.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -25,7 +25,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 ## v1 plans (all done)
 
-P-scaffold, A-setup, B-store-api, B-gateway, B-verify, B-ingest, B-shl-plan, B-extract, B-reason, B-brief, B-cli, A-deploy, B-g2fix, B-testpage, B-live, B-baseline, B-fix-brief, B-fix-extract, B-fix-draft, B-fix-repair, B-fix-checks, B-fix-cite, B-fix-holes, B-fix-polish. Running: B-fix-yield. Not started: B-p1. Details are in PLANS.md "Interface notes" and in git history.
+P-scaffold, A-setup, B-store-api, B-gateway, B-verify, B-ingest, B-shl-plan, B-extract, B-reason, B-brief, B-cli, A-deploy, B-g2fix, B-testpage, B-live, B-baseline, B-fix-brief, B-fix-extract, B-fix-draft, B-fix-repair, B-fix-checks, B-fix-cite, B-fix-holes, B-fix-polish. B-fix-yield partial (3 of 5 scored in its one full live run, composite 4 of 5; committed, R2 is the real test). Running: B-fix-judge. Not started: B-p1. Details are in PLANS.md "Interface notes" and in git history.
 
 ## Gates
 
@@ -90,3 +90,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sat 10:17 PM: G3 verifier findings, fixed by B-fix-cite, B-fix-holes, B-fix-polish.
 - Sat 11:02 PM: G5b, 1 of 6 scored. B-fix-yield launched.
 - Sat 11:32 PM: merged origin/main (contract v0.3.0). Started v2: V1-shapes, V4-archive, V5-plan2.
+- Sat 11:36 PM: B-fix-yield partial and committed. B-fix-judge started.

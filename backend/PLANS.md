@@ -800,6 +800,16 @@ Added 2026-11-07 10:55 PM.
 
 **2026-11-07 11:14 PM, B-fix-polish REPORT.** The gap summary is always in the brief when the run has holes. `numbers_traced` traces amounts written as words (scale, percent, basis points, currency words, fractions like "one third"). Counts and ordinals stay exempt. A range value (as_reported "4.0% and 5.0%", "4% to 5%", "4-5%") vouches for both bounds. Rubric thresholds compare by number. The full register in human-report.md is headed `verify_summary.HOLES_REGISTER_HEADING`. demo.py passes `pages_by_doc` to `with_fixed_locators`.
 
+
+## B-fix-judge (v1 leftover, runs next to V1)
+Added 2026-11-07 11:40 PM from B-fix-yield's REPORT.
+**Owns.** `axelrod/agents/judge.py`, `axelrod/stages/verify.py`, `axelrod/verify/checks.py` (period_match only), `tests/test_judge_view.py` (new).
+**Tasks.**
+1. Judges misread signs: they read "subtracting a negative-reported amortization" as not adding it back (G5b C-003, B-fix-yield run 3 C-064 and C-065). In the evidence a judge sees, show every cited data item's signed `expr_value` (`checks.base_value`) next to its as-reported value, and add one judge rule: "a negative-reported cost subtracted in an expression is added back, so judge the arithmetic on the signed values shown".
+2. A data item's statement can name a year its quotes don't support. D-262's statement says "due in fiscal year 2029" while its quote says 2031. Extend `period_match` (keeping its name and CheckResult shape, since the contract fixes check names): every fiscal year or year-end named in the statement must appear in the evidence or a context quote, or equal the value's period. A fail detail names the year.
+3. Tests, plus a replay of the period check over the stored runs (`backend/data/replay/*`, `backend/.data/g5b_export`, read only), reporting pass-to-fail changes. Each one must be a real mismatch, or the rule is too strict.
+**Acceptance.** Offline suite green, planted line still all caught.
+
 ---
 
 # v2 plans (docs/BACKEND_V2.md, contract v0.3.0)
