@@ -5,8 +5,13 @@ large-model drafter per group runs in parallel. Each sees only the verified data
 criteria. Code then turns the drafts into contract items:
 - C, E and G ids come from code. The drafter's own keys ("c1") are only used to link scores and charts.
 - Refs to data items that don't exist or didn't pass are dropped, and a conclusion left with none is dropped.
-- Every computation is evaluated by code (verify.compute.safe_eval). The drafter's display is kept, so a
-  wrong display is caught by the computation check and repaired by recompute.
+- Every computation is evaluated by code (verify.compute.safe_eval). Before the draft is final, code runs the
+  verify stage's own code checks on it (precheck) and the drafter revises once with code's findings. A display
+  in the first draft is kept as written, so a wrong one the drafter did not fix is caught by the computation
+  check and repaired by recompute. A computation the drafter wrote or changed in its revision gets code's
+  display (fill_displays): the drafter was already shown code's values once, and does arithmetic badly.
+- Each metric group also gets code's inputs_by_year index and every row its expr_value, so the drafter
+  computes from the years it has instead of refusing (B-fix-draft, after the R0 rehearsal).
 - Chart points are computed by code from their refs. A model never draws a chart.
 - Every in-scope criterion gets exactly one extrapolation. A criterion the drafter skipped, or one about the
   analyst rather than the company (research_stage), comes out N/A with a reason, which finalize declares
@@ -42,6 +47,15 @@ ANALYST_ONLY = {
 _TEN_YEARS = re.compile(r"\b10\s?y\b|\b10[- ]years?\b|\bten years\b", re.IGNORECASE)
 _NAME = re.compile(r"[a-z_][a-z0-9_]*\Z")
 _BAR = re.compile(r"(>=|<=|≥|≤|>|<)\s*\d")
+_TIER_RANK = {"priority": 0, "tier_2": 1, "tier_3": 2}
+# Rows per drafter. A guard on prompt size only: the SHL ROTIC group (company and two peers, several years of
+# income statement and balance sheet lines) is 159 rows, about 25k tokens.
+MAX_ROWS = 400
+_NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
+                 10: "ten"}
+_LITERAL = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
+SMALL_CONSTANT = 100      # whole numbers up to this may appear in an expr (averages, year counts, percent)
+MAX_PROBLEMS = 30         # pre-check findings sent back to a drafter
 
 
 # ---------------------------------------------------------------------------
@@ -81,13 +95,113 @@ def criterion_groups(scope: list[str], needs: list[m.DataNeed]) -> list[list[str
     return sorted(groups.values(), key=lambda g: scope.index(g[0]))
 
 
+def plain(x: Decimal) -> str:
+    """A Decimal as a plain number string, no exponent: 403000000, -0.21, 2.5."""
+    s = format(x.normalize(), "f")
+    return "0" if s in ("-0", "0") else s
+
+
 def data_row(d: m.DataItem) -> dict:
-    """What a drafter sees of one data item: no quotes, no offsets, nothing else."""
+    """What a drafter sees of one data item: no quotes, no offsets. expr_value is what the id stands for in an
+    expression (checks.base_value: base units, sign as reported, a percentage as a fraction), computed by code
+    so the drafter never has to guess a sign or a scale."""
     v = d.value
     row = {"id": d.id, "statement": d.statement, "tier": d.source_tier, "criteria": list(d.criteria)}
     if v is not None:
-        row.update({"value": v.as_reported, "unit": v.unit, "scale": v.scale, "period": v.period})
+        row.update({"value": v.as_reported, "unit": v.unit, "scale": v.scale, "period": v.period,
+                    "expr_value": plain(checks.base_value(d))})
     return row
+
+
+def group_items(data: list[m.DataItem], group: list[str], limit: int = MAX_ROWS) -> tuple[list[m.DataItem], int]:
+    """The items a group's drafter sees: verified items serving any of its criteria, in id order, the best tiers
+    kept when there are more than the cap. Returns them and how many the cap left out (0 for SHL: its largest
+    group has 159)."""
+    mine = [d for d in data if set(d.criteria) & set(group)]
+    ranked = sorted(range(len(mine)), key=lambda i: (_TIER_RANK.get(mine[i].source_tier, 3), i))
+    keep = set(ranked[:limit])
+    return [d for i, d in enumerate(mine) if i in keep], len(mine) - len(keep)
+
+
+def group_rows(data: list[m.DataItem], group: list[str], limit: int = MAX_ROWS) -> tuple[list[dict], int]:
+    """group_items as drafter rows."""
+    items, left = group_items(data, group, limit)
+    return [data_row(d) for d in items], left
+
+
+# Line items of the rubric's NOPAT and TICAP definitions, found by words in a data item's statement. First match
+# wins, so "income before income taxes" is checked before "income tax".
+_CONCEPTS = (
+    ("pretax_income", ("income before income taxes", "profit before tax")),
+    ("income_tax", ("income tax",)),
+    ("ebit", ("earnings before interest and taxes", "operating income", "income from operations")),
+    ("amortization", ("purchase price allocation", "amortization of intangible", "amortization of acquired",
+                      "intangible assets acquired")),
+    ("nci_income", ("income attributable to non-controlling", "non-controlling interests attributable",
+                    "non-controlling interests were")),
+    ("total_assets", ("total assets",)),
+    ("cash", ("cash and cash equivalents",)),
+    ("goodwill", ("goodwill",)),
+    ("trade_payables", ("trade payables", "accounts payable")),
+    ("current_liabilities", ("total current liabilities",)),
+    ("short_term_debt", ("short-term debt", "short-term financial debt")),
+)
+_NOT_A_CONCEPT = ("adjusted", "segment", "margin", "capitalized development", "siemens group", " due in ")
+
+
+def concept_of(statement: str) -> str | None:
+    """Which NOPAT or TICAP line item a statement reports, or None. A navigation aid only: the drafter still
+    reads every statement and cites ids, and code checks every computation."""
+    s = statement.lower()
+    if any(w in s for w in _NOT_A_CONCEPT):
+        return None
+    for concept, words in _CONCEPTS:
+        if any(w in s for w in words):
+            if concept == "nci_income" and (" as of " in s or " at september" in s or " at dec" in s):
+                return None          # the equity balance, not the income line
+            return concept
+    return None
+
+
+_PEER_IN = re.compile(r"\(peer:\s*([^)]+)\)", re.IGNORECASE)        # "company facts (peer: Harbor Scientific)"
+_PEER_AFTER = re.compile(r":\s*([^:]+?)\s*\(peer\)\s*$", re.IGNORECASE)   # "company facts: GE HealthCare (peer)"
+
+
+def company_of(src: m.Source | None, company: str) -> str:
+    """The company a source reports on: the peer its title names when the plan marked it as a peer source,
+    otherwise the run's own company."""
+    title = (src.title if src is not None else "") or ""
+    mm = _PEER_IN.search(title) or _PEER_AFTER.search(title)
+    return mm.group(1).strip() if mm else company
+
+
+def inputs_index(state: RunState, items: list[m.DataItem]) -> list[dict]:
+    """For metric groups: one line per company and fiscal year naming the data ids that hold each NOPAT and
+    TICAP line item, built by code so the drafter sees at a glance which years can be computed and pairs
+    balances from the right year-ends (the R0 drafter mixed years up)."""
+    srcs = state.sources_by_id()
+    table: dict[tuple[str, int], dict[str, list[str]]] = {}
+    for d in items:
+        v = d.value
+        concept = concept_of(d.statement) if v is not None and v.period else None
+        years = period_key(v.period)[0] if concept else set()
+        if len(years) != 1:
+            continue
+        who = company_of(srcs.get(d.source_id), state.run.company)
+        line = table.setdefault((who, years.pop()), {})
+        line.setdefault(concept, []).append(d.id)
+        if checks.base_value(d) < 0:
+            line.setdefault("reported_negative", []).append(d.id)
+    order = [c for c, _ in _CONCEPTS] + ["reported_negative"]
+    first = state.run.company
+    return [{"company": who, "fiscal_year": year, **{k: found[k] for k in order if k in found}}
+            for (who, year), found in sorted(table.items(), key=lambda kv: (kv[0][0] != first, kv[0][0], kv[0][1]))]
+
+
+def years_asked(criterion: str) -> int | None:
+    """10 for a criterion whose label or hint asks for ten years of data, else None."""
+    crit = RUBRIC["criteria"][criterion]
+    return 10 if _TEN_YEARS.search(f"{crit['label']} {crit.get('evidence_hint', '')}") else None
 
 
 def criterion_entry(criterion: str) -> dict:
@@ -99,6 +213,10 @@ def criterion_entry(criterion: str) -> dict:
         out["zero"] = crit["zero"]
     if crit["scoring"] == "threshold" and _BAR.search(crit.get("plus_one") or "") and _BAR.search(crit.get("minus_one") or ""):
         out["numeric_bar"] = True
+    if years_asked(criterion):
+        out["years_asked"] = years_asked(criterion)
+        out["short_series"] = ("Compute every fiscal year the data allows and score on those. Fewer years means "
+                               "low confidence, not N/A.")
     if criterion in ANALYST_ONLY:
         out["not_scored"] = True
         out["not_scored_reason"] = ANALYST_ONLY[criterion]
@@ -117,19 +235,149 @@ def company_view(state: RunState) -> dict:
             "as_of": state.as_of, "fiscal_note": state.fiscal_note}
 
 
+def needs_view(needs: list[m.DataNeed], group: list[str]) -> list[dict]:
+    """The approved plan's needs for these criteria (question and rationale), so the drafter knows which inputs
+    were collected (the R0 drafter called the PPA amortization missing although it was in its data)."""
+    return [{"need_id": n.need_id, "label": n.label, "question": n.question, "rationale": n.rationale}
+            for n in needs if set(n.criteria) & set(group)]
+
+
 # ---------------------------------------------------------------------------
 # Drafting
 # ---------------------------------------------------------------------------
 
 
-async def _draft_group(ctx: RunContext, group: list[str], rows: list[dict]) -> tuple[drafter.DraftOutput | None, str]:
-    """One drafter for one group. Returns the draft, or None and why."""
+def typed_amounts(expr: str) -> list[str]:
+    """Plain numbers in an expr other than small whole constants (2 for an average, 5 for five years, 100):
+    a typed-in amount or rate has no source, so every input must come from a data id instead."""
+    out = []
+    for raw in _LITERAL.findall(_ID.sub(" ", expr)):
+        x = Decimal(raw)
+        if x != x.to_integral_value() or x > SMALL_CONSTANT:
+            out.append(raw)
+    return out
+
+
+def _cited(dc: drafter.DraftConclusion, verified: dict[str, m.DataItem], shown: set[str]) -> list[str]:
+    ids = dict.fromkeys(dc.data_ids + [i for c in dc.computations for i in compute.ids_in(c.expr)])
+    return [i for i in ids if i in verified and i in shown]
+
+
+def _swap(text: str, names: dict[str, str]) -> str:
+    for tid, key in names.items():
+        text = text.replace(tid, key)
+    return text
+
+
+UNTRACED_FIX = ("Each of these numbers is neither a cited item's value nor a computation's display. Declare a "
+                "computation and use its display, or reword without the number. Formulas belong in expr, not in "
+                "the text: describe the method in words (\"less tax at the effective rate\", not \"x (1 - t)\").")
+
+
+def _where(r: m.CheckResult, text: str) -> dict:
+    """For an untraced-number failure: where each number sits in the text, and how to fix it."""
+    if r.check != "numbers_traced" or not r.unsupported_spans:
+        return {}
+    spots = []
+    for span in dict.fromkeys(r.unsupported_spans):
+        for mm in re.finditer(re.escape(span), text):
+            spots.append(f"...{text[max(0, mm.start() - 40):mm.end() + 25]}...")
+            if len(spots) >= 8:
+                break
+    return {"where": spots, "fix": UNTRACED_FIX}
+
+
+def _exact(r: m.CheckResult, rule_input: str | None, items: dict) -> dict:
+    """For a threshold failure: the unrounded value code compared with the bar, since a display such as
+    "10.0%" can hide a value just under the 10% bar."""
+    cid, _, name = (rule_input or "").partition(":")
+    if r.check != "threshold_rule" or cid not in items or not name:
+        return {}
+    try:
+        x = checks.conclusion_env(items[cid], items).get(name)
+    except compute.ComputeError:
+        return {}
+    return {} if x is None else {"exact_value": plain(x.quantize(Decimal("1e-8")))}
+
+
+def precheck(state: RunState, group: list[str], out: drafter.DraftOutput, verified: dict[str, m.DataItem],
+             shown: set[str]) -> list[dict]:
+    """Code's own checks on a draft before it is final, the same ones the verify stage runs: every computation
+    evaluates from shown verified data with no typed amounts, every display matches code's value, every number
+    in a text traces, and a threshold score agrees with its bar. Problems are keyed by the drafter's own labels.
+    The drafter gets one chance to fix them (see _draft_group); the verify stage checks everything again."""
+    items: dict = dict(state.items)
+    sources = state.sources_by_id()
+    tids: dict[str, str] = {}               # drafter key -> temporary id
+    found: list[dict] = []
+    for n, dc in enumerate(out.conclusions, 1):
+        key = dc.key.strip()
+        cited = _cited(dc, verified, shown)
+        if not cited:
+            found.append({"conclusion": key, "problem": "cites no verified data id from <data>"})
+            continue
+        env = {i: checks.base_value(verified[i]) for i in cited if verified[i].value is not None}
+        comps = []
+        for comp in dc.computations:
+            typed = typed_amounts(comp.expr)
+            if typed:
+                found.append({"conclusion": key, "computation": comp.name, "check": "computation",
+                              "problem": f"{comp.expr!r} types {', '.join(typed)}. Use the data id that holds the "
+                                         f"number, so every input traces to a source."})
+                continue
+            try:
+                val = compute.safe_eval(comp.expr, env)
+            except compute.ComputeError as e:
+                found.append({"conclusion": key, "computation": comp.name, "check": "computation", "problem": str(e)})
+                continue
+            env[comp.name] = val
+            comps.append(m.Computation(name=comp.name, expr=comp.expr, result=float(val), display=comp.display))
+        tid = f"C-9{n:02d}"
+        crit = [c for c in dc.criteria if c in group] or [group[0]]
+        items[tid] = m.Conclusion(id=tid, category=RUBRIC["criteria"][crit[0]]["category"], criteria=crit,
+                                  text=dc.text or "-", data_ids=cited, computations=comps,
+                                  verification=m.Verification(status="pass"))
+        tids[key] = tid
+        for r in checks.check_conclusion(items[tid], items, sources, rubric=RUBRIC):
+            if r.result == "fail" and r.check != "citations_resolve":
+                found.append({"conclusion": key, "check": r.check, "problem": r.detail, **_where(r, dc.text)})
+    names = {tid: key for key, tid in tids.items()}
+    for ds in out.scores:
+        if ds.criterion not in group or ds.score is None or ds.criterion in ANALYST_ONLY:
+            continue
+        crit = RUBRIC["criteria"][ds.criterion]
+        key, _, cname = (ds.rule_input or "").partition(":")
+        rule_input = f"{tids[key.strip()]}:{cname.strip()}" if key.strip() in tids else ds.rule_input
+        cids = list(dict.fromkeys([tids[k.strip()] for k in ds.conclusion_keys if k.strip() in tids]
+                                  + ([rule_input.split(":")[0]] if key.strip() in tids else [])))
+        e = m.Extrapolation(id="E-900", category=crit["category"], criterion=ds.criterion, score=ds.score,
+                            text=ds.text or "-", conclusion_ids=cids, confidence=ds.confidence,
+                            rule=m.ScoreRule(type=crit["scoring"], plus_one=crit.get("plus_one"),
+                                             minus_one=crit.get("minus_one"), input=rule_input),
+                            verification=m.Verification(status="pending"))
+        for r in checks.check_extrapolation(e, items, RUBRIC, sources=sources):
+            if r.result == "fail":
+                found.append({"score": ds.criterion, "check": r.check, "problem": _swap(r.detail, names),
+                              **_where(r, ds.text), **_exact(r, rule_input, items)})
+    return [{k: _swap(v, names) if isinstance(v, str) else v for k, v in p.items()} for p in found]
+
+
+async def _draft_group(ctx: RunContext, group: list[str], rows: list[dict],
+                       verified: dict[str, m.DataItem] | None = None,
+                       index: list[dict] | None = None) -> tuple[drafter.DraftOutput | None, str]:
+    """One drafter for one group. Returns the draft, or None and why. When code's pre-check finds problems in
+    the draft, the same drafter revises it once with code's findings (and code's values for wrong displays);
+    the revision is kept only if it validates."""
     prompt = drafter.draft_prompt(company_view(ctx.state), [criterion_entry(c) for c in group], rows,
-                                  metrics_for(group))
+                                  metrics_for(group), needs_view(ctx.state.needs, group), index)
     runner = AgentRunner(ctx, "drafter", f"Draft {', '.join(group)}", [r["id"] for r in rows], "large")
+    shown = {r["id"] for r in rows}
     try:
         with runner:
             out = await runner.ask(drafter.SYSTEM, prompt, drafter.DraftOutput, max_tokens=drafter.MAX_TOKENS)
+            problems = precheck(ctx.state, group, out, verified or {}, shown) if verified is not None else []
+            if problems:
+                out = await _revise(ctx, runner, group, prompt, out, problems, verified or {}, shown)
     except StopRequested:
         raise
     except Blocked as e:
@@ -137,6 +385,102 @@ async def _draft_group(ctx: RunContext, group: list[str], rows: list[dict]) -> t
     except AgentOutputError:
         return None, "The drafter's output failed validation twice."
     return out, runner.agent_id  # type: ignore[return-value]
+
+
+def merge_revision(old: drafter.DraftOutput, new: drafter.DraftOutput) -> drafter.DraftOutput:
+    """The revision sends only what changed: conclusions by key (an empty text drops one), scores by criterion,
+    charts by title (no series drops one). Everything it leaves out stays as drafted."""
+    conclusions = {c.key.strip(): c for c in old.conclusions}
+    for c in new.conclusions:
+        if c.text.strip():
+            conclusions[c.key.strip()] = c
+        else:
+            conclusions.pop(c.key.strip(), None)
+    scores = {s.criterion: s for s in old.scores}
+    scores.update({s.criterion: s for s in new.scores})
+    charts = {g.title.strip(): g for g in old.charts}
+    for g in new.charts:
+        if g.series:
+            charts[g.title.strip()] = g
+        else:
+            charts.pop(g.title.strip(), None)
+    return drafter.DraftOutput(conclusions=list(conclusions.values()), scores=list(scores.values()),
+                               charts=list(charts.values()))
+
+
+async def _revise(ctx: RunContext, runner: AgentRunner, group: list[str], prompt: str, out: drafter.DraftOutput,
+                  problems: list[dict], verified: dict[str, m.DataItem], shown: set[str]) -> drafter.DraftOutput:
+    """One revision round. A revision that is blocked or invalid leaves the first draft in place."""
+    aid = runner.agent_id
+    ctx.emit("agent.log", m.AgentLogData(text=f"Code pre-check found {len(problems)} problem(s) in the draft, sent "
+                                              f"back once: " + "; ".join(p["problem"][:160] for p in problems[:6])),
+             message=f"{aid}: code pre-check found {len(problems)} problem(s), drafter revises once",
+             agent_id=aid, level="warn")
+    try:
+        new = await runner.ask(drafter.SYSTEM, drafter.revise_prompt(prompt, out.model_dump(mode="json"),
+                                                                     problems[:MAX_PROBLEMS]),
+                               drafter.DraftOutput, max_tokens=drafter.MAX_TOKENS)
+    except (Blocked, AgentOutputError) as e:
+        ctx.emit("agent.log", m.AgentLogData(text=f"Revision not used ({type(e).__name__}), first draft kept"),
+                 message=f"{aid}: revision not used, first draft kept", agent_id=aid, level="warn")
+        return out
+    new = merge_revision(out, new)
+    before = {(c.key.strip(), x.name, x.expr, x.display) for c in out.conclusions for x in c.computations}
+    new, filled = fill_displays(new, verified, shown, skip=before)
+    if filled:
+        ctx.emit("agent.log", m.AgentLogData(text="Code filled the display of computations written in the revision: "
+                                                  + "; ".join(filled)),
+                 message=f"{aid}: code filled {len(filled)} display(s) in the revision", agent_id=aid)
+    left = precheck(ctx.state, group, new, verified, shown)
+    ctx.emit("agent.log", m.AgentLogData(text=f"Revised draft: {len(left)} pre-check problem(s) left of "
+                                              f"{len(problems)}. The verify stage checks everything again."),
+             message=f"{aid}: revised draft, {len(left)} of {len(problems)} pre-check problem(s) left", agent_id=aid)
+    return new
+
+
+def fill_displays(out: drafter.DraftOutput, verified: dict[str, m.DataItem], shown: set[str], *,
+                  skip: set[tuple[str, str, str, str]] = frozenset()) -> tuple[drafter.DraftOutput, list[str]]:
+    """Code's display, in the drafter's own format, for every computation whose display does not match its value,
+    swapped into the conclusion's text and into the texts of the scores that cite it. Computations in skip (key,
+    name, expr, display: the first draft's, sent back unchanged) stay as written for the checks to catch, and so
+    does a sign the format cannot show. Returns the draft and what changed."""
+    from .repair import redisplay, replace_number      # repair imports this module, so import late
+
+    swaps: dict[str, list[tuple[str, str]]] = {}
+    notes: list[str] = []
+    conclusions = []
+    for dc in out.conclusions:
+        key = dc.key.strip()
+        cited = _cited(dc, verified, shown)
+        env = {i: checks.base_value(verified[i]) for i in cited if verified[i].value is not None}
+        text, comps = dc.text, []
+        for comp in dc.computations:
+            new_display = None
+            if not typed_amounts(comp.expr):
+                try:
+                    env[comp.name] = val = compute.safe_eval(comp.expr, env)
+                except compute.ComputeError:
+                    val = None
+                if (val is not None and (key, comp.name, comp.expr, comp.display) not in skip
+                        and not checks.display_of(val, comp.display)[0]):
+                    new_display = redisplay(val, comp.display)
+            if new_display is None:
+                comps.append(comp)
+                continue
+            text = replace_number(text, comp.display, new_display)
+            swaps.setdefault(key, []).append((comp.display, new_display))
+            notes.append(f"{key}:{comp.name} {comp.display} -> {new_display}")
+            comps.append(comp.model_copy(update={"display": new_display}))
+        conclusions.append(dc.model_copy(update={"text": text, "computations": comps}))
+    scores = []
+    for ds in out.scores:
+        text = ds.text
+        keys = [k.strip() for k in ds.conclusion_keys] + [(ds.rule_input or "").partition(":")[0].strip()]
+        for k in dict.fromkeys(keys):
+            for old, new in swaps.get(k, []):
+                text = replace_number(text, old, new)
+        scores.append(ds.model_copy(update={"text": text}))
+    return out.model_copy(update={"conclusions": conclusions, "scores": scores}), notes
 
 
 def point_value(ref: str, unit: str, scale: str, items: dict) -> Decimal | None:
@@ -178,6 +522,7 @@ class Builder:
         self.notes: dict[int, list[str]] = {}
         self.agent_ids: dict[int | None, str] = {}     # group index -> drafter agent id
         self.seen: dict[int, set[str]] = {}             # group index -> data ids its drafter was shown
+        self.info: list[str] = []                       # what code noted without changing anything
 
     def note(self, gi: int, text: str) -> None:
         self.notes.setdefault(gi, []).append(text)
@@ -193,6 +538,11 @@ class Builder:
             name = comp.name.strip()
             if not _NAME.match(name) or name in env:
                 self.note(gi, f"{key}: computation {name!r} dropped (not a fresh snake_case name)")
+                continue
+            typed = typed_amounts(comp.expr)
+            if typed:
+                self.note(gi, f"{key}: computation {name} dropped (it types {', '.join(typed)} instead of citing "
+                              f"the data id that holds the number)")
                 continue
             try:
                 val = compute.safe_eval(comp.expr, env)
@@ -250,21 +600,38 @@ class Builder:
             cids.append(cid)
         return f"{cid}:{name.strip()}"
 
-    def _coverage(self, criterion: str, confidence: str, cids: list[str]) -> tuple[str, str | None]:
-        """Code may lower the data-coverage label, never raise it: a 10-year criterion with fewer than ten
-        fiscal years of cited data is low coverage."""
-        crit = RUBRIC["criteria"][criterion]
-        if not _TEN_YEARS.search(f"{crit['label']} {crit.get('evidence_hint', '')}") or confidence == "low":
-            return confidence, None
+    def _years(self, cids: list[str], rule_input: str | None) -> set[int]:
+        """Fiscal years of the data behind a score. With a rule input, only the data that computation reads
+        (directly or through earlier computations), since that is the number code compares with the bar.
+        Otherwise every cited conclusion's data."""
+        ids: list[str] = []
+        cid, _, name = (rule_input or "").partition(":")
+        if cid in self.conclusions and name:
+            ids = inputs_of(self.conclusions[cid], name)
+        if not ids:
+            ids = [did for c in cids for did in self.conclusions[c].data_ids]
         years: set[int] = set()
-        for cid in cids:
-            for did in self.conclusions[cid].data_ids:
-                v = self.verified[did].value
-                if v is not None and v.period:
-                    years |= period_key(v.period)[0]
-        if len(years) >= 10:
+        for did in ids:
+            v = self.verified[did].value if did in self.verified else None
+            if v is not None and v.period:
+                years |= period_key(v.period)[0]
+        return years
+
+    def _coverage(self, criterion: str, confidence: str, cids: list[str], rule_input: str | None = None, *,
+                  scored: bool = True) -> tuple[str, str | None]:
+        """Code may lower the data-coverage label, never raise it: a 10-year criterion with fewer than ten
+        fiscal years of data behind it is low coverage. For a score, also notes which years it rests on."""
+        asked = years_asked(criterion)
+        if asked is None:
             return confidence, None
-        return "low", f"{criterion}: data coverage lowered from {confidence} to low ({len(years)} of ten fiscal years)"
+        years = self._years(cids, rule_input) if cids else set()
+        span = f"{_count(len(years))} of {_count(asked)} fiscal years" + (
+            f": {', '.join(str(y) for y in sorted(years))}" if years else "")
+        if scored:
+            self.info.append(f"{criterion}: the score rests on data from {span}")
+        if len(years) >= asked or confidence == "low":
+            return confidence, None
+        return "low", f"{criterion}: data coverage lowered from {confidence} to low ({span})"
 
     def extrapolation(self, criterion: str, gi: int | None, ds: drafter.DraftScore | None, missing: str) -> m.Extrapolation:
         crit = RUBRIC["criteria"][criterion]
@@ -279,7 +646,7 @@ class Builder:
             return m.Extrapolation(**base, score=None, na_reason=missing, text=f"{crit['label']} is not scored.",
                                    conclusion_ids=[], confidence="low")
         rule.input = self._input(gi, criterion, ds.rule_input, cids) if gi is not None else None
-        confidence, lowered = self._coverage(criterion, ds.confidence, cids)
+        confidence, lowered = self._coverage(criterion, ds.confidence, cids, rule.input, scored=ds.score is not None)
         if lowered and gi is not None:
             self.note(gi, lowered)
         na = (ds.na_reason or "").strip() or None
@@ -335,6 +702,31 @@ class Builder:
                        verification=m.Verification(status="pending"))
 
 
+_ID = re.compile(r"\b[A-Z]{1,4}-\d{1,4}\b")
+_WORD = re.compile(r"\b[A-Za-z_]\w*\b")
+
+
+def inputs_of(c: m.Conclusion, name: str) -> list[str]:
+    """Data ids a computation reads, directly or through the earlier computations it names."""
+    comps = {x.name: x for x in c.computations}
+    out: list[str] = []
+    seen: set[str] = set()
+    todo = [name]
+    while todo:
+        n = todo.pop()
+        if n in seen or n not in comps:
+            continue
+        seen.add(n)
+        expr = comps[n].expr
+        out += [i for i in compute.ids_in(expr) if i not in out]
+        todo += [w for w in _WORD.findall(_ID.sub(" ", expr)) if w in comps]
+    return out
+
+
+def _count(n: int) -> str:
+    return _NUMBER_WORDS.get(n, str(n))
+
+
 async def _no_draft() -> None:
     """A group with no verified data gets no drafter call."""
     return None
@@ -387,6 +779,9 @@ def build_items(ctx: RunContext, scope: list[str], groups: list[list[str]], veri
                                              transcript_path=ctx.state.agents[aid].transcript_path if aid else None),
                  message=f"{aid or 'draft'}: code rejected or changed {len(lines)} part(s) of the draft",
                  agent_id=aid, level="warn")
+    if b.info:
+        ctx.emit("agent.log", m.AgentLogData(text="Code noted: " + "; ".join(b.info)),
+                 message="draft: " + "; ".join(b.info))
     return out
 
 
@@ -399,9 +794,15 @@ async def run(ctx: RunContext) -> None:
     verified = {d.id: d for d in data}
     jobs, shown = [], []
     for group in groups:
-        rows = [data_row(d) for d in data if set(d.criteria) & set(group)]
+        mine, left_out = group_items(data, group)
+        rows = [data_row(d) for d in mine]
+        index = inputs_index(state, mine) if metrics_for(group) else None
+        if left_out:
+            ctx.emit("agent.log", m.AgentLogData(text=f"Draft {', '.join(group)}: {left_out} verified data item(s) "
+                                                      f"left out of the prompt (cap {MAX_ROWS} rows, lowest tier first)"),
+                     message=f"draft: {left_out} data item(s) over the row cap for {', '.join(group)}", level="warn")
         shown.append({r["id"] for r in rows})
-        jobs.append(_draft_group(ctx, group, rows) if rows else _no_draft())
+        jobs.append(_draft_group(ctx, group, rows, verified, index) if rows else _no_draft())
     results = list(await asyncio.gather(*jobs))
     ctx.check_stop()
     for item in build_items(ctx, scope, groups, verified, results, shown):
