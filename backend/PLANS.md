@@ -585,6 +585,33 @@ Added 2026-11-07 9:22 PM from B-fix-draft's REPORT.
 
 ---
 
+## G3 fixes (from the G3 verifier, after G5)
+
+Added 2026-11-07 10:22 PM. The verifier's full report is in status.md Log (G3). Two builders run in parallel on separate files.
+
+### B-fix-cite
+**Owns.** `axelrod/verify/checks.py`, `axelrod/stages/extract.py`, `axelrod/stages/verify.py`, `tests/test_cite_fidelity.py` (new), and only additions to `tests/test_verify.py` and `tests/test_extract.py`.
+**Tasks.**
+1. Quote fidelity. Every text citation must satisfy `citation.quote == page[char_start:char_end]` exactly. `checks.with_fixed_locators` (checks.py about line 122) moves only the locator, so it must also set `quote` to the real span text. Look for every other place that sets a locator or a quote (`extract.py` around lines 316, 425 and 434, the recite and code_fix paths) and make the same invariant hold. Add a test that walks every text citation of a stored run (`backend/.data/r0b` and `backend/data/replay/run_20261108_pin2ve`, read only) and asserts the invariant. Copy short fixtures if a test needs them.
+2. Same-page context. When the evidence ends up on a different page from where the model said, re-derive the unit and period contexts on the evidence's final page with the B-fix-extract helpers (`context_citations`, `recontext`). If none is found there, the item fails its unit or period check as usual. Never leave context citations on another page than the evidence, except a release's cover-page period (S-002), which B-fix-extract allows on purpose. Seen in R0: D-108 to D-110 took a period header from page 95 (a share-matching table) for evidence on page 99. Seen in R0b: D-135 and D-159 moved from page 13 to page 6 while their headers stayed on page 13.
+3. Sign in `numbers_traced` (checks.py `_traced`, about line 317, compares abs values). A negative cited value only traces when the text shows it as negative: a minus or U+2212, brackets, or a direction word right next to the number ("loss of", "decline of", "decrease of", "fell by", "down", "negative", "outflow"). Otherwise fail with a plain detail ("1,710 is shown without its minus sign: D-123 is -1,710"). Add the planted case to test_planted.py's set if that file's owner rules allow (only add).
+4. `stages/verify.py` about line 168: call `check_chart(item, items)` with the sources, so a chart behind a revoked source is blocked.
+5. `stages/extract.py` about line 483: the recite note's similarity percentage uses `verify.numbers.half_up`, not `round`.
+**Acceptance.** Offline suite green, planted line still all caught, and the invariant test passes on newly extracted items (offline fakes on real stored pages). On the two stored runs, report how many citations broke the invariant before the change (they are recorded runs, so they can't change).
+
+### B-fix-holes
+**Owns.** `axelrod/stages/summarize.py`, `axelrod/agents/summarizer.py`, `axelrod/stages/repair.py` (docstring only), `tests/test_brief.py` (only add tests), `tests/test_brief_holes.py` (new).
+**Problem.** In R0b, 25 of 33 brief sentences are hole bullets (438 of 639 words), and Financial Strength has no section at all. The prompt asks for one bullet per hole (`summarizer.py` about line 95), and `_protected` (`summarize.py` about lines 95 to 98) trims content sections before hole bullets. Tong's UI also prints the full `holes` register inside the brief, so the printed brief runs to about 4 pages.
+**Tasks.**
+1. The brief's "What we could not determine" section is a summary, not the register: at most 5 sentences. Group holes by kind (unscored criteria by name, data items that failed verification as one counted sentence per criterion, quarantined or blocked sources, analyst-only gaps). Each sentence cites the HOLE- ids it covers in `derived_from`. The full register stays in `AgentReport.holes`, linked from the brief.
+2. Content first: every in-scope category gets at least one content sentence before any trimming touches it. Trim order is extra content sentences first, then the hole summary down to 2 sentences. Never drop a whole category.
+3. `est_pages` keeps counting what the brief itself renders. Add `holes_in_register` (the count) to the brief stats if the stats model allows extra keys, otherwise put it in the hole section's first sentence.
+4. `stages/repair.py` module docstring: say what code really does. Models can only weaken claims. Code recomputes threshold scores from the rubric and its score wins, which can move a score either way. No logic change.
+5. Tests with fake models on the R0b report (load it from `backend/.data/r0b` with Store, read only): at most 5 hole sentences, all six categories present when they have content, est_pages <= 3.
+**Acceptance.** Offline suite green. One live summarize plus verify_summary on a copy of the pin2ve or R0b state (short DATA_DIR such as `backend/.data/fixholes`) gives a valid final brief with at most 5 hole sentences and est_pages <= 3. Under $0.50.
+
+---
+
 ## W3 plans
 
 Written loosely on purpose. The orchestrator sharpens them after G5 with what the full run showed.

@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: G5 done (10:15 PM). Next G6 demo rehearsal, then W3 polish.
-- Running: A-deploy (W2, waiting on the port approval), verifier (G3). Verifier (G3). W1 is 5/5 done.
+- Running: B-fix-cite, B-fix-holes (G3 fixes). G6 rehearsal on EC2 by the orchestrator. Verifier (G3). W1 is 5/5 done.
 - Next: G6 (demo rehearsal on EC2). Finish G3 when the verifier reports. W3 polish (B-p1) while time allows.
 - **Rehearsal R0b done (9:46 PM): run_20261108_whhj0d, full SHL run, laptop, live models.** Report final: 403 items (341 pass, 40 fixed, 22 fail = 94.5% pass or fixed), 25 holes, report certainty 92. Scores: rotic_level -1 (9.4%, low), rotic_vs_peers 0 (low), secular_growth +1, leverage 0, liquidity N/A (its coverage computation failed), research_stage N/A (by design). 4 of 6 scored, weighted average 0.0. Brief final: 33 sentences (31 pass, 2 fixed, 1 removed), 2.8 pages, certainty 85. $2.06, about 5 min. contract_smoke 21/21. Exported as the replay fallback (`backend/data/replay/run_20261108_whhj0d`, 31 MB, text only).
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
@@ -34,6 +34,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-repair | builder | R0 fix | done | 50 passed (suite 457) | code's threshold score wins (9.996% keeps -1), judgment scores only move toward 0 or N/A, blocked items never repaired |
 | B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
 | B-fix-checks | builder | R0 fix | done | 75 passed (suite 465) | planted 13/13 caught, clean 13/13. Own clause beats headers, comparison bases, nil cells, exact threshold, adjacent-year averages. Old vs new on stored runs: 9 fail-to-pass (all right), 0 pass-to-fail |
+| B-fix-cite | builder | G3 fix | running | | quote == page span, contexts on the evidence page, signed numbers_traced, charts vs revoked sources |
+| B-fix-holes | builder | G3 fix | running | | brief hole section at most 5 sentences, every category gets content |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
 | B-p1 | builder | W3 | todo | | |
 
@@ -44,7 +46,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
 | G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
-| G3 Pipeline and pre-smoke | partial | Sat 8:32 PM | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
+| G3 Pipeline and pre-smoke | fail at 1c7118c, fixes running | Sat 10:22 PM | Verifier: the blocker (brief crash) is already fixed. Open majors: citation quote vs page span after relocation, and a brief full of hole bullets (printed about 4 pages). Minors: numbers_traced ignores sign, charts not checked against revoked sources, 2 displays without half_up. Fix builders B-fix-cite and B-fix-holes running. Earlier: | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
 | G4 Deploy | pass | Sat 10:10 PM | public healthz live, /api/v1/runs lists, test page 200 with simulated header, deploy.sh moved the instance to b223c2b (the pushed HEAD) |
 | G5 Full SHL run, demo-ok-1 | pass | Sat 10:15 PM | **run_20261108_pin2ve** on EC2 (STORE=aws, live). Report final, certainty mean 93. Items 374: 345 pass, 18 fixed, 11 fail (97.1% pass or fixed). Holes 13, every gap declared. Rollup -0.6 (3 of 6 scored). Brief 24 sentences, 2.8 pages, certainty 75. $1.96 of $5, about 4 min. Exported to backend/data/replay/run_20261108_pin2ve |
 | G6 Demo rehearsal | | | |
@@ -108,6 +110,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
+- (10:22 PM, pass to Tong) The brief's UI prints the full hole register (`<Holes/>` in BriefModule.tsx) inside `#brief`, under a second "What we could not determine" heading. That pushes the printed brief past 3 pages (about 4.1 on R0b). The backend is changing the brief's own hole section into a short summary (at most 5 sentences, citing HOLE- ids). Ask Tong to render the full register outside the 3-page brief, for example as a separate "Holes register" panel or appendix, and link to it.
+
 - (10:15 PM, demo choice) **G5 finished SHL run: run_20261108_pin2ve** (EC2, live). Scores: rotic_level -1 (9.1%, low confidence), rotic_vs_peers 0 (low), liquidity -1 (medium), secular_growth and leverage **failed verification** (judges 1 of 3 supported) so they are declared holes, research_stage N/A by design. 3 of 6 scored, weighted average -0.6. The laptop rehearsal R0b (run_20261108_whhj0d, also live, also recorded as a replay) scored 4 of 6: rotic_level -1, rotic_vs_peers 0, secular_growth +1, leverage 0. Runs vary. Which run do we show from 1:40 to 3:00? My view: show pin2ve, the official EC2 run, and use its two failed scores as a beat ("the judges rejected two scores, so we show them as gaps instead of guessing"). Picking the best of several runs without saying so would be cherry-picking.
 
 - (10:05 PM, pass to Tong now) **VITE_API_URL=https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com/api/v1**. It serves the recorded R0b run (mode replay) right now, and the real SHL run (G5) shortly.
@@ -151,3 +155,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 10:05 PM: A-deploy done (Gordon approved port 8000). G4 curl checks pass.
 - Sat 10:10 PM: G4 pass. Starting G5 on EC2.
 - Sat 10:15 PM: G5 pass. run_20261108_pin2ve on EC2, 97.1% items pass or fixed, $1.96. Exported, tagging demo-ok-1.
+- Sat 10:22 PM: G3 verifier: fail at 1c7118c (blocker already fixed). Two majors and four minors going to B-fix-cite and B-fix-holes.
