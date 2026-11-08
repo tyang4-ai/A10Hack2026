@@ -552,6 +552,16 @@ Added 2026-11-07 8:38 PM. The rehearsal `run_20261108_0bsu0o` (live models, STOR
 5. Use the failing examples in `backend/.data/r0_report.json` as test cases. Copy short excerpts of the page text into test fixtures, labeled as real SHL text.
 **Acceptance.** Tests green. A live presmoke on the pages behind the failing items (the S-002 and S-005 pages from plan.json, plus S-001 pages 15 and 155) shows at least 95% of data items pass or fixed. Under $0.50.
 
+### B-fix-checks
+Added 2026-11-07 9:17 PM from B-fix-extract's REPORT.
+**Owns.** `axelrod/verify/checks.py`, `tests/test_verify.py`, `tests/test_planted.py` (only add cases).
+**Tasks.**
+1. False pass (most important): when a `period_context` citation is present, `_period_text` ignores the years in the evidence's own clause. So an agent-supplied header can mask a comparative: "8% (2024: 9%)" with 9% claimed as FY2025 passes. Fix: the value's own clause decides first. If the clause names a period for that value (a comparative in brackets, "in fiscal year 2024", "2024:"), that period wins over any header. Headers apply only when the clause names none.
+2. `_CLAUSE` lacks "over" and "than", so "4.0% and 5.0% over fiscal year 2026" reads 4.0% as 2026. A comparison base ("over", "than", "compared with", "versus", "vs.") is not the value's period.
+3. `_columns`: nil cells ("‐", "–", "-" standing alone) count as columns, and numbers inside a row label ("Loan (US$1,742 million)") do not. Right-aligned columns then line up with the header again (r0 D-307: 1,484 was read as 2024).
+4. Each fix gets a test, plus a planted case for task 1 (a comparative claimed as the current year must fail). `planted` must stay N/N caught and `clean` M/M pass.
+**Acceptance.** `.venv/Scripts/python -m pytest -q backend/tests -m "not live"` green, and the planted line still shows every planted error caught.
+
 ### B-fix-draft
 **Owns.** `axelrod/agents/drafter.py`, `axelrod/stages/draft.py`, `tests/test_reason.py` (only add tests).
 **Problem.** rotic_level and rotic_vs_peers came out N/A because the drafter wanted a complete ten-year NOPAT and average-TICAP series and refused. The demo story (docs/PLAN.md) is the opposite: score ROTIC from the years we have, and let code lower the certainty because SHL has fewer than ten years of reports since listing (`finalize` already marks data coverage low). liquidity is N/A because C-015 failed `numbers_traced` (`'(€13,499 million)', '€4.5 billion' and '14.3%' do not match any cited value`), and C-001 failed the same way (`'€1,525 million'`).
@@ -703,7 +713,7 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 
 **2026-11-07 8:47 PM, B-fix-brief REPORT.** `agents/base.py` adds `coerce_json_strings(tool_input, schema) -> (fixed, paths)`, applied before validation. It parses strings where the schema expects an array or object, recursively, and unwraps an answer that was wrapped in its own field name (`{"sections": "{\"sections\": [...]}"}`). Scalars and string-typed fields are never touched. Each coercion logs an `agent.log` line, and the transcript keeps the raw input. `RETRY_SHAPE_RULE` is added to retries. The real SHL summarizer prompt is about 64k tokens in, about $0.17 per try.
 
-**2026-11-07 8:55 PM, B-fix-extract REPORT.**
+**2026-11-07 9:17 PM, B-fix-extract REPORT.**
 - `context_citations(doc_id, pages, ev, raw, value, *, source=None)`. `recite(item, results, pages_by_doc, source=None)` now re-cites on the cited page only (in r0 the recite jumped to other pages). New helpers: `code_fix`, `recontext`, `row_span`, `restate_value`, `scale_from_evidence`.
 - Period context is chosen by code by position on the page (table header above the row, nearest period line above, the release cover page, or the sentence's leading phrase), never from the model's claimed period. A scale word next to the number sets the scale and is cited as unit context. A decorated value ("~37", ">31", "(4.2%)") is restated as printed. A sign the page prints is never added.
 - Presmoke: use `--budget 1.0` for multi-page runs, because the gateway holds 8192 output tokens per call as the worst case.

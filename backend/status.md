@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2). B-fix-extract, B-fix-draft (R0 fixes). Verifier (G3). W1 is 5/5 done.
+- Running: A-deploy (W2). B-fix-draft, B-fix-checks (R0 fixes). Verifier (G3). W1 is 5/5 done.
 - Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -31,6 +31,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-extract | builder | R0 fix | done | suite 441 | live: plan pages 100/100, r0 failure pages 148/150. Replaying r0 outputs: 48 fails down to 6 (98.3% pass or fixed). $0.42 |
 | B-fix-draft | builder | R0 fix | running | | score ROTIC from available years, peers, declared computations |
 | B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
+| B-fix-checks | builder | R0 fix | running | | 3 period-check refinements from B-fix-extract (one false-pass risk) |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
 | B-p1 | builder | W3 | todo | | |
 
@@ -59,7 +60,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Decisions
 
-- Sat 8:55 PM: keep the extractor's skip of % change table columns. With the current `_period_text`, a % cell in a row of amounts passes for either year, so year claims there would go unchecked.
+- Sat 9:17 PM: keep the extractor's skip of % change table columns. With the current `_period_text`, a % cell in a row of amounts passes for either year, so year claims there would go unchecked.
 
 - Sat 8:49 PM: for the live demo, set `DEMO_PACING=2` and `MAX_CONCURRENCY_SMALL=8` on the instance (fewer metered calls discarded at STOP). Keep 32 for the full SHL run.
 
