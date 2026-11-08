@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-013",
+  "source_id": "S-016",
+  "title": "Philips Annual Report 2023 (peer)",
+  "url": "https://www.results.philips.com/publications/ar23/downloads/files/en/PhilipsFullAnnualReport2023-English.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 308,
+  "sha256": "b7efbac77ea3859ab85338462cf3e9684faa42f41c3d800b9f1552679aaca20f",
+  "bytes": 11235957,
+  "fetched_at": "2026-11-08T09:26:21.893Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/08-Competitors/S-016_philips-annual-report-2023-peer.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/08-Competitors/S-016_philips-annual-report-2023-peer.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0014",
+    "url": "https://www.results.philips.com/publications/ar23/downloads/files/en/PhilipsFullAnnualReport2023-English.pdf",
+    "final_url": "https://www.results.philips.com/publications/ar23/downloads/files/en/PhilipsFullAnnualReport2023-English.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

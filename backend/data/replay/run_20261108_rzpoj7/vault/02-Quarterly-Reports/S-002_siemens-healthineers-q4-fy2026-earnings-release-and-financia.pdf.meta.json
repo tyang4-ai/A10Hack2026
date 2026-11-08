@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-002",
+  "source_id": "S-002",
+  "title": "Siemens Healthineers Q4 FY2026 earnings release and financial results",
+  "url": "https://corporate.webassets.siemens-healthineers.com/8410b8eff08f9fd0/df64669e4035/siemens-healthineers-Q4_FY2026_Earnings-Release-and-Financial-Results.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 19,
+  "sha256": "b66227a75059eac7add7a23d5105e0f407efc5723d72051b921fa1ae72bbfe09",
+  "bytes": 281238,
+  "fetched_at": "2026-11-08T09:26:10.067Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/02-Quarterly-Reports/S-002_siemens-healthineers-q4-fy2026-earnings-release-and-financia.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/02-Quarterly-Reports/S-002_siemens-healthineers-q4-fy2026-earnings-release-and-financia.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (company_ir), not scanned"
+  },
+  "origin": "cache",
+  "collected_at": "2026-11-08T08:29:38.792Z",
+  "fetch": {
+    "request_id": "REQ-0003",
+    "url": "https://corporate.webassets.siemens-healthineers.com/8410b8eff08f9fd0/df64669e4035/siemens-healthineers-Q4_FY2026_Earnings-Release-and-Financial-Results.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/8410b8eff08f9fd0/df64669e4035/siemens-healthineers-Q4_FY2026_Earnings-Release-and-Financial-Results.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

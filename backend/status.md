@@ -1,13 +1,43 @@
+DEMO RUN: run_20261108_rzpoj7 (picked 1:32 AM)
+
+- **Run:** R2 on EC2, 647 items, 96.6% pass or fixed, 5 of 6 criteria scored, rollup -0.6, certainty 94 (report) and 74 (brief), brief 2.5 pages, $2.84. Tag `demo-ok-2`, replay in `backend/data/replay/run_20261108_rzpoj7`. Backup: demo-ok-1 run_20261108_pin2ve. The comparison is under Now.
+- **Deployed:** 4f10702 on EC2 (`axelrod` service, port 8000). Later commits are only this board, DEMO.md and the R2 replay, which EC2 doesn't need because a stored run wins over a replay with the same id. Invoke URL `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com`. Webapp: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`. No API key yet (Needs Gordon).
+- **Server env for the demo** (set 1:33 AM in `/etc/axelrod.env`):
+  - `CACHE_DOCUMENTS=on`: the gateway decides every fetch, then serves it from the S3 cache.
+  - `CACHE_MODELS=record`: model calls stay live and each answer is also recorded, so the in-person rehearsals record the demo path for the replay fallback. Runs say `cache_mode: documents`.
+  - `DEMO_PACING=0.8`: seconds before each fetch. In the scripted check, STOP landed at about 52 s with a 10 s approval, revoking S-006 right after the first fetches. Set what the in-person rehearsal needs: `bash backend/infra/remote.sh --set-env DEMO_PACING=<seconds>`, or ask this session.
+  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5` (per run), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
+- **Fallback if Bedrock throttles:** `--set-env CACHE_MODELS=replay` serves recorded answers at $0, labeled `documents_and_models`. So far that's R2's 291 answers. It's untested on the live segment until a rehearsal has run with `record`.
+- **Cut:** the scripted G6b rehearsal and B-rehearse (Gordon, 1 AM). The script stays in the repo, unused. Nothing else: v2 steps 1 to 12 are built.
+
 # Backend build board
 
 Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top, history in Log.
 
 ## Now
 
-- Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: B-fix-s015. G6b rehearsal 1 on EC2 meanwhile (it stops in early extract, so the S-015 fix doesn't matter to it).
-- Next: deploy, then R2 on EC2 (`CACHE_MODELS=record`) and the G6b webapp rehearsal.
-- Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
+- Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, origin/main 69b40fc merged at 1:24 AM). Gordon's 1 AM change: the integrator runs next to us and shares EC2 (it owns `axelrod-web` on port 3000 and the `$default` route, we own the `axelrod` service on 8000 and its env). No scripted rehearsal, no READY FOR INTEGRATION. Cutoff: R2 done and the `DEMO RUN:` line posted by 3:15 AM.
+- **R2 done** at 1:29 AM: run_20261108_rzpoj7. EC2 is free for runs again.
+- **Env changed at 1:33 AM** (restarted the `axelrod` service only, no deploy): demo values `DEMO_PACING=0.8`, `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`.
+- **Deployed at 1:25 AM:** 4f10702 to EC2, `axelrod` service on port 8000 only. Then env for R2: `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`. `axelrod-web`, port 3000 and the `$default` route are not touched.
+- **R2 against demo-ok-1** (same API, same counting, `r2_compare.py` in the scratchpad):
+
+| | demo-ok-1 run_20261108_pin2ve | **R2 run_20261108_rzpoj7** |
+|---|---|---|
+| Code, corpus | v1, 10 sources, live fetches | v2, 16 sources (plan v2 plus the archive), `cache_mode` documents: 16 of 16 fetches from the cache |
+| Items | 374 (348 data, 15 conclusions, 6 scores, 5 charts) | 647 (592 data, 41 conclusions, 6 scores, 8 charts) |
+| Pass or fixed | 345 + 18 of 374 = **97.1%** | 570 + 55 of 647 = **96.6%** |
+| Failed (declared holes) | 11 (13 holes) | 22 (24 holes): 19 data, C-018 and C-019 (tier 3 only), C-026 (judges: year labels reversed) |
+| Scores | rotic_level -1, rotic_vs_peers 0, liquidity -1. secular_growth and leverage failed. Research stage N/A | rotic_level -1, **rotic_vs_peers -1** (below GE HealthCare 24.6% and Philips 16.8%, text and sign agree), secular_growth +1, leverage -1, liquidity -1. Research stage N/A |
+| Coverage | 3 of 6 | **5 of 6** |
+| Rollup | -0.6 | -0.6 |
+| Mean certainty, report / brief | 93 / 75 | 94 / 74 |
+| Brief | 2.8 pages, 24 sentences | 2.5 pages, 18 sentences (3 fixed, none failed) |
+| Cost, time | $1.96, 3.9 min, 197 model calls | $2.84, 3.4 min, 291 model calls (all recorded to `cache/models/`) |
+| Bobby's calls | none (before v2) | plan proceed, extract rework (3 extractors), repair proceed, brief proceed |
+
+  **Picked R2**: the same pass rate on 1.7 times the items, 5 of 6 criteria scored instead of 3, every score's sign agrees with its text, and it shows Bobby, the cache and the archive. demo-ok-1 stays as the backup (tag and replay kept). Exported to `backend/data/replay/run_20261108_rzpoj7` (47.6 MB, text only), tagged `demo-ok-2`.
+  **For the pitch (docs/PLAN.md 1:20 to 2:35):** in R2 the judges rejected no score. All five scorable criteria are scored, and the gaps are 19 data items, two tier-3-only conclusions and C-026 (judges: year labels reversed). So "The judges rejected two scores" should become something like "the judges threw out a conclusion that reversed its years, so it shows as a gap". ROTIC still scores -1 with certainty flagged (54, four of ten years computable).
 
 ## v2 plans
 
@@ -24,8 +54,11 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | pre-R2 | 12 | orchestrator | done | | run_20261108_5zqdvb on EC2, cache_mode documents, 16 sources (13 cache hits, 10 from the archive). 659 items (522 pass, 88 fixed, 49 fail = 92.6%), 52 holes, certainty 93, rollup +0.4 (4 of 6: rotic_level 0, rotic_vs_peers +1, secular_growth +1, leverage -1), brief 2.8 pages, $3.03, 6 min. Bobby: plan escalate, extract rework (S-015 extractors), repair proceed, brief proceed. **Bug: rotic_vs_peers +1 while its text says SHL trails both peers.** Fixes: B-fix-score, B-fix-s015 |
 | B-fix-score | 12 | builder | done | 93 passed (suite 824), 3 live | judges check a score's direction against its text and rubric (`score_direction`). Live on r2a rotic_vs_peers +1: 0 of 3, all naming "trails both peers". Same text at -1: 3 of 3. Bobby's plan gate proceeds on the r2a digest. $0.034 live |
 | B-fix-score2 | 12 | builder | done | 15 passed (suite 879) | wire the drafter's direction pre-check, swap every drafter key for its id (E-002 kept "(c_sh_fy2025_rotic)"), plan-gate digest lists criteria with no need and needs with no source |
-| B-rehearse | 12 | builder | done | 38 passed | demo_live.py `--webapp`: reorder and reject at approval, cache labels, stop one goon, launch to STOP at most 55 s, suggested DEMO_PACING |
-| R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
+| B-rehearse | 12 | builder | done, then cut | 38 passed | demo_live.py `--webapp`: reorder and reject at approval, cache labels, stop one goon, launch to STOP at most 55 s, suggested DEMO_PACING |
+| B-fix-s015 | 12 | builder | done | 54 passed (suite 880) | Philips year headers after the rows, unit lines without brackets, maturity balance dates. Replay of r2a: S-015 fails 35 to 0 (10 new passes checked by eye). S-014's 8 maturity fails went to B-fix-due |
+| B-fix-due | 12 | builder | done | 44 passed (suite 924) | period_match: a due year in the value's own clause is never its period (today a due-year claim passes falsely), and a range header cell counts as one column |
+| R2 | 12 | orchestrator | todo | | full run on the full corpus, compared with demo-ok-1 here |
+| G6b | 12 | orchestrator | cut | | Gordon, 1 AM: we demo in person. Scripted rehearsals had already run (Gates). DEMO_PACING stays an env setting |
 
 ## v1 plans (all done)
 
@@ -41,6 +74,7 @@ P-scaffold, A-setup, B-store-api, B-gateway, B-verify, B-ingest, B-shl-plan, B-e
 | G5 Full SHL run | pass, **demo-ok-1** | Sat 10:15 PM | run_20261108_pin2ve: 374 items, 345 pass, 18 fixed, 11 fail, 13 holes, certainty 93, rollup -0.6 (3 of 6), brief 2.8 pages, $1.96, 4 min |
 | G5b | not tagged | Sat 11:02 PM | run_20261108_0murfv: data better, but 1 of 6 scored (coarse conclusions). Fix: B-fix-yield |
 | G6 rehearsal 1 | pass | Sat 10:20 PM | CLI live segment on EC2, every beat PASS, $0.10. Superseded by G6b (webapp, 3 minutes) |
+| G6b scripted rehearsals | pass, then cut | Sun 1:10 to 1:20 AM | Ran before Gordon's 1 AM message reached us. `demo_live.py --webapp` on EC2 at 95c55df, cached documents, live models. DEMO_PACING 2: every beat but timing (STOP 71.5 s). 0.6: all PASS, STOP 42.5 s. 1.0: all PASS, 50.7 s. **0.8 with a 10 s approval: all PASS, 51.7 s** (run_20261108_5hddrr). About $0.18 each. Revoke S-006 right after the first fetches. DEMO.md is now a click guide with these timings |
 
 ## AWS
 
@@ -54,6 +88,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Decisions
 
+- Sun 1:24 AM (Gordon's 1 AM message): integration runs next to us. No scripted rehearsals and no READY FOR INTEGRATION. When R2 is picked, the first line of this file becomes `DEMO RUN: <run id> (picked <time>)`. Every deploy is noted here before it runs. B-rehearse had already landed (ff105a8), so its script stays in the repo but nothing runs it. B-fix-due goes on, because it closes a false pass B-fix-s015 found.
+- Sun 1:08 AM: the demo approval moves S-002 up above S-001 and rejects S-016 (Philips 2023: one page, 0 data items in the pre-R2 run, and S-008 carries those balances). The only non-priority sources are S-006, S-009 and S-010, which are never touched, so the rejection has to be a priority source. That makes S-006 the 13th fetch.
 - Sun 1:08 AM: the demo approval moves S-002 up above S-001 and rejects S-016 (Philips 2023: one page, 0 data items in the pre-R2 run, and S-008 carries those balances). The only non-priority sources are S-006, S-009 and S-010, which are never touched, so the rejection has to be a priority source. That makes S-006 the 13th fetch.
 - Sun 12:46 AM (Gordon may override): `CACHE_MODELS=record` labels a run `documents` (or `off`), since it replays nothing. Only replay sets `documents_and_models`, and replay with the document cache off says so too (the contract has no models-only value), so replayed answers are never hidden.
 - Sun 12:46 AM: a fork keeps `R-stop-<id>` only for agents it copies (they never run again there, and the rule keeps their unfinished work a declared hole). Every other stop rule is dropped, `R-stop-bobby` included. A fork's Bobby doesn't get the rerun instructions: they're for the goons that redo work.
@@ -75,6 +111,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere, so demo_live measures it from the events.
 - Resume inside draft asks a drafter again if it finished inside the STOP cut, because draft builds items only after every drafter answers. A few cents, no wrong data.
 - Plan v2 has 13 priority sources (was 7), and 6 more paced fetches come before S-006. Retune `DEMO_PACING` at G6b for the 55 s launch-to-STOP. The ROTIC drafter group should be about 310 rows against MAX_ROWS=400.
@@ -128,3 +165,11 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:58 AM: B-fix-score done and committed. B-fix-score2 started (its three follow-ups, before R2).
 - Sun 1:03 AM: V6-resume done and committed. Its gates.py follow-up (only analyst-stopped goons count as stopped by the analyst) went to B-fix-score2.
 - Sun 1:08 AM: B-fix-score2 and B-rehearse done and committed. test_bobby given a real analyst stop rule (gate glue).
+- Sun 1:13 AM: B-fix-s015 done and committed. B-fix-due started.
+- Sun 1:20 AM: scripted G6b rehearsals on EC2: four runs, the last three all PASS. DEMO_PACING=0.8 recommended. DEMO.md rewritten for the webapp.
+- Sun 1:24 AM: Gordon's 1 AM change of plan received. origin/main 69b40fc merged. G6b cut, B-rehearse cut (already committed). No READY FOR INTEGRATION: the DEMO RUN line instead.
+- Sun 1:24 AM: B-fix-due done and committed (S-014 maturity fails 8 to 0, S-012 7 to 1, one old false pass now fails). Offline suite 924 passed. Deploy and R2 noted here first.
+- Sun 1:26 AM: deployed 4f10702 (env for R2 set). R2 started: run_20261108_rzpoj7.
+- Sun 1:29 AM: R2 done: run_20261108_rzpoj7, 647 items, 96.6% pass or fixed, 5 of 6 scored, $2.84, 3.4 min.
+- Sun 1:32 AM: picked R2 over demo-ok-1 (table in Now). Exported as a replay, tagged demo-ok-2.
+- Sun 1:33 AM: demo env set on EC2. DEMO RUN line posted: run_20261108_rzpoj7.

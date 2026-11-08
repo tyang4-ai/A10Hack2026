@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-010",
+  "source_id": "S-013",
+  "title": "Siemens Healthineers Annual Report FY2020",
+  "url": "https://corporate.webassets.siemens-healthineers.com/180f4f3673c1bef8/42315c736d84/180f4f3673c1bef8-747507c6608d-Siemens_Healthineers-_Annual-_Report_2020.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 126,
+  "sha256": "cd150568ac6309d2f0454f6b1e94edde1e87284a17af64166ca0daacc5c733fc",
+  "bytes": 1662586,
+  "fetched_at": "2026-11-08T09:26:16.771Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-013_siemens-healthineers-annual-report-fy2020.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-013_siemens-healthineers-annual-report-fy2020.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0011",
+    "url": "https://corporate.webassets.siemens-healthineers.com/180f4f3673c1bef8/42315c736d84/180f4f3673c1bef8-747507c6608d-Siemens_Healthineers-_Annual-_Report_2020.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/180f4f3673c1bef8/42315c736d84/180f4f3673c1bef8-747507c6608d-Siemens_Healthineers-_Annual-_Report_2020.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

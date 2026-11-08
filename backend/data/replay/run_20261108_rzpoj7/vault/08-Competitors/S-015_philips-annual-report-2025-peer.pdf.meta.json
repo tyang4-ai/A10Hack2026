@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-012",
+  "source_id": "S-015",
+  "title": "Philips Annual Report 2025 (peer)",
+  "url": "https://www.results.philips.com/app/uploads/2026/04/PhilipsFullAnnualReport2025-English.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 306,
+  "sha256": "ff527efe35aa923bd6b592c38549bf1f9f207ac3cef2cec6695a7b9cd93efc6d",
+  "bytes": 36925082,
+  "fetched_at": "2026-11-08T09:26:20.494Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/08-Competitors/S-015_philips-annual-report-2025-peer.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/08-Competitors/S-015_philips-annual-report-2025-peer.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0013",
+    "url": "https://www.results.philips.com/app/uploads/2026/04/PhilipsFullAnnualReport2025-English.pdf",
+    "final_url": "https://www.results.philips.com/app/uploads/2026/04/PhilipsFullAnnualReport2025-English.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-008",
+  "source_id": "S-011",
+  "title": "Siemens Healthineers Annual Report FY2024",
+  "url": "https://corporate.webassets.siemens-healthineers.com/427714ab59c7e09a/34f542dcc913/siemens-healthineers-ir-annual-report-2024.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 143,
+  "sha256": "e1c3461695906632b48d26ee17de2bad5f6a3b961f6085a21603c414bcd1f36a",
+  "bytes": 7394493,
+  "fetched_at": "2026-11-08T09:26:14.763Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-011_siemens-healthineers-annual-report-fy2024.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-011_siemens-healthineers-annual-report-fy2024.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0009",
+    "url": "https://corporate.webassets.siemens-healthineers.com/427714ab59c7e09a/34f542dcc913/siemens-healthineers-ir-annual-report-2024.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/427714ab59c7e09a/34f542dcc913/siemens-healthineers-ir-annual-report-2024.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}
