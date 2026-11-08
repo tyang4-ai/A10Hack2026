@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Block, SummarySentence } from "@contract/types";
 import { BAND_BG, CERTAINTY_HELP } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
@@ -12,39 +12,92 @@ import { btn, Skeleton } from "./ui";
 function Sentence({ s }: { s: SummarySentence }) {
   const select = useRunStore((x) => x.select);
   const selected = useRunStore((x) => x.selected);
-  const [hover, setHover] = useState(false);
+  const items = useRunStore((x) => x.items);
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const c = s.certainty;
   const band = c?.band ?? "none";
   const on = selected?.type === "sentence" && selected.id === s.id;
+
+  // The tooltip stays open while the pointer is on the sentence or the tooltip,
+  // with a short grace period so the pointer can travel between them.
+  const show = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(true);
+  };
+  const hide = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 200);
+  };
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
+  const follow = (ref: string) => {
+    const base = ref.split(":")[0];
+    if (items[base]) select({ type: "item", id: base });
+    else select({ type: "sentence", id: s.id });
+    setOpen(false);
+  };
+
   return (
-    <span className="relative">
+    <span
+      className="relative"
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) hide();
+      }}
+      onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+    >
       <button
         onClick={() => select({ type: "sentence", id: s.id })}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        onFocus={() => setHover(true)}
-        onBlur={() => setHover(false)}
+        aria-describedby={open ? `tip-${s.id}` : undefined}
         className={`inline px-0.5 text-left transition-colors print:bg-transparent ${BAND_BG[band]} ${on ? "outline-2 outline-ink" : ""} ${
           s.verification.status === "pending" ? "animate-pulse" : ""
         }`}
       >
         {s.text}
       </button>{" "}
-      {hover && (
-        <span role="tooltip" className="absolute top-full left-0 z-30 mt-1 w-80 rounded-[4px] bg-desk px-3 py-2 text-[12px] leading-snug text-desk-ink print:hidden">
-          <span className="text-white">
-            {s.id}: certainty {c?.score ?? "—"} ({band})
+      {open && (
+        // pt-1 instead of a margin: the padding is part of the hover area, so there is no gap to fall through.
+        <span id={`tip-${s.id}`} role="tooltip" className="absolute top-full left-0 z-30 w-80 pt-1 print:hidden">
+          <span className="block rounded-[4px] bg-desk px-3 py-2 font-sans text-[12px] leading-snug text-desk-ink">
+            <span className="text-white">
+              {s.id}: certainty {c?.score ?? "—"} ({band})
+            </span>
+            <br />
+            {c && (
+              <>
+                {c.basis}
+                <br />
+                <span className="font-mono">
+                  support {c.support.toFixed(2)} × inherited {c.inherited.toFixed(2)} × completeness {c.completeness.toFixed(2)}
+                </span>
+                <br />
+              </>
+            )}
+            <span className="text-desk-muted">From </span>
+            {s.derived_from.length
+              ? s.derived_from.map((r, i) => (
+                  <span key={r}>
+                    {i > 0 && ", "}
+                    {r === "rollup" || r.startsWith("HOLE-") ? (
+                      <span className="text-desk-muted">{r === "rollup" ? "the scorecard" : r}</span>
+                    ) : (
+                      <button onClick={() => follow(r)} className="font-mono text-desk-link underline-offset-2 hover:underline">
+                        {r}
+                      </button>
+                    )}
+                  </span>
+                ))
+              : "—"}
+            <span className="text-desk-muted">. </span>
+            <button onClick={() => follow(s.id)} className="text-desk-link underline-offset-2 hover:underline">
+              Follow the chain in the inspector
+            </button>
           </span>
-          <br />
-          {c && (
-            <>
-              {c.basis}
-              <br />
-              <span className="font-mono">support {c.support.toFixed(2)} × inherited {c.inherited.toFixed(2)} × completeness {c.completeness.toFixed(2)}</span>
-              <br />
-            </>
-          )}
-          <span className="text-desk-muted">From {s.derived_from.join(", ") || "—"}. Click to follow it down.</span>
         </span>
       )}
     </span>
