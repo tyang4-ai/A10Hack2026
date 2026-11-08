@@ -4,7 +4,7 @@
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { useEffect, useMemo, useState } from "react";
 import type { Citation, DocumentPage, Item, Run, Source, SourceDecision, Stage, SummarySentence } from "../../../contract/types.ts";
-import { CACHE_LABEL, MODE_LABEL, STAGES, STAGE_LABEL, formatValue, usd } from "../../src/lib/format.ts";
+import { CACHE_LABEL, STAGES, STAGE_LABEL, formatValue, usd } from "../../src/lib/format.ts";
 import { API_BASE, ApiError, api } from "./api.ts";
 import { useRun } from "./useRun.ts";
 
@@ -164,7 +164,7 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
               )}
               <Text inverse={at === sel} wrap="truncate-end">
                 {at === sel ? "▸ " : "  "}
-                {pad(r.run_id, 22)} {pad(r.mode === "live" ? "" : MODE_LABEL, 10)}
+                {pad(r.run_id, 22)} 
                 <Text color={color}>{pad(cols < 100 && r.status === "awaiting_approval" ? "Needs approval" : word, cols < 100 ? 16 : 26)}</Text>
                 {show.stage && pad(STAGE_LABEL[r.stage], 12)}
                 {show.items && pad(`${r.counts.items_pass + r.counts.items_fixed} of ${r.counts.items_total}`, 10)}
@@ -276,7 +276,6 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
       <Box justifyContent="space-between" flexDirection={cols >= 110 ? "row" : "column"}>
         <Text wrap="truncate-end">
           <Text bold>Axelrod</Text>  <Text bold color="white">{run.company}</Text> <Text color="gray">{run.run_id.split("_").pop()}</Text>
-          {run.mode !== "live" && <Text color="black" backgroundColor="yellow"> {MODE_LABEL} </Text>}
           {run.cache_mode !== "off" && <Text color="yellow"> {CACHE_LABEL}</Text>}
           {run.status !== "done" && <Text color={sc}>  ● {sw}</Text>}
         </Text>

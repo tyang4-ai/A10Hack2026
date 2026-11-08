@@ -34,4 +34,4 @@ The tab follows the run's stage until you pick one: sources while planning and a
 - `src/app.tsx`: the screens.
 - `src/index.tsx`: the entry point. It uses the terminal's alternate screen and restores it on exit.
 
-It reuses the web app's formatting (`src/lib/format.ts`), so stage names, money and the SIMULATED label match.
+It reuses the web app's formatting (`src/lib/format.ts`), so stage names and money match.
