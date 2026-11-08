@@ -77,12 +77,12 @@ Check from the build machine: `bash backend/infra/remote.sh 'grep -E "^(CACHE_MO
 
 | Path | Launch to done | Approve to done |
 |---|---|---|
-| Stage click path: S-002 above S-001, S-016 rejected, S-006 revoked at collect start, started like the website with no ticker (run_20261108_9wvm74, 5:30 AM, 291 of 292 calls recorded, $0.01) | 109 s | 103 s |
-| Every source approved, nothing else (backend estimate after the 5:30 AM change) | about 2:15 | |
+| (a) Approve as planned: click Approve on the priority sources, change nothing (run_20261108_cyfrac, 6:03 AM, website-style with no ticker, 307 of 313 calls recorded, $0.01). Watch (extract plus draft) took 17 s | 117 s | |
+| (b) Stage clicks: drag S-002 above S-001, reject S-016, Approve, then revoke S-006 right away (run_20261108_9wvm74, 5:30 AM, 291 of 292 calls recorded, $0.01) | 109 s | 103 s |
 
-With a person clicking, expect about 2:00 to 2:20 from launch to a finished run. A call with no recording now goes live instead of being blocked, so no model call shows red for that reason.
+With a person clicking, expect about 2:00 from launch to a finished run. A call with no recording goes live instead of being blocked, so no model call shows red for that reason.
 
-**Click one of the two recorded paths if you can.** Other clicks (another drag, another reject, revoking later than collect start) still finish, but the calls that differ go live and take longer.
+**Click one of the two recorded paths, (a) or (b).** Other clicks (another drag, another reject, revoking later than collect start, approving every source) still finish, but the calls that differ go live and take longer. The user wants Watch at 30 s or less, and only (a) and (b) are measured to do that.
 
 The beats, in order (times from the stage click path: launch at 0 s, approve at about 6 s):
 
@@ -95,7 +95,7 @@ The beats, in order (times from the stage click path: launch at 0 s, approve at 
 | 5 | Extract, then draft and verify. Judges take 3 s each, and the planted malformed verdict is flagged and rerun | Talk through Bobby's gate calls in the log |
 | 6 | The run finishes and the brief appears, about 103 s after Approve | Click into the brief, or switch to the finished R2 run (tab 2) as in docs/PLAN.md |
 
-**Stopping a goon, and STOP.** A stopped goon's page has no items, so the later calls that depend on it differ from the recording and go live, which makes the run slower (it still finishes). If timing matters, skip the goon stop or press **Stop run**, **Confirm stop** right after it. STOP at any point is safe: in-flight calls come back blocked ("Result discarded"), and the red banner counts the blocked requests.
+**Stopping a goon, and STOP.** No goon stop in a full run (the user's call, 6:03 AM): it changes that page's items, so later calls go live and Watch runs long. Show stop-one-agent on a separate run, and press **Stop run**, **Confirm stop** right after it. STOP at any point is safe: in-flight calls come back blocked ("Result discarded"), and the red banner counts the blocked requests.
 
 Rehearsals (fill in with a stopwatch):
 
