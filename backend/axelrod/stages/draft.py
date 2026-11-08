@@ -500,6 +500,7 @@ def precheck(state: RunState, group: list[str], out: drafter.DraftOutput, verifi
                 found.append({"conclusion": key, "check": r.check, "problem": r.detail, **_where(r, dc.text),
                               **({"sign_check": hints} if hints else {})})
     found += missing_scores(group, out)
+    found += drafter.direction_problems(out.scores, group, state.run.company)
     names = {tid: key for key, tid in tids.items()}
     for ds in out.scores:
         if ds.criterion not in group or ds.score is None or ds.criterion in ANALYST_ONLY:
@@ -701,6 +702,7 @@ class Builder:
         self.agent_ids: dict[int | None, str] = {}     # group index -> drafter agent id
         self.seen: dict[int, set[str]] = {}             # group index -> data ids its drafter was shown
         self.info: list[str] = []                       # what code noted without changing anything
+        self.unknown_keys: set[tuple[int, str]] = set()  # key-shaped tokens in score texts already noted
 
     def note(self, gi: int, text: str) -> None:
         self.notes.setdefault(gi, []).append(text)
@@ -837,13 +839,32 @@ class Builder:
                                confidence=confidence)
 
     def key_ids(self, gi: int, text: str) -> str:
-        """The drafter's conclusion keys in a score's text ("(c2)") become the conclusions' ids, so readers and
-        judges can follow them, and repair can drop the sentence that rests on a conclusion that failed."""
-        keys = {k: cid for (g, k), cid in self.keys.items() if g == gi and _KEY.fullmatch(k)}
-        if not keys:
-            return text
-        alt = "|".join(re.escape(k) for k in sorted(keys, key=len, reverse=True))
-        return re.sub(rf"(?<![\w-])({alt})(?![\w-])", lambda mm: keys[mm.group(1)], text)
+        """The drafter's conclusion keys in a score's text ("(c2)", "(c_sh_fy2025_rotic)") become the conclusions'
+        ids, so readers and judges can follow them, and repair can drop the sentence that rests on a conclusion
+        that failed. Every key of the group is swapped, longest first and on word boundaries, in one pass, so a
+        key that is a prefix of another (c1, c12) or an id code just wrote is never touched. A key with no digit
+        or underscore could be a plain word ("peers"), so it is swapped only inside parentheses. A key-shaped
+        token no conclusion has (a dropped conclusion's key) stays as it is and is noted once, never guessed."""
+        keys = {k: cid for (g, k), cid in self.keys.items() if g == gi and k and not k.startswith("#")}
+        src = text
+        if keys:
+            alt = "|".join(re.escape(k) for k in sorted(keys, key=len, reverse=True))
+
+            def swap(mm: re.Match) -> str:
+                k = mm.group(1)
+                return keys[k] if _KEY_MARK.search(k) or _in_parens(src, mm.start()) else k
+
+            text = re.sub(rf"(?<![\w-])({alt})(?![\w-])", swap, src)
+        self._note_unknown_keys(gi, text)
+        return text
+
+    def _note_unknown_keys(self, gi: int, text: str) -> None:
+        """Note, once per group and key, a parenthesised key-shaped token that is not one of the group's keys."""
+        for inner in _PARENS.findall(text):
+            for tok in _TOKEN.findall(inner):
+                if _LOOKS_KEY.fullmatch(tok) and (gi, tok) not in self.unknown_keys:
+                    self.unknown_keys.add((gi, tok))
+                    self.note(gi, f"score text keeps {tok!r} as written: no conclusion of this draft has that key")
 
     # -- charts --------------------------------------------------------------------------
 
@@ -895,7 +916,17 @@ class Builder:
 
 _ID = re.compile(r"\b[A-Z]{1,4}-\d{1,4}\b")
 _WORD = re.compile(r"\b[A-Za-z_]\w*\b")
-_KEY = re.compile(r"[a-z]{1,3}\d{1,3}")     # drafter keys code swaps for ids in score texts: c1, c12, cn3
+_KEY_MARK = re.compile(r"[\d_]")            # a key with a digit or underscore is no plain word: swap it anywhere
+_PARENS = re.compile(r"\(([^()]*)\)")
+_TOKEN = re.compile(r"(?<![\w-])[a-z][a-z0-9_]*(?![\w-])")
+# What a drafter's conclusion key looks like in a score text: c1, cn3, c12_peers, c_sh_fy2025_rotic.
+_LOOKS_KEY = re.compile(r"c(?:_[a-z0-9]+)+|c[a-z]{0,2}\d{1,3}(?:_[a-z0-9]+)*")
+
+
+def _in_parens(text: str, pos: int) -> bool:
+    """True when pos sits inside an open parenthesis, where a drafter cites its keys."""
+    before = text[:pos]
+    return before.count("(") > before.count(")")
 
 
 def inputs_of(c: m.Conclusion, name: str) -> list[str]:

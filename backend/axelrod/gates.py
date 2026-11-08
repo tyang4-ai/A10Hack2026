@@ -21,7 +21,7 @@ from collections import Counter
 from typing import TYPE_CHECKING
 
 from .contract import m
-from .gateway import Blocked
+from .gateway import STOP_ORIGIN, Blocked, stop_rule_id
 from .ids import now_iso
 from .runtime import InvalidState, StopRequested
 from .store.state import BOBBY_ID, ORCHESTRATOR_ROLE
@@ -153,8 +153,34 @@ def _sources_line(state: RunState) -> str:
     return f"Sources: {len(approved)} approved, {c['extracted']} extracted{tail}."
 
 
+def _ids(ids: list[str]) -> str:
+    return ", ".join(ids) if ids else "none"
+
+
+def plan_links(state: RunState) -> tuple[list[str], list[str]]:
+    """(in-scope criteria no need names, needs no source names), computed by code from the plan, so Bobby never
+    has to take the planner's word that every need is mapped (live Bobby once claimed it without seeing the map).
+    A rejected source maps nothing."""
+    from .stages.finalize import in_scope       # stages import the runtime, so import late
+
+    named = {c for n in state.needs for c in n.criteria}
+    sourced = {nid for s in state.sources if s.approval != "rejected" for nid in s.need_ids}
+    return ([c for c in in_scope(state.run.depth) if c not in named],
+            [n.need_id for n in state.needs if n.need_id not in sourced])
+
+
+def stopped_by_analyst(state: RunState, agent_id: str) -> bool:
+    """True only when the analyst stopped this one agent: its R-stop-<agent_id> rule (origin user_agent_stop)
+    is in the policy. An agent a whole-run STOP ended also shows status stopped, and after a resume it is
+    just a finished agent, so its status alone never counts."""
+    policy = state.policy
+    return policy is not None and any(r.rule_id == stop_rule_id(agent_id) and r.origin == STOP_ORIGIN
+                                      for r in policy.rules)
+
+
 def _stopped_line(state: RunState) -> str | None:
-    stopped = [a.agent_id for a in state.agents.values() if a.status == "stopped" and a.role != ORCHESTRATOR_ROLE]
+    stopped = [a.agent_id for a in state.agents.values()
+               if a.role != ORCHESTRATOR_ROLE and stopped_by_analyst(state, a.agent_id)]
     return f"Stopped by the analyst: {', '.join(stopped[:8])}." if stopped else None
 
 
@@ -173,6 +199,8 @@ def build_digest(ctx: RunContext, stage: str) -> str:
         lines.append(f"Plan: {len(st.needs)} needs, {len(st.sources)} sources (priority {tiers['priority']}, "
                      f"tier 2 {tiers['tier_2']}, tier 3 {tiers['tier_3']}). Nothing is fetched until the analyst "
                      "approves the priority sources.")
+        no_need, no_source = plan_links(st)
+        lines += [f"Criteria with no need: {_ids(no_need)}.", f"Needs with no source: {_ids(no_source)}."]
     elif stage == "extract":
         data = st.data_items()
         lines += [f"Data items: {len(data)} ({_counts([d.verification.status for d in data])}).",
@@ -240,7 +268,7 @@ def validate_reworks(ctx: RunContext, stage: str, orders: list) -> tuple[list[m.
             reason = "already sent back at this gate"
         elif agent is None:
             reason = "no such agent"
-        elif agent.status == "stopped":
+        elif stopped_by_analyst(st, aid):
             reason = "stopped by the analyst, and Bobby never undoes that"
         elif not text:
             reason = "no instructions"

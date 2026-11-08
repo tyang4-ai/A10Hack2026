@@ -111,6 +111,7 @@ async def test_code_rejects_invalid_reworks_and_keeps_at_most_three(run):
     for aid in ("extractor-01", "extractor-02", "extractor-03", "extractor-04"):
         register_fake(extractor.TOOL, page_fake(st, aid))       # the last one wins: fine, each only re-reads
     st.agents["extractor-05"].status = "stopped"
+    ctx.gateway.stop_agent(st.agents["extractor-05"], "demo")  # the analyst's R-stop rule: status alone is not enough
     orders = [{"agent_id": a, "instructions": "Again, carefully."} for a in
               ("nobody-99", "fetcher-01", "bobby", "extractor-06", "extractor-05", "extractor-01", "extractor-01",
                "extractor-02", "extractor-03", "extractor-04")]
