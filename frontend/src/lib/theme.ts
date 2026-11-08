@@ -6,6 +6,7 @@ export const THEMES = [
   { id: "graphite-violet", label: "Graphite and violet", swatches: ["#18181B", "#8B5CF6", "#FFFFFF"] },
   { id: "navy-gold", label: "Navy and gold", swatches: ["#0B1F3A", "#C9A227", "#FBFAF7"] },
   { id: "stone-ember", label: "Stone and ember", swatches: ["#1C1917", "#F97316", "#FFFDF9"] },
+  { id: "harbor", label: "Harbor (charcoal blue and rosy taupe)", swatches: ["#28536B", "#C2948A", "#F6F0ED"] },
   { id: "slate-blue", label: "Slate and blue (previous)", swatches: ["#0F172A", "#F59E0B", "#FFFFFF"] },
 ] as const;
 

@@ -14,9 +14,9 @@ import { Skeleton } from "./ui";
 // Fixed widths so every company's table lines up with the others.
 const COLUMNS: [string, string][] = [
   ["Run", "w-[27%]"],
-  ["Status", "w-[22%]"],
+  ["Status", "w-[20%]"],
   ["Stage", "w-[12%]"],
-  ["Items checked", "w-[14%]"],
+  ["Items checked", "w-[16%]"],
   ["Blocked", "w-[8%]"],
   ["Cost", "w-[8%]"],
   ["Updated", "w-[9%]"],
@@ -172,7 +172,7 @@ function RunRow({ r }: { r: Run }) {
         {r.error && <div className="max-w-56 truncate text-[12px] text-bad" title={r.error}>{r.error}</div>}
       </td>
       <td className="px-2 py-2 whitespace-nowrap">{STAGE_LABEL[r.stage]}</td>
-      <td className="px-2 py-2 text-right font-mono tabular-nums">
+      <td className="px-2 py-2 text-right font-mono whitespace-nowrap tabular-nums">
         {checked}
         <span className="text-muted"> of {c.items_total}</span>
         {c.items_fail > 0 && <span className="text-bad"> ({c.items_fail} fail)</span>}

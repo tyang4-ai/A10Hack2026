@@ -143,6 +143,44 @@
   --color-focus: #3b82f6;
 }
 
+/* Harbor: charcoal blue chrome, rosy taupe accent, steel blue links, parchment paper, khaki highlights.
+   The desk is a shade darker than charcoal blue (#28536B) so the accent and status text keep 4.5:1. */
+[data-theme="harbor"] {
+  --color-paper: #f6f0ed;
+  --color-ink: #1b2b36;
+  --color-muted: #56636c;
+  --color-rule: #e3d9d3;
+  --color-zebra: #efe7e2;
+  --color-hover: #ebe2dc;
+  --color-control: #cfc3bb;
+  --color-link: #28536b;
+  --color-good: #2f6b45;
+  --color-bad: #a6382e;
+  --color-warn: #8a5a12;
+  --color-bad-bg: #f8e6e2;
+  --color-warn-bg: #f4ecdc;
+  --color-band-none: #ebe2dc;
+  --color-hl-evidence: #bbb193;
+  --color-hl-context: #e2dcc9;
+  --color-hl-other: #d6dfe5;
+  --color-hl-other-context: #e9eef1;
+  --color-desk: #193747;
+  --color-desk-raised: #28536b;
+  --color-desk-line: #244b5f;
+  --color-desk-line-strong: #36667f;
+  --color-desk-ink: #f6f0ed;
+  --color-desk-muted: #a9c4d3;
+  --color-desk-good: #86d3a0;
+  --color-desk-bad: #f2a39a;
+  --color-desk-warn: #e8cf8a;
+  --color-desk-link: #9ec2d6;
+  --color-row-blocked: #4a2a2c;
+  --color-row-flagged: #3f3a24;
+  --color-accent: #c2948a;
+  --color-accent-ink: #2b1814;
+  --color-focus: #c2948a;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   color-scheme: light;
