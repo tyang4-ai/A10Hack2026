@@ -71,7 +71,7 @@ export function Home() {
       {/* Search-first, like a search engine: the wordmark, then one box to start researching a company. */}
       <header className="mx-auto flex max-w-2xl flex-col items-center px-4 pt-[14vh] pb-10 text-center">
         <h1 className="font-logo text-[64px] leading-none font-semibold tracking-[0.01em] text-ink">Axelrod</h1>
-        <p className="mt-3 text-[14px] text-muted">Verified company research</p>
+        <p className="mt-3 text-[14px] text-muted">Validated Financial Market reports</p>
         <StartSearch />
       </header>
 
