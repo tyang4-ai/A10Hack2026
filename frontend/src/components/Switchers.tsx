@@ -95,7 +95,6 @@ export function RunSwitcher() {
       >
         {current ? (
           <>
-            <span className={`h-2 w-2 flex-none rounded-full ${STATUS_DOT[current.status]}`} />
             <span className="truncate font-semibold text-white">{current.company}</span>
             <span className="flex-none font-mono text-[11px] text-desk-muted" title={current.run_id}>{current.run_id.split("_").pop()}</span>
           </>

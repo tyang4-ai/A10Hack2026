@@ -148,10 +148,13 @@ export function TopBar() {
                 {run.mode.toUpperCase()}
               </span>
             )}
-            <span className="flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${st.dot} ${run.status === "running" ? "animate-pulse" : ""}`} />
-              {st.label}
-            </span>
+            {/* Done needs no label: every step in the stage bar is ticked. */}
+            {run.status !== "done" && (
+              <span className="flex items-center gap-1.5">
+                <span className={`h-2 w-2 rounded-full ${st.dot} ${run.status === "running" ? "animate-pulse" : ""}`} />
+                {st.label}
+              </span>
+            )}
           </div>
         )}
         <LayoutControl />

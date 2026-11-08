@@ -65,8 +65,8 @@ export function Home() {
   return (
     <div className="min-h-screen bg-paper">
       <header className="bg-desk text-[13px] text-desk-ink">
-        <div className="mx-auto flex min-h-12 max-w-6xl flex-wrap items-center gap-3 px-4 py-2 sm:px-6">
-          <span className="font-logo text-[20px] leading-none font-semibold tracking-[0.02em] text-accent">Axelrod</span>
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+          <span className="font-logo text-[30px] leading-none font-semibold tracking-[0.02em] text-accent">Axelrod</span>
           <span className="text-desk-muted">Self-verifying research harness</span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
