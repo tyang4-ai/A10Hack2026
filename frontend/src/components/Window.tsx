@@ -4,7 +4,7 @@
 // While dragging, geometry lives in local state, so only this window re-renders;
 // the store is updated once, when the pointer is released.
 import { memo, useMemo, useRef, useState } from "react";
-import { clampGeo, MODULE_KINDS, useWindows, type Geo, type Win } from "@/lib/windows";
+import { clampGeo, MODULE_KINDS, TITLE_PX, useWindows, type Geo, type Win } from "@/lib/windows";
 import { KIND_META, TitleExtras, WindowBody, WinSubtitle, winTitle } from "./WindowContent";
 
 type Mode = "move" | "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
@@ -34,12 +34,11 @@ export function snapFor(px: number, py: number, W: number, H: number): Geo | nul
 }
 
 // The title bar under a point, if the window on top there is showing its title bar at that spot.
-const TITLE_H = 32;
 function titleBarAt(self: string, px: number, py: number, W: number, H: number) {
   const over = Object.values(useWindows.getState().wins)
     .filter((w) => w.id !== self && !w.min && !w.max && px >= w.x * W && px < (w.x + w.w) * W && py >= w.y * H && py < (w.y + w.h) * H)
     .sort((a, b) => b.z - a.z)[0];
-  return over && py < over.y * H + TITLE_H ? over : null;
+  return over && py < over.y * H + TITLE_PX ? over : null;
 }
 
 // The visible, unmaximized window (other than the one being dragged) under a point on the desk.
@@ -229,7 +228,14 @@ export const Window = memo(function Window({ id }: { id: string }) {
     const dx = (e.clientX - d.sx) / d.desk.width;
     const dy = (e.clientY - d.sy) / d.desk.height;
     if (d.mode === "move") {
-      setGeo(clampGeo({ ...d.g, x: d.g.x + dx, y: d.g.y + dy }));
+      // Dragging into the bottom edge: the bottom stays put and the window gets shorter,
+      // down to its minimum height. Past that it slides off the bottom, title bar still showing.
+      let y = d.g.y + dy;
+      let h = d.g.h;
+      const pushing = y + h > 1;
+      if (pushing) h = Math.max(Math.min(d.g.h, MIN_H / d.desk.height), 1 - y);
+      y = Math.min(y, 1 - TITLE_PX / d.desk.height);
+      setGeo(clampGeo({ ...d.g, x: d.g.x + dx, y, h }, TITLE_PX / d.desk.height));
       const px = e.clientX - d.desk.left;
       const py = e.clientY - d.desk.top;
       let snap: Geo | null;
@@ -240,13 +246,14 @@ export const Window = memo(function Window({ id }: { id: string }) {
         snap = over ? { x: over.x, y: over.y, w: over.w, h: over.h } : null;
       } else {
         // Desk edges first, then another window's title bar (drop to swap), then the empty space under the pointer.
+        // While a window is pushed into the bottom edge, the shrink is the point: no swap or fill.
         const edge = snapFor(px, py, d.desk.width, d.desk.height);
-        const bar = edge ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
+        const bar = edge || pushing ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
         d.target = bar?.id ?? null;
         snap =
           edge ??
           (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ??
-          emptyAt(id, px / d.desk.width, py / d.desk.height, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));
+          (pushing ? null : emptyAt(id, px / d.desk.width, py / d.desk.height, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height)));
       }
       const cur = useWindows.getState().snap;
       if (JSON.stringify(snap) !== JSON.stringify(cur)) useWindows.setState({ snap });
