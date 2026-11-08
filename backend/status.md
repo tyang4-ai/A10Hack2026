@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V2-gateway, V3-rework, V7-chat, V5-plan2, the archive upload (aws-operator).
+- Running: V2-gateway, V3-rework, V7-chat, the archive upload (aws-operator).
 - Next: V6-resume (after V3) and V8-fork (after V2). Then R2 on EC2 and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -17,7 +17,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V2-gateway | 2, 6 | builder | running | | stop one agent, document cache |
 | V3-rework | 3, 4, 5 | builder | running | | rerun one agent, Bobby at the gates, comments to Bobby |
 | V4-archive | 7 | builder + aws-operator | script done, uploading | 16 passed | dry run on the real archive: 929 files, 988 MB, every file has its original URL and date. S-001, S-003, S-004, S-005 are byte-identical to tonight's fetches |
-| V5-plan2 | 8 | builder | running | | S-011 and up from the archive |
+| V5-plan2 | 8 | builder | done | 43 passed (suite 662) | S-011 to S-016: SHL annual reports FY2024, FY2022, FY2020, FY2018 (ten ROTIC years FY2017 to FY2026) and Philips 2025, 2023. 30 new pages, all checked against the PDFs. S-006 now fetches 14th, still before S-009 and S-010 |
 | V6-resume | 9 | builder | todo | | |
 | V7-chat | 10 | builder | running | | |
 | V8-fork | 11 | builder | todo | | rerun from a step, model cache (cut first if late) |
@@ -65,6 +65,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- Plan v2 has 13 priority sources (was 7), and 6 more paced fetches come before S-006. Retune `DEMO_PACING` at G6b for the 55 s launch-to-STOP. The ROTIC drafter group should be about 310 rows against MAX_ROWS=400.
+
 - Runs vary: R0b scored 4 of 6, pin2ve 3 of 6, G5b 1 of 6 (coarse conclusions, being fixed).
 - Revoke cascade: an item mid-check when a revoke lands can still be recorded as pass. After a revoke on a finished run, report certainty and the rollup stay as finalize left them.
 - Windows only: a long DATA_DIR pushes vault paths past MAX_PATH (260). Keep DATA_DIR short (`backend/.data/<name>`). EC2 is fine.
@@ -98,3 +100,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sat 11:32 PM: merged origin/main (contract v0.3.0). Started v2: V1-shapes, V4-archive, V5-plan2.
 - Sat 11:36 PM: B-fix-yield partial and committed. B-fix-judge started.
 - Sat 11:58 PM: V1-shapes done and committed. Wave 2 launched: V2, V3, V7 and the archive upload.
+- Sun 12:05 AM: V5-plan2 done and committed (6 archive sources, 30 pages).
