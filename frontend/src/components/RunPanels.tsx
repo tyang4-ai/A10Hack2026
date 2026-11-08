@@ -200,12 +200,32 @@ export function Vault() {
           <>
             <div className="mb-2 text-desk-muted">
               {file.path} ({file.content_type}, {file.size.toLocaleString()} bytes)
+              {file.download_url && (
+                <>
+                  {" "}
+                  <a href={file.download_url} target="_blank" rel="noreferrer" className="text-desk-link hover:underline">
+                    Open in a new tab
+                  </a>
+                </>
+              )}
             </div>
             {file.text !== null ? (
               <pre className="whitespace-pre-wrap text-desk-ink">
                 {file.text}
                 {file.truncated && "\n… truncated"}
               </pre>
+            ) : file.download_url && file.content_type === "application/pdf" ? (
+              // The vault's presigned S3 link answers application/pdf inline, so the browser's own PDF viewer shows it.
+              <iframe
+                key={file.path}
+                src={file.download_url}
+                title={file.path}
+                className="w-full rounded-[4px] border border-desk-line bg-white"
+                style={{ height: "calc(100% - 28px)", minHeight: 400 }}
+              />
+            ) : file.download_url && file.content_type.startsWith("image/") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={file.download_url} alt={file.path} className="max-w-full" />
             ) : (
               <span className="text-desk-muted">Binary file{file.download_url ? "" : ", no preview"}.</span>
             )}
