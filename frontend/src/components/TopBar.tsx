@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { STAGES, STAGE_LABEL, usd } from "@/lib/format";
@@ -65,11 +67,13 @@ function StopButton() {
   );
 }
 
-function NewRun() {
-  const [open, setOpen] = useState(false);
+// Starts a run and goes to its desk. Also used on the home page.
+export function NewRun({ startOpen = false }: { startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen);
   const [company, setCompany] = useState("Siemens Healthineers");
   const [busy, setBusy] = useState(false);
-  const { openRun, loadRuns } = useRunStore.getState();
+  const [err, setErr] = useState<string | null>(null);
+  const router = useRouter();
   if (!open)
     return (
       <button onClick={() => setOpen(true)} className="h-8 rounded-[4px] border border-desk-line px-2.5 text-desk-ink hover:border-desk-muted">
@@ -82,11 +86,13 @@ function NewRun() {
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
+        setErr(null);
         try {
           const run = await api.createRun({ company, created_via: "ui" });
-          await loadRuns();
-          await openRun(run.run_id);
-          setOpen(false);
+          router.push(`/runs/${encodeURIComponent(run.run_id)}`);
+          setOpen(startOpen);
+        } catch (x) {
+          setErr(x instanceof Error ? x.message : String(x));
         } finally {
           setBusy(false);
         }
@@ -97,7 +103,7 @@ function NewRun() {
       </label>
       <input
         id="new-company"
-        autoFocus
+        autoFocus={!startOpen}
         value={company}
         onChange={(e) => setCompany(e.target.value)}
         className="h-8 w-52 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink outline-none focus:border-accent"
@@ -105,9 +111,16 @@ function NewRun() {
       <button disabled={busy || !company.trim()} className="h-8 rounded-[4px] bg-accent px-3 font-semibold text-accent-ink disabled:opacity-40">
         Start
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="h-8 px-1.5 text-desk-muted hover:text-white" aria-label="Cancel new run">
-        ✕
-      </button>
+      {!startOpen && (
+        <button type="button" onClick={() => setOpen(false)} className="h-8 px-1.5 text-desk-muted hover:text-white" aria-label="Cancel new run">
+          ✕
+        </button>
+      )}
+      {err && (
+        <span role="alert" className="text-desk-bad">
+          {err}
+        </span>
+      )}
     </form>
   );
 }
@@ -121,7 +134,9 @@ export function TopBar() {
   return (
     <header className="flex-none bg-desk text-[13px] text-desk-ink">
       <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1.5 px-4">
-        <span className="mr-1 font-mono text-sm font-semibold tracking-[0.18em] text-accent">AXELROD</span>
+        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-mono text-sm font-semibold tracking-[0.18em] text-accent hover:text-white">
+          AXELROD
+        </Link>
         <RunSwitcher />
         {run && st && (
           <div className="flex items-center gap-3">

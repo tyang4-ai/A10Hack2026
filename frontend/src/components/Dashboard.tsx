@@ -8,7 +8,7 @@ import { Desk, Dock } from "./Desk";
 import { Palette } from "./Palette";
 import { Banner, TopBar } from "./TopBar";
 
-export function Dashboard() {
+export function Dashboard({ runId: urlRunId }: { runId: string }) {
   const runId = useRunStore((s) => s.runId);
   const stage = useRunStore((s) => s.run?.stage);
   const error = useRunStore((s) => s.error);
@@ -16,16 +16,13 @@ export function Dashboard() {
   const { loadRuns, openRun } = useRunStore.getState();
   usePolling(runId);
 
-  // First load: list runs and open the newest.
+  // Open the run named in the URL, and list runs for the run switcher.
   useEffect(() => {
-    loadRuns().then(
-      () => {
-        const runs = useRunStore.getState().runs;
-        if (!useRunStore.getState().runId && runs[0]) void openRun(runs[0].run_id);
-      },
-      () => useRunStore.setState({ error: "Cannot reach the API. Is the mock running on port 8000?" }),
-    );
-  }, [loadRuns, openRun]);
+    loadRuns().catch(() => useRunStore.setState({ error: "Cannot reach the API. Is the mock running on port 8000?" }));
+  }, [loadRuns]);
+  useEffect(() => {
+    if (useRunStore.getState().runId !== urlRunId) void openRun(urlRunId);
+  }, [urlRunId, openRun]);
 
   // Switching runs closes windows pinned to the old run's agents, pages and items.
   const prevRun = useRef<string | null>(null);

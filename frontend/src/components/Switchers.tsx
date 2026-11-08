@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@contract/types";
 import { STAGE_LABEL } from "@/lib/format";
@@ -30,14 +31,14 @@ function usePopover() {
   return { open, setOpen, root, trigger };
 }
 
-const STATUS_DOT: Record<Run["status"], string> = {
+export const STATUS_DOT: Record<Run["status"], string> = {
   running: "bg-desk-link",
   awaiting_approval: "bg-accent",
   done: "bg-desk-good",
   stopped: "bg-desk-bad",
   failed: "bg-desk-bad",
 };
-const STATUS_WORD: Record<Run["status"], string> = {
+export const STATUS_WORD: Record<Run["status"], string> = {
   running: "Running",
   awaiting_approval: "Waiting for approval",
   done: "Done",
@@ -45,7 +46,7 @@ const STATUS_WORD: Record<Run["status"], string> = {
   failed: "Failed",
 };
 
-function ago(iso: string) {
+export function ago(iso: string) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return "just now";
   if (s < 3600) return `${Math.floor(s / 60)} min ago`;
@@ -58,7 +59,7 @@ export function RunSwitcher() {
   const runs = useRunStore((s) => s.runs);
   const runId = useRunStore((s) => s.runId);
   const current = useRunStore((s) => s.run);
-  const openRun = useRunStore((s) => s.openRun);
+  const router = useRouter();
   const loadRuns = useRunStore((s) => s.loadRuns);
   const { open, setOpen, root, trigger } = usePopover();
   const [q, setQ] = useState("");
@@ -79,7 +80,7 @@ export function RunSwitcher() {
 
   const choose = (r: Run) => {
     setOpen(false);
-    if (r.run_id !== runId) void openRun(r.run_id);
+    if (r.run_id !== runId) router.push(`/runs/${encodeURIComponent(r.run_id)}`);
     trigger.current?.focus();
   };
 
