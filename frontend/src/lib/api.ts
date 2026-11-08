@@ -23,6 +23,7 @@ import type {
   RerunRequest,
   RevokeResponse,
   Run,
+  RunDeleted,
   RunList,
   Source,
   VaultFile,
@@ -91,4 +92,20 @@ export const api = {
   sendAgentMessage: (id: string, agent: string, text: string) => call<AgentMessage>("POST", `${r(id)}/agents/${encodeURIComponent(agent)}/messages`, { text }),
   stopAgent: (id: string, agent: string, reason: string) => call<Agent>("POST", `${r(id)}/agents/${encodeURIComponent(agent)}/stop`, { reason }),
   rerunAgent: (id: string, agent: string, req: AgentRerunRequest) => call<Agent>("POST", `${r(id)}/agents/${encodeURIComponent(agent)}/rerun`, req),
+  // Contract v0.3.1: delete a finished run, and the stored PDF page as a PNG with the item's quotes highlighted.
+  deleteRun: (id: string) => call<RunDeleted>("DELETE", r(id)),
+  // An <img> can't send headers, so this is a plain URL. It 404s when no PDF is stored: show the text page then.
+  pageImageUrl: (id: string, doc: string, page: number, itemId?: string) =>
+    absolute(`${r(id)}/documents/${encodeURIComponent(doc)}/pages/${page}/image${itemId ? `?item_id=${encodeURIComponent(itemId)}` : ""}`),
 };
+
+// API_BASE may be relative (a same-origin proxy), so resolve it against the page for an absolute URL.
+function absolute(path: string): string {
+  const url = API_BASE + path;
+  if (typeof window === "undefined") return url;
+  try {
+    return new URL(url, window.location.href).toString();
+  } catch {
+    return url;
+  }
+}
