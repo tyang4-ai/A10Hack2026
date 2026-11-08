@@ -5,8 +5,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-reason, A-deploy (W2). B-live, B-baseline (W3, started early). W1 is 5/5 done.
-- Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
+- Running: A-deploy (W2). B-live, B-baseline (W3, started early). G3 checks by the orchestrator. W1 is 5/5 done.
+- Next: G3 now (live presmoke through every stage). G4 when A-deploy lands.
 
 ## Plans
 
@@ -20,7 +20,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-ingest | builder | W1 | done | 24 passed | ingest_one S-001 live ok (230 pages). Untrusted = news/forum/other or tier_3, scanned, fail closed. S-010 404 until pushed |
 | B-shl-plan | builder | W1 | done | 31 passed, 1 skipped | 10 sources, 7 needs, 36 extract pages checked against PDFs. S-006 is the tier_2 revoke target, fetched 8th |
 | B-extract | builder | W2 | done | 24 passed, live presmoke | 5 real S-001 pages: 49/49 items pass, $0.06. Total live spend so far about $0.13 |
-| B-reason | builder | W2 | running | | |
+| B-reason | builder | W2 | done | 20 passed (suite 366) | unsupported conclusion 0/3 votes and downgraded, rollup matches hand example, research_stage N/A with a Hole |
 | B-brief | builder | W2 | done | 23 passed | fixture brief 18 sentences, 2.0 pages. Unfaithful sentence 0/3 votes, one-word copy edit caught and restored |
 | B-cli | builder | W2 | done | 21 passed (suite 334) | tail colors traffic, inject-errors 3/3 caught then re-cited. CLI uses urllib (own API only) |
 | A-deploy | aws-operator | W2 | running | | |
@@ -105,4 +105,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:01 PM: W2 launched early (6 agents). G2 checks 3 to 5 pass. Verifier running on the 4 finished W1 plans.
 - Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
-- Sat 8:28 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
+- Sat 8:26 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.

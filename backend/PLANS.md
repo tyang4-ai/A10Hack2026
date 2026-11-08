@@ -649,3 +649,10 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `gateway.base_policy(run_id, settings, *, budget_usd, at, as_of_seq=0, kill_switch=False)` is the pre-approval policy, used by both `RunState.policy_view(settings=None)` and the gateway. Also `gateway.is_link_local(host)`, `gateway.host_ip(host)`, `ingest.held_scan(scan)`, `ingest.HELD_REASONS`, `store.FAKE_MODELS_NOTE`.
 - With `FAKE_MODELS=1`, `Run.notes` starts with "Simulated: model answers come from offline fakes (FAKE_MODELS=1)".
 - The orchestrator changed `api.py` to call `policy_view(rt.settings)`.
+
+**2026-11-07 8:30 PM, B-reason REPORT.**
+- Drafters: one per group of in-scope criteria that share a plan need, run in parallel. For SHL that is 5 Sonnet calls: {rotic_level, rotic_vs_peers}, secular_growth, leverage, liquidity, research_stage. Drafter `max_tokens` is 12000. The repairer uses the large model, judges the small one.
+- Judge ids keep counting on re-checks (`verifier-C-005-4` to `-6` after a repair). `finalize_report` emits `report.ready` with stage "repair".
+- Code only lowers model claims: research_stage is forced N/A with a coverage-history Hole, and data coverage is "low" for a 10-year criterion with fewer than ten fiscal years of cited data.
+- Repair order: conclusions first, then scores and charts that failed only because of them, then the rest. At most two repairs, then the item stays fail and becomes a Hole. Blocked items are never touched. Each failed extractor agent gets a Hole.
+- Public additions: `finalize.in_scope`, `build_rollup`, `build_holes`, `CertaintyBook`, `emit_verified`; `verify.run_checks(ctx, item)`, `tally`, `judge_claim`; `repair.repair_item`, `redisplay`, `replace_number`; `draft.point_value`, `ANALYST_ONLY`.
