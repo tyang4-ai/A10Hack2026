@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
+import { RunSwitcher, ThemeSwitcher } from "./Switchers";
 
 const STATUS = {
   running: { label: "Running", dot: "bg-desk-link" },
-  awaiting_approval: { label: "Waiting for your approval", dot: "bg-amber" },
+  awaiting_approval: { label: "Waiting for your approval", dot: "bg-accent" },
   done: { label: "Done", dot: "bg-desk-good" },
   stopped: { label: "Stopped", dot: "bg-desk-bad" },
   failed: { label: "Failed", dot: "bg-desk-bad" },
@@ -98,9 +99,9 @@ function NewRun() {
         autoFocus
         value={company}
         onChange={(e) => setCompany(e.target.value)}
-        className="h-8 w-52 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink outline-none focus:border-amber"
+        className="h-8 w-52 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink outline-none focus:border-accent"
       />
-      <button disabled={busy || !company.trim()} className="h-8 rounded-[4px] bg-amber px-3 font-semibold text-desk disabled:opacity-40">
+      <button disabled={busy || !company.trim()} className="h-8 rounded-[4px] bg-accent px-3 font-semibold text-accent-ink disabled:opacity-40">
         Start
       </button>
       <button type="button" onClick={() => setOpen(false)} className="h-8 px-1.5 text-desk-muted hover:text-white" aria-label="Cancel new run">
@@ -111,43 +112,20 @@ function NewRun() {
 }
 
 export function TopBar() {
-  const runs = useRunStore((s) => s.runs);
   const run = useRunStore((s) => s.run);
-  const runId = useRunStore((s) => s.runId);
-  const openRun = useRunStore((s) => s.openRun);
   const stageIdx = run ? STAGES.indexOf(run.stage) : -1;
   const c = run?.counts;
   const st = run ? STATUS[run.status] : null;
 
   return (
     <header className="flex-none bg-desk text-[13px] text-desk-ink">
-      <div className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1.5 px-4">
-        <span className="font-mono text-sm font-semibold tracking-[0.18em] text-amber">AXELROD</span>
-        <label className="sr-only" htmlFor="run-picker">
-          Run
-        </label>
-        <select
-          id="run-picker"
-          value={runId ?? ""}
-          onChange={(e) => openRun(e.target.value || null)}
-          className="h-8 max-w-64 rounded-[4px] border border-desk-line bg-desk-raised px-2 text-desk-ink"
-        >
-          <option value="">Select a run</option>
-          {runs.map((r) => (
-            <option key={r.run_id} value={r.run_id}>
-              {r.company} ({r.run_id})
-            </option>
-          ))}
-        </select>
-        <NewRun />
+      <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1.5 px-4">
+        <span className="mr-1 font-mono text-sm font-semibold tracking-[0.18em] text-accent">AXELROD</span>
+        <RunSwitcher />
         {run && st && (
-          <div className="flex items-center gap-3 border-l border-desk-line pl-4">
-            <span className="font-semibold text-white">
-              {run.company}
-              {run.ticker && <span className="ml-1.5 font-mono font-normal text-desk-muted">{run.ticker}</span>}
-            </span>
+          <div className="flex items-center gap-3">
             {run.mode !== "live" && (
-              <span title="Simulated data, not a live run" className="rounded-[3px] bg-amber px-1.5 font-mono text-[11px] font-semibold text-desk">
+              <span title="Simulated data, not a live run" className="rounded-[3px] bg-desk-warn px-1.5 font-mono text-[11px] font-semibold text-desk">
                 {run.mode.toUpperCase()}
               </span>
             )}
@@ -189,6 +167,10 @@ export function TopBar() {
               )}
             </dl>
           )}
+          <div className="flex items-center gap-1.5">
+            <ThemeSwitcher />
+            <NewRun />
+          </div>
           <StopButton />
         </div>
       </div>
@@ -204,7 +186,7 @@ export function TopBar() {
                 key={s}
                 aria-current={now ? "step" : undefined}
                 className={`relative truncate border-r border-desk-line px-2.5 py-1.5 last:border-r-0 ${
-                  halted ? "bg-desk-bad font-semibold text-desk" : waiting ? "bg-amber font-semibold text-desk" : now ? "font-semibold text-white" : done ? "text-desk-ink" : "text-desk-muted/60"
+                  halted ? "bg-desk-bad font-semibold text-desk" : waiting ? "bg-accent font-semibold text-accent-ink" : now ? "font-semibold text-white" : done ? "text-desk-ink" : "text-desk-muted/60"
                 }`}
               >
                 <span className={`mr-1.5 font-mono text-[10px] ${done ? "text-desk-good" : ""}`}>{done ? "✓" : String(i + 1).padStart(2, "0")}</span>
@@ -235,7 +217,7 @@ export function Banner() {
   }
   if (run.status === "failed")
     return (
-      <div role="alert" className="flex-none bg-[#7F1D1D] px-4 py-2 text-[13px] text-white">
+      <div role="alert" className="flex-none bg-failed-bg px-4 py-2 text-[13px] text-white">
         The run failed: {run.error ?? "the backend reported an error without details"}.
       </div>
     );

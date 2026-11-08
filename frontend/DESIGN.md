@@ -10,7 +10,7 @@ The dashboard is an analyst's desk for checking AI research. It should feel like
 ## 2. Colour
 | Token | Hex | Use |
 |---|---|---|
-| `desk` | `#0F172A` | Dark chrome background (top bar, inspector, drawer) |
+| `desk` | `#18181B` | Dark chrome background (top bar, inspector, drawer). Six themes override these tokens; see `src/app/globals.css` and the theme menu in the top bar |
 | `desk-raised` | `#16213A` | Hover and selected rows on dark |
 | `desk-line` | `#1E293B` | Hairlines on dark (depth comes from lines, never shadows) |
 | `desk-ink` | `#E2E8F0` | Text on dark |

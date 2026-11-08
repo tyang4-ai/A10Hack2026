@@ -31,7 +31,7 @@ export function Drawer() {
               setTab(id);
               setOpen(true);
             }}
-            className={`border-b-2 px-3 py-2 text-[13px] ${tab === id && open ? "border-amber font-semibold text-white" : "border-transparent text-desk-muted hover:text-white"}`}
+            className={`border-b-2 px-3 py-2 text-[13px] ${tab === id && open ? "border-accent font-semibold text-white" : "border-transparent text-desk-muted hover:text-white"}`}
           >
             {label} {n && <span className="ml-1 font-mono text-[11px] font-normal text-desk-muted">{n}</span>}
             {id === "traffic" && bad > 0 && <span className="ml-1.5 rounded-[3px] bg-desk-bad px-1 font-mono text-[11px] font-semibold text-desk">{bad}</span>}
@@ -53,7 +53,7 @@ export function Drawer() {
   );
 }
 
-const DECISION_CLS = { allowed: "", blocked: "bg-[#450A0A] text-desk-bad", flagged: "bg-[#422006] text-amber" } as const;
+const DECISION_CLS = { allowed: "", blocked: "bg-row-blocked text-desk-bad", flagged: "bg-row-flagged text-desk-warn" } as const;
 
 function Traffic() {
   const traffic = useRunStore((s) => s.traffic);
@@ -124,7 +124,7 @@ function Traffic() {
 }
 
 const ROLES: AgentRole[] = ["planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer", "reviser"];
-const AGENT_CLS = { queued: "bg-[#334155]", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-amber" } as const;
+const AGENT_CLS = { queued: "bg-desk-line-strong", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-accent" } as const;
 
 // Click an agent to open it in the inspector, where you can talk to it or stop it.
 function Agents() {
@@ -229,7 +229,7 @@ function Node({ n, depth, onOpen, active }: { n: VaultNode; depth: number; onOpe
   const [open, setOpen] = useState(depth < 2);
   if (n.type === "file")
     return (
-      <button onClick={() => onOpen(n.path)} style={{ paddingLeft: depth * 12 }} className={`block w-full truncate text-left hover:text-white ${active === n.path ? "text-amber" : ""}`}>
+      <button onClick={() => onOpen(n.path)} style={{ paddingLeft: depth * 12 }} className={`block w-full truncate text-left hover:text-white ${active === n.path ? "text-accent" : ""}`}>
         {n.name}
       </button>
     );
@@ -249,7 +249,7 @@ function Log() {
   return (
     <ol className="p-2">
       {rows.map((e) => (
-        <li key={e.seq} className={`flex gap-2.5 py-0.5 ${e.type === "agent.log" ? "text-amber" : e.level === "error" ? "text-desk-bad" : e.level === "warn" ? "text-amber" : ""}`}>
+        <li key={e.seq} className={`flex gap-2.5 py-0.5 ${e.type === "agent.log" ? "text-accent" : e.level === "error" ? "text-desk-bad" : e.level === "warn" ? "text-desk-warn" : ""}`}>
           <span className="text-desk-muted tabular-nums">{fmtTime(e.ts)}</span>
           <span className="w-28 flex-none truncate text-desk-muted">{e.agent_id ?? e.type}</span>
           <span>{e.message}</span>

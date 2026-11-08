@@ -149,14 +149,14 @@ export function ChartView({ chart, compact }: { chart: Chart; compact?: boolean 
     <svg viewBox={`0 0 ${W} ${H}`} className="block w-full font-mono text-[10px]" role="img" aria-label={`${chart.title}: ${pts.map((p) => `${p.x} ${p.y}`).join(", ")}`}>
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={left} x2={W - 8} y1={y(t)} y2={y(t)} stroke={t === 0 ? "#000" : "#E2E8F0"} />
+          <line x1={left} x2={W - 8} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--color-ink)" : "var(--color-rule)"} />
           <text x={left - 5} y={y(t) + 3} textAnchor="end" className="fill-muted">
             {formatAxis(t, chart.unit, chart.scale)}
           </text>
         </g>
       ))}
       {chart.chart_type === "line" && (
-        <polyline points={pts.map((p) => `${x(xs.indexOf(p.x))},${y(p.y)}`).join(" ")} fill="none" stroke="#000" strokeWidth={2} />
+        <polyline points={pts.map((p) => `${x(xs.indexOf(p.x))},${y(p.y)}`).join(" ")} fill="none" stroke="var(--color-ink)" strokeWidth={2} />
       )}
       {pts.map((p) => {
         const i = xs.indexOf(p.x);

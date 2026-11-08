@@ -175,7 +175,7 @@ export function BriefModule() {
         </div>
       </div>
 
-      <article id="brief" className="mx-auto max-w-[8.5in] bg-white px-[0.6in] py-[0.5in] outline outline-1 outline-rule print:max-w-none print:p-0 print:shadow-none">
+      <article id="brief" className="mx-auto max-w-[8.5in] bg-paper px-[0.6in] py-[0.5in] outline outline-1 outline-rule print:max-w-none print:p-0 print:shadow-none">
         <header className="border-b border-ink pb-3">
           <h1 className="font-serif text-[26px] leading-tight">{summary.title}</h1>
           <div className="mt-1 font-serif text-[14px]">

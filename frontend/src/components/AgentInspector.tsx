@@ -141,7 +141,7 @@ function Chat({
         {thread.map((m) => (
           <div key={m.message_id} className={`max-w-[85%] rounded-[6px] px-2.5 py-1.5 ${m.author === "analyst" ? "ml-auto bg-desk-ink text-desk" : "bg-desk-raised text-desk-ink"}`}>
             <div className="text-[13px] leading-snug whitespace-pre-wrap">{m.text}</div>
-            <div className={`mt-0.5 font-mono text-[10px] ${m.author === "analyst" ? "text-[#475569]" : "text-desk-muted"}`}>
+            <div className={`mt-0.5 font-mono text-[10px] ${m.author === "analyst" ? "text-muted" : "text-desk-muted"}`}>
               {m.author === "analyst" ? "You" : agentId} · {fmtTime(m.created_at)}
               {m.status === "failed" && <span className="text-desk-bad"> · failed</span>}
             </div>

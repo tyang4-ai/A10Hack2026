@@ -41,7 +41,7 @@ function Ref({ id }: { id: string }) {
   const items = useRunStore((s) => s.items);
   const select = useRunStore((s) => s.select);
   if (id === "rollup") return <span className="text-desk-muted">rollup (scorecard)</span>;
-  if (id.startsWith("HOLE-")) return <span className="text-amber">{id} (declared gap)</span>;
+  if (id.startsWith("HOLE-")) return <span className="text-accent">{id} (declared gap)</span>;
   if (id.startsWith("S-")) return <button onClick={() => select({ type: "source", id })} className="text-desk-link hover:underline">{id}</button>;
   const base = id.split(":")[0];
   const it = items[base];
@@ -100,7 +100,7 @@ function Checks({ checks }: { checks: CheckResult[] }) {
     <ul className="grid gap-1.5">
       {checks.map((c, i) => (
         <li key={i}>
-          <span className={`font-bold ${c.result === "pass" ? "text-desk-good" : c.result === "fail" ? "text-desk-bad" : "text-amber"}`}>
+          <span className={`font-bold ${c.result === "pass" ? "text-desk-good" : c.result === "fail" ? "text-desk-bad" : "text-desk-warn"}`}>
             {c.result === "pass" ? "✓" : c.result === "fail" ? "✕" : "!"}
           </span>{" "}
           <span className="text-white">{human(c.check)}</span> <span className="text-desk-muted">· {c.method === "llm_judge" ? `judges ${c.votes_for}/${c.votes_total}` : c.method}</span>
@@ -286,7 +286,7 @@ function SentenceInspector({ id }: { id: string }) {
 function ChainTree({ refs, items, depth }: { refs: string[]; items: Record<string, Item>; depth: number }) {
   const select = useRunStore((s) => s.select);
   return (
-    <ul className={depth ? "ml-3 border-l border-[#334155] pl-2.5" : ""}>
+    <ul className={depth ? "ml-3 border-l border-desk-line-strong pl-2.5" : ""}>
       {refs.map((r) => {
         const base = r.split(":")[0];
         const it = items[base];
@@ -350,7 +350,7 @@ function SourceInspector({ id }: { id: string }) {
       </Block>
       <Block title={`Gateway requests (${reqs.length})`}>
         {reqs.slice(-12).map((t) => (
-          <div key={t.seq} className={t.data.decision === "blocked" ? "text-desk-bad" : t.data.decision === "flagged" ? "text-amber" : ""}>
+          <div key={t.seq} className={t.data.decision === "blocked" ? "text-desk-bad" : t.data.decision === "flagged" ? "text-desk-warn" : ""}>
             {t.data.decision.toUpperCase()} · {t.data.reason}
           </div>
         ))}
@@ -372,7 +372,7 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
       {thread.map((c) => (
         <div key={c.comment_id} className="mb-2">
           <div className="text-white">“{c.text}”</div>
-          <div className={c.status === "applied" ? "text-desk-good" : c.status === "rejected" ? "text-desk-bad" : "animate-pulse text-amber"}>
+          <div className={c.status === "applied" ? "text-desk-good" : c.status === "rejected" ? "text-desk-bad" : "animate-pulse text-accent"}>
             {c.status.toUpperCase()}
             {c.response ? ` · ${c.response}` : ""}
             {c.changed_item_ids.length ? ` · changed ${c.changed_item_ids.join(", ")}` : ""}
@@ -448,7 +448,7 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
 
   return (
     <div role="dialog" aria-label={`${citation.doc_id} page ${page}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={onClose}>
-      <div className="flex max-h-full w-full max-w-3xl flex-col rounded-[6px] bg-white text-ink" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-full w-full max-w-3xl flex-col rounded-[6px] bg-paper text-ink" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-rule px-4 py-2 text-[13px]">
           <span className="font-mono font-semibold">{citation.doc_id}</span>
           <span>
@@ -473,7 +473,7 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
             if (!s.h) return <span key={i}>{s.text}</span>;
             const mine = s.h.item_id === itemId;
             const ctx = s.h.role !== "evidence";
-            const cls = mine ? (ctx ? "bg-[#FEF3C7]" : "bg-[#FCD34D] outline-2 outline-ink") : ctx ? "bg-[#F1F5F9]" : "bg-[#E2E8F0]";
+            const cls = mine ? (ctx ? "bg-hl-context" : "bg-hl-evidence outline-2 outline-ink") : ctx ? "bg-hl-other-context" : "bg-hl-other";
             return (
               <mark key={i} ref={mine && !ctx ? (el) => { mark.current = el; } : undefined} title={`${s.h.item_id} · ${s.h.role} · ${s.h.status}`} className={`${cls} text-ink`}>
                 {s.text}
@@ -482,8 +482,8 @@ function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citati
           })}
         </div>
         <div className="border-t border-rule px-4 py-1.5 text-[11px] text-muted">
-          <mark className="bg-[#FCD34D] px-1">{itemId} evidence</mark> <mark className="bg-[#FEF3C7] px-1">unit or period context</mark>{" "}
-          <mark className="bg-[#E2E8F0] px-1">other cited items</mark>. Press Esc to close.
+          <mark className="bg-hl-evidence px-1">{itemId} evidence</mark> <mark className="bg-hl-context px-1">unit or period context</mark>{" "}
+          <mark className="bg-hl-other px-1">other cited items</mark>. Press Esc to close.
         </div>
       </div>
     </div>

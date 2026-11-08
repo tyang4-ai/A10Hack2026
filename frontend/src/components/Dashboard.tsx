@@ -32,12 +32,12 @@ function Rail() {
           key={m.id}
           aria-current={module === m.id ? "page" : undefined}
           onClick={() => setModule(m.id)}
-          className={`rounded-[4px] px-2.5 py-2 text-left transition-colors ${module === m.id ? "bg-ink text-white" : "text-ink hover:bg-[#EEF2F7]"}`}
+          className={`rounded-[4px] px-2.5 py-2 text-left transition-colors ${module === m.id ? "bg-ink text-white" : "text-ink hover:bg-hover"}`}
         >
           <div className="flex items-center gap-2">
-            <span className={`grid h-5 w-5 place-items-center rounded-full font-mono text-[11px] ${module === m.id ? "bg-white text-ink" : "bg-white text-muted outline outline-1 outline-rule"}`}>{m.n}</span>
+            <span className={`grid h-5 w-5 place-items-center rounded-full font-mono text-[11px] ${module === m.id ? "bg-paper text-ink" : "bg-paper text-muted outline outline-1 outline-rule"}`}>{m.n}</span>
             <span className="text-[13px] font-semibold">{m.label}</span>
-            {live === m.id && run?.status !== "done" && <span title="The run is working here" className={`ml-auto h-2 w-2 rounded-full ${module === m.id ? "bg-amber" : "bg-link"} animate-pulse`} />}
+            {live === m.id && run?.status !== "done" && <span title="The run is working here" className={`ml-auto h-2 w-2 rounded-full ${module === m.id ? "bg-accent" : "bg-link"} animate-pulse`} />}
           </div>
           <div className={`mt-0.5 pl-7 text-[11px] ${module === m.id ? "text-desk-muted" : "text-muted"}`}>{m.stages}</div>
         </button>
@@ -46,7 +46,7 @@ function Rail() {
         <div className="mt-auto border-t border-rule p-2 pt-3">
           <div className="text-[11px] font-medium text-muted">Demo control</div>
           <button
-            className="mt-1.5 w-full rounded-[4px] border border-dashed border-warn px-2 py-1.5 text-[12px] font-medium text-warn hover:bg-[#FFFBEB]"
+            className="mt-1.5 w-full rounded-[4px] border border-dashed border-warn px-2 py-1.5 text-[12px] font-medium text-warn hover:bg-warn-bg"
             title="Corrupts one digit in a few quotes so the checker can catch them. Simulated."
             onClick={async () => {
               try {

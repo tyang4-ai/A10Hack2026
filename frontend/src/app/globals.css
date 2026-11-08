@@ -1,36 +1,151 @@
 @import "tailwindcss";
 
-/* Tokens: see frontend/DESIGN.md. Colour only carries meaning. */
+/* Tokens: see frontend/DESIGN.md. Colour only carries meaning.
+   Defaults are the "graphite-teal" theme; [data-theme] blocks below override them.
+   Tailwind utilities read these variables, so switching data-theme on <html> restyles everything. */
 @theme {
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --font-serif: "KaTeX_Main", "Latin Modern Roman", "CMU Serif", Georgia, serif;
 
+  /* Reading surface */
   --color-paper: #ffffff;
+  --color-ink: #18181b;
+  --color-muted: #52525b;
+  --color-rule: #e4e4e7;
+  --color-zebra: #fafafa;
+  --color-hover: #f4f4f5;
+  --color-control: #d4d4d8;
+  --color-link: #0f766e;
+
+  /* Status on the reading surface */
+  --color-good: #15803d;
+  --color-bad: #dc2626;
+  --color-warn: #b45309;
+  --color-bad-bg: #fef2f2;
+  --color-warn-bg: #fffbeb;
+
+  /* Certainty bands and source highlights */
+  --color-band-high: #dcfce7;
+  --color-band-medium: #fef3c7;
+  --color-band-low: #fee2e2;
+  --color-band-none: #f4f4f5;
+  --color-hl-evidence: #fcd34d;
+  --color-hl-context: #fef3c7;
+  --color-hl-other: #e4e4e7;
+  --color-hl-other-context: #f4f4f5;
+
+  /* Dark chrome */
+  --color-desk: #18181b;
+  --color-desk-raised: #222226;
+  --color-desk-line: #27272a;
+  --color-desk-line-strong: #3f3f46;
+  --color-desk-ink: #e4e4e7;
+  --color-desk-muted: #a1a1aa;
+  --color-desk-good: #4ade80;
+  --color-desk-bad: #f87171;
+  --color-desk-warn: #fbbf24;
+  --color-desk-link: #5eead4;
+  --color-row-blocked: #3b1414;
+  --color-row-flagged: #3a2a0c;
+  --color-failed-bg: #7f1d1d;
+
+  /* The one accent: brand, active tab, "waiting for you" */
+  --color-accent: #14b8a6;
+  --color-accent-ink: #042f2e;
+  --color-focus: #14b8a6;
+}
+
+[data-theme="graphite-amber"] {
+  --color-accent: #f59e0b;
+  --color-accent-ink: #1c1306;
+  --color-focus: #f59e0b;
+  --color-desk-link: #fcd34d;
+  --color-link: #1d4ed8;
+}
+
+[data-theme="graphite-violet"] {
+  --color-accent: #8b5cf6;
+  --color-accent-ink: #ffffff;
+  --color-focus: #8b5cf6;
+  --color-desk-link: #c4b5fd;
+  --color-link: #6d28d9;
+}
+
+[data-theme="navy-gold"] {
+  --color-paper: #fbfaf7;
+  --color-ink: #13233a;
+  --color-muted: #5a6577;
+  --color-rule: #e7e3d9;
+  --color-zebra: #f4f2ec;
+  --color-hover: #efece4;
+  --color-control: #d6d0c2;
+  --color-link: #1f4e8c;
+  --color-band-none: #efece4;
+  --color-hl-other: #e7e3d9;
+  --color-hl-other-context: #f4f2ec;
+  --color-desk: #0b1f3a;
+  --color-desk-raised: #12294a;
+  --color-desk-line: #1c3354;
+  --color-desk-line-strong: #2a4670;
+  --color-desk-ink: #e8ecf2;
+  --color-desk-muted: #8ea0b8;
+  --color-desk-link: #9ec3f0;
+  --color-accent: #c9a227;
+  --color-accent-ink: #1a1405;
+  --color-focus: #c9a227;
+}
+
+[data-theme="stone-ember"] {
+  --color-paper: #fffdf9;
+  --color-ink: #1c1917;
+  --color-muted: #57534e;
+  --color-rule: #e7e5e4;
+  --color-zebra: #fafaf9;
+  --color-hover: #f5f5f4;
+  --color-control: #d6d3d1;
+  --color-link: #c2410c;
+  --color-band-none: #f5f5f4;
+  --color-hl-other: #e7e5e4;
+  --color-hl-other-context: #f5f5f4;
+  --color-desk: #1c1917;
+  --color-desk-raised: #26221f;
+  --color-desk-line: #292524;
+  --color-desk-line-strong: #44403c;
+  --color-desk-ink: #e7e5e4;
+  --color-desk-muted: #a8a29e;
+  --color-desk-link: #fdba74;
+  --color-accent: #f97316;
+  --color-accent-ink: #1c0a02;
+  --color-focus: #f97316;
+}
+
+[data-theme="slate-blue"] {
   --color-ink: #0f172a;
   --color-muted: #475569;
   --color-rule: #e2e8f0;
   --color-zebra: #f8fafc;
-
-  --color-good: #15803d;
-  --color-bad: #b91c1c;
-  --color-warn: #b45309;
+  --color-hover: #eef2f7;
+  --color-control: #cbd5e1;
   --color-link: #1d4ed8;
-
+  --color-band-none: #f1f5f9;
+  --color-hl-other: #e2e8f0;
+  --color-hl-other-context: #f1f5f9;
   --color-desk: #0f172a;
   --color-desk-raised: #16213a;
   --color-desk-line: #1e293b;
+  --color-desk-line-strong: #334155;
   --color-desk-ink: #e2e8f0;
   --color-desk-muted: #94a3b8;
-  --color-amber: #f59e0b;
-  --color-desk-good: #4ade80;
-  --color-desk-bad: #f87171;
-  --color-desk-warn: #fbbf24;
   --color-desk-link: #93c5fd;
+  --color-accent: #f59e0b;
+  --color-accent-ink: #0f172a;
+  --color-focus: #3b82f6;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: light;
 }
 
 body {
@@ -42,7 +157,7 @@ body {
 
 /* Visible keyboard focus on every control. */
 :focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 

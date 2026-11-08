@@ -50,10 +50,10 @@ export const moduleFor = (s: Stage): Module =>
 
 // Certainty bands. Light backgrounds for the brief, text colours elsewhere.
 export const BAND_BG: Record<CertaintyBand, string> = {
-  high: "bg-[#DCFCE7]",
-  medium: "bg-[#FEF3C7]",
-  low: "bg-[#FEE2E2]",
-  none: "bg-[#F1F5F9]",
+  high: "bg-band-high",
+  medium: "bg-band-medium",
+  low: "bg-band-low",
+  none: "bg-band-none",
 };
 export const BAND_TEXT: Record<CertaintyBand, string> = {
   high: "text-good",

@@ -77,7 +77,7 @@ export function Skeleton({ rows = 6 }: { rows?: number }) {
 }
 
 const base = "inline-flex items-center justify-center gap-1.5 rounded-[4px] text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
-export const btn = `${base} h-8 border border-[#CBD5E1] bg-white px-3 text-ink hover:border-ink disabled:hover:border-[#CBD5E1]`;
-export const btnSm = `${base} h-7 border border-[#CBD5E1] bg-white px-2 text-[12px] text-ink hover:border-ink`;
-export const btnPrimary = `${base} h-8 bg-ink px-3.5 text-white hover:bg-[#1E293B]`;
-export const btnDanger = `${base} h-7 border border-bad/50 bg-white px-2 text-[12px] text-bad hover:bg-bad hover:text-white`;
+export const btn = `${base} h-8 border border-control bg-paper px-3 text-ink hover:border-ink disabled:hover:border-control`;
+export const btnSm = `${base} h-7 border border-control bg-paper px-2 text-[12px] text-ink hover:border-ink`;
+export const btnPrimary = `${base} h-8 bg-ink px-3.5 text-white hover:opacity-90`;
+export const btnDanger = `${base} h-7 border border-bad/50 bg-paper px-2 text-[12px] text-bad hover:bg-bad hover:text-white`;

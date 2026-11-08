@@ -123,7 +123,7 @@ export function SourcesModule() {
       </details>
 
       {coverage.length > 0 && (
-        <div role="status" className="mt-4 rounded-[4px] border border-bad/40 bg-[#FEF2F2] px-3 py-2 text-[13px]">
+        <div role="status" className="mt-4 rounded-[4px] border border-bad/40 bg-bad-bg px-3 py-2 text-[13px]">
           <div className="font-semibold text-bad">Coverage gap</div>
           {coverage.map((c) => (
             <div key={c.criterion}>
@@ -207,7 +207,7 @@ export function SourcesModule() {
       {awaiting && <AddSource runId={run.run_id} />}
 
       {awaiting && (
-        <div className="sticky bottom-0 mt-6 flex flex-wrap items-center gap-3 border-t border-rule bg-white py-3">
+        <div className="sticky bottom-0 mt-6 flex flex-wrap items-center gap-3 border-t border-rule bg-paper py-3">
           <button className={btnPrimary} disabled={busy || undecided.length > 0} onClick={commit}>
             Approve and run
           </button>
@@ -292,14 +292,14 @@ function SourceRow({
           </>
         )}
         {awaiting && (
-          <div role="group" aria-label={`Decision for ${s.source_id}`} className="flex overflow-hidden rounded-[4px] border border-[#CBD5E1] text-[12px] font-medium">
+          <div role="group" aria-label={`Decision for ${s.source_id}`} className="flex overflow-hidden rounded-[4px] border border-control text-[12px] font-medium">
             <button aria-pressed={decision === "approved"} onClick={() => onDecide("approved")} className={`h-7 px-2.5 ${decision === "approved" ? "bg-good text-white" : "hover:bg-zebra"}`}>
               Approve
             </button>
             <button
               aria-pressed={decision === "rejected"}
               onClick={() => onDecide("rejected")}
-              className={`h-7 border-l border-[#CBD5E1] px-2.5 ${decision === "rejected" ? "bg-bad text-white" : "hover:bg-zebra"}`}
+              className={`h-7 border-l border-control px-2.5 ${decision === "rejected" ? "bg-bad text-white" : "hover:bg-zebra"}`}
             >
               Reject
             </button>
@@ -335,7 +335,7 @@ function AddSource({ runId }: { runId: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [added, setAdded] = useState<Source | null>(null);
   const refreshPlan = useRunStore((s) => s.refreshPlan);
-  const field = "h-8 rounded-[4px] border border-[#CBD5E1] bg-white px-2 text-[13px] text-ink outline-none focus:border-ink";
+  const field = "h-8 rounded-[4px] border border-control bg-paper px-2 text-[13px] text-ink outline-none focus:border-ink";
   return (
     <form
       className="mt-6"
