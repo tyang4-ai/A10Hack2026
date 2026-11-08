@@ -114,10 +114,12 @@ async def run(ctx: RunContext) -> None:
     kind = match_kind(plan, state.run.company, state.run.ticker)
     if kind is None:
         raise PlanUnavailable(UNAVAILABLE)
+    # The name and ticker feed titles, prompts and checks, so every matching run takes the plan's spelling and
+    # ticker (the website sends no ticker). Then a run started anywhere asks the same prompts as the recordings.
+    typed = state.run.company
+    state.run.company = plan_name(plan) or typed
+    state.run.ticker = state.run.ticker or plan.get("ticker")
     if kind == "typo":
-        # The name feeds titles, prompts and checks, so the run takes the plan's spelling, and says so.
-        typed, state.run.company = state.run.company, plan_name(plan)
-        state.run.ticker = state.run.ticker or plan.get("ticker")
         note = f"Company typed as '{typed}', read as {state.run.company} (typo-tolerant match to the frozen plan)."
         state.run.notes = f"{state.run.notes.strip()} | {note}" if (state.run.notes or "").strip() else note
     needs = [m.DataNeed.model_validate(n) for n in plan.get("needs", [])]
