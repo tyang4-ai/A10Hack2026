@@ -5,6 +5,7 @@ import type { Certainty, CheckResult, Citation, DiffSegment, DocumentPage, Item 
 import { api } from "@/lib/api";
 import { CERTAINTY_HELP, formatValue, human } from "@/lib/format";
 import { allSentences, useRunStore } from "@/lib/store";
+import { AgentInspector } from "./AgentInspector";
 import { itemText } from "./report";
 import { btn, CertaintyPill, KindBadge, Label, SourceChip, StatusText } from "./ui";
 
@@ -17,10 +18,11 @@ export function Inspector() {
         <span className="font-mono text-desk-muted">{selected ? selected.id : ""}</span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {!selected && <p className="p-3.5 text-[13px] text-desk-muted">Select a source, a report item or a brief sentence to see its evidence, checks and certainty.</p>}
+        {!selected && <p className="p-3.5 text-[13px] text-desk-muted">Select a source, a report item, a brief sentence or an agent to see its evidence, checks and certainty, or to talk to it.</p>}
         {selected?.type === "item" && <ItemInspector id={selected.id} />}
         {selected?.type === "source" && <SourceInspector id={selected.id} />}
         {selected?.type === "sentence" && <SentenceInspector id={selected.id} />}
+        {selected?.type === "agent" && <AgentInspector id={selected.id} />}
       </div>
     </aside>
   );

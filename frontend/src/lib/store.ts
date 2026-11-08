@@ -20,10 +20,11 @@ import {
   type Source,
   type SummarySentence,
 } from "@contract/types";
+import { agentMessageFromEvent, type AgentMessage } from "./agentApi";
 import { api } from "./api";
 import { moduleFor, type Module } from "./format";
 
-export type Selection = { type: "source" | "item" | "sentence" | "hole"; id: string } | null;
+export type Selection = { type: "source" | "item" | "sentence" | "hole" | "agent"; id: string } | null;
 
 type Seqs = { run: number; plan: number; report: number; summary: number; agents: number; policy: number };
 
@@ -40,6 +41,7 @@ interface State {
   agents: Record<string, Agent>;
   policy: Policy | null;
   comments: Record<string, Comment>;
+  agentMessages: Record<string, AgentMessage[]>;
   traffic: GatewayRequestEvent[];
   log: Event[];
   lastSeq: number;
@@ -74,6 +76,7 @@ const empty = {
   agents: {},
   policy: null,
   comments: {},
+  agentMessages: {},
   traffic: [],
   log: [],
   lastSeq: 0,
@@ -225,6 +228,7 @@ export const useRunStore = create<State>((set, get) => ({
     const items = { ...st.items };
     const agents = { ...st.agents };
     const comments = { ...st.comments };
+    const agentMessages = { ...st.agentMessages };
     let summary = st.summary;
     let report = st.report;
     const traffic = [...st.traffic];
@@ -289,6 +293,13 @@ export const useRunStore = create<State>((set, get) => ({
       }
 
       if (isEvent(e, "comment.created") || isEvent(e, "comment.resolved")) comments[e.data.comment.comment_id] = e.data.comment;
+
+      // Provisional agent.message event (not in the contract yet, see agentApi.ts).
+      const am = agentMessageFromEvent(e as { type: string; data?: unknown });
+      if (am) {
+        const list = agentMessages[am.agent_id] ?? [];
+        agentMessages[am.agent_id] = [...list.filter((m) => m.message_id !== am.message_id), am];
+      }
     }
 
     const log = [...st.log, ...events.filter((e) => e.seq > st.lastSeq)];
@@ -300,6 +311,7 @@ export const useRunStore = create<State>((set, get) => ({
       items,
       agents,
       comments,
+      agentMessages,
       summary,
       report,
       traffic,

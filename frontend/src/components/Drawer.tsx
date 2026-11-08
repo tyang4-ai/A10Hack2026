@@ -57,6 +57,7 @@ const DECISION_CLS = { allowed: "", blocked: "bg-[#450A0A] text-desk-bad", flagg
 
 function Traffic() {
   const traffic = useRunStore((s) => s.traffic);
+  const select = useRunStore((s) => s.select);
   const [onlyBad, setOnlyBad] = useState(false);
   const rows = useMemo(() => {
     const r = onlyBad ? traffic.filter((t) => t.data.decision !== "allowed") : traffic;
@@ -87,7 +88,15 @@ function Traffic() {
             return (
               <tr key={e.seq} title={d.reason} className={`animate-[tape-in_240ms_ease-out] border-t border-desk-line font-mono ${DECISION_CLS[d.decision]}`}>
                 <td className="px-2 py-1 whitespace-nowrap text-desk-muted tabular-nums">{fmtTime(e.ts)}</td>
-                <td className="px-2 whitespace-nowrap">{e.agent_id ?? "—"}</td>
+                <td className="px-2 whitespace-nowrap">
+                  {e.agent_id ? (
+                    <button onClick={() => select({ type: "agent", id: e.agent_id! })} className="hover:text-white hover:underline" title={`Open ${e.agent_id} in the inspector`}>
+                      {e.agent_id}
+                    </button>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td className="px-2 text-desk-muted">{d.role}</td>
                 <td className="px-2 whitespace-nowrap">{d.action}</td>
                 <td className="max-w-[380px] truncate px-2" title={d.target}>
@@ -117,9 +126,12 @@ function Traffic() {
 const ROLES: AgentRole[] = ["planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer", "reviser"];
 const AGENT_CLS = { queued: "bg-[#334155]", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-amber" } as const;
 
+// Click an agent to open it in the inspector, where you can talk to it or stop it.
 function Agents() {
   const agents = useRunStore((s) => s.agents);
-  const [pick, setPick] = useState<Agent | null>(null);
+  const selected = useRunStore((s) => s.selected);
+  const select = useRunStore((s) => s.select);
+  const pick = selected?.type === "agent" ? agents[selected.id] : null;
   const byRole = useMemo(() => {
     const m = new Map<AgentRole, Agent[]>();
     for (const a of Object.values(agents)) m.set(a.role, [...(m.get(a.role) ?? []), a]);
@@ -139,7 +151,7 @@ function Agents() {
                   key={a.agent_id}
                   aria-label={`${a.agent_id} ${a.status}`}
                   title={`${a.agent_id} · ${a.status} · ${a.task}`}
-                  onClick={() => setPick(a)}
+                  onClick={() => select({ type: "agent", id: a.agent_id })}
                   className="grid h-6 w-6 place-items-center rounded-[4px] hover:bg-desk-raised"
                 >
                   <span className={`h-3 w-3 rounded-full transition-colors ${AGENT_CLS[a.status]} ${pick?.agent_id === a.agent_id ? "outline-2 outline-offset-1 outline-white" : ""}`} />
@@ -149,26 +161,26 @@ function Agents() {
           </div>
         ))}
         {byRole.size === 0 && <div className="text-desk-muted">No agents yet.</div>}
-        <div className="mt-2 flex gap-3 text-[10px] text-desk-muted">
+        <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-desk-muted">
           {Object.entries(AGENT_CLS).map(([k, c]) => (
             <span key={k} className="flex items-center gap-1">
               <span className={`h-2 w-2 rounded-full ${c.replace("animate-pulse", "")}`} />
               {k}
             </span>
           ))}
+          <span className="ml-auto">Click an agent to talk to it or stop it in the inspector.</span>
         </div>
       </div>
       {pick && (
-        <div className="w-80 flex-none border-l border-desk-line p-3">
-          <div className="text-white">{pick.agent_id}</div>
+        <div className="w-72 flex-none border-l border-desk-line p-3">
+          <div className="font-mono text-white">{pick.agent_id}</div>
           <div className="text-desk-muted">
             {pick.role}, {pick.model_id ?? "code only"}, {pick.status}
           </div>
-          <div className="mt-2">{agents[pick.agent_id]?.task ?? pick.task}</div>
+          <div className="mt-2">{pick.task}</div>
           <div className="mt-2 text-desk-muted">
             {pick.usage.model_calls} model calls, {count(pick.usage.tokens_in + pick.usage.tokens_out)} tokens, {usd(pick.usage.cost_usd)}
           </div>
-          {pick.transcript_path && <div className="mt-2 break-all text-desk-muted">{pick.transcript_path}</div>}
         </div>
       )}
     </div>
