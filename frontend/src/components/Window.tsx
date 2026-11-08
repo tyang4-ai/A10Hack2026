@@ -261,7 +261,6 @@ export const Window = memo(function Window({ id }: { id: string }) {
       const pushRight = x + w > 1;
       const pushLeft = x < 0;
       const pushDown = y + h > 1;
-      const pushing = pushRight || pushLeft || pushDown;
       if (pushRight) w = Math.max(minW, 1 - x);
       else if (pushLeft) {
         const right = x + d.g.w;
@@ -273,10 +272,10 @@ export const Window = memo(function Window({ id }: { id: string }) {
       const px = e.clientX - d.desk.left;
       const py = e.clientY - d.desk.top;
       // Desk edges first, then another window's title bar (drop to swap), then the empty space under the pointer.
-      // Filling needs a drop on the small centre square, so it stays on even while the window
-      // is pushed into an edge; only the title bar swap waits until the window is clear of the edges.
+      // Both stay on while the window is shrinking against an edge: a swap trades the windows'
+      // original places, so the shrink in progress doesn't matter.
       const edge = snapFor(px, py, d.desk.width, d.desk.height);
-      const bar = edge || pushing ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
+      const bar = edge ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
       d.target = bar?.id ?? null;
       const snap = edge ?? (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ?? fillTarget(id, px, py, d.desk);
       const cur = useWindows.getState();
