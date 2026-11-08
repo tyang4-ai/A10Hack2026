@@ -296,7 +296,10 @@ export const Window = memo(function Window({ id }: { id: string }) {
       onPointerDownCapture={() => focus(id)}
       onFocusCapture={() => focus(id)}
       style={{ left: `${geo.x * 100}%`, top: `${geo.y * 100}%`, width: `${geo.w * 100}%`, height: `${geo.h * 100}%`, zIndex: win.z }}
-      className={`win absolute flex animate-[win-in_120ms_ease-out] flex-col border bg-desk ${focused ? "border-accent" : "border-desk-line-strong"} ${win.kind === "brief" ? "print-brief" : ""}`}
+      className={`win absolute flex animate-[win-in_120ms_ease-out] flex-col border bg-desk ${focused ? "border-accent" : "border-desk-line-strong"} ${win.kind === "brief" ? "print-brief" : ""} ${
+        // Glide to a new place (swap, snap, layout change), but follow the pointer exactly while dragging or resizing.
+        live || peek ? "" : "transition-[left,top,width,height] duration-150 ease-out"
+      }`}
     >
       <div
         data-titlebar
