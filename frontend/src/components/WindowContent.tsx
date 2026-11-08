@@ -18,7 +18,7 @@ import { CertaintyPill, Skeleton } from "./ui";
 export const KIND_META: Record<WinKind, { icon: string; title: string; paper?: boolean }> = {
   sources: { icon: "1", title: "Sources", paper: true },
   report: { icon: "2", title: "Agent report", paper: true },
-  brief: { icon: "3", title: "Brief", paper: true },
+  brief: { icon: "3", title: "Final report", paper: true },
   inspector: { icon: "◎", title: "Inspector" },
   traffic: { icon: "⇄", title: "Traffic" },
   agents: { icon: "◍", title: "Agents" },
@@ -128,7 +128,7 @@ function ChainWindow() {
   }, [selected]);
   useEffect(() => setSid(null), [runId]);
   const s = sid ? allSentences(summary).find((x) => x.id === sid) : null;
-  if (!s) return <p className="p-3.5 text-[13px] text-desk-muted">Select a sentence in the brief.</p>;
+  if (!s) return <p className="p-3.5 text-[13px] text-desk-muted">Select a sentence in the final report.</p>;
   return (
     <div className="text-[12px] text-desk-ink">
       <div className="border-b border-desk-line px-3.5 py-2.5">

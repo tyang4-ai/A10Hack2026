@@ -92,7 +92,7 @@ function PaletteDialog() {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <label htmlFor="palette-q" className="sr-only">
-          Search items, brief sentences, sources, agents and holes
+          Search items, final report sentences, sources, agents and holes
         </label>
         <input
           id="palette-q"

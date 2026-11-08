@@ -40,7 +40,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
   verify: "Verify",
   repair: "Repair",
   summarize: "Summarize",
-  verify_summary: "Check brief",
+  verify_summary: "Final check",
   complete: "Complete",
 };
 

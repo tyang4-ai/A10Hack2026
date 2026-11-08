@@ -18,8 +18,8 @@ export const RERUN_KEEPS: Partial<Record<Stage, string>> = {
   draft: "Keeps the verified data. Redrafts conclusions and scores.",
   verify: "Keeps the draft. Checks again.",
   repair: "Keeps the checks. Repairs again.",
-  summarize: "Keeps the report. Rewrites the brief.",
-  verify_summary: "Keeps the brief. Checks it again.",
+  summarize: "Keeps the agent report. Rewrites the final report.",
+  verify_summary: "Keeps the final report. Checks it again.",
 };
 
 const EXAMPLES: Partial<Record<Stage, string>> = {

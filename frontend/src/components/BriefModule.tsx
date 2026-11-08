@@ -149,8 +149,8 @@ export function BriefModule() {
   if (summary.status === "not_started")
     return (
       <div>
-                <h1 className="text-[22px] font-semibold">Brief</h1>
-        <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Written after the report is verified.</p>
+                <h1 className="text-[22px] font-semibold">Final report</h1>
+        <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Written after the agent report is verified.</p>
         <div className="mt-6 max-w-[8.5in]"><Skeleton rows={8} /></div>
       </div>
     );
@@ -183,7 +183,7 @@ export function BriefModule() {
             {summary.ticker ? ` (${summary.ticker})` : ""} · as of {new Date(summary.as_of).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           </div>
           <div className="mt-3">
-            <Gauge c={summary.certainty} label="Brief" />
+            <Gauge c={summary.certainty} label="Final report" />
           </div>
         </header>
         {summary.sections.map((sec, i) => (

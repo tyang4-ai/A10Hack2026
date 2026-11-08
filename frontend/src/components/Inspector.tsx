@@ -284,7 +284,7 @@ function SentenceInspector({ id }: { id: string }) {
       <div className="border-b border-desk-line px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="text-white">{s.id}</span>
-          <span className="text-desk-muted">{s.mode === "copied" ? "copied from the report" : "summarized"}</span>
+          <span className="text-desk-muted">{s.mode === "copied" ? "copied from the agent report" : "summarized"}</span>
           <span className="ml-auto">
             <StatusText status={s.verification.status} />
           </span>

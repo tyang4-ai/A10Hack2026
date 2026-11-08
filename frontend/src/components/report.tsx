@@ -211,7 +211,7 @@ export function ReportModule() {
         <div className="flex gap-1.5"><dt className="text-muted">Pending</dt><dd className="font-mono tabular-nums">{status("pending")}</dd></div>
       </dl>
       <div className="mt-5">
-        <Gauge c={report.certainty} label="Report" />
+        <Gauge c={report.certainty} label="Agent report" />
       </div>
 
       <section className="mt-6">
