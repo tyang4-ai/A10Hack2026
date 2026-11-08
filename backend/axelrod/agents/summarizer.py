@@ -53,11 +53,15 @@ class BriefSectionOut(BaseModel):
     blocks: list[BriefBlockOut]
 
 
+# The nesting stays (section, block, sentence). In R0 Sonnet 5 filled it correctly on both tries and only
+# wrapped the whole input in a JSON string ({"sections": "{\"sections\": [...]}"}), which AgentRunner now
+# parses back (base.coerce_json_strings). The docstring below is the tool description the model reads.
 class BriefDraft(BaseModel):
     """The whole brief as sections of paragraph, bullets, chart and scorecard blocks. Every sentence cites
-    the ids it rests on."""
+    the ids it rests on. sections is a JSON array of section objects, never a string holding JSON."""
     TOOL_NAME: ClassVar[str] = "brief_draft"
-    sections: list[BriefSectionOut]
+    sections: list[BriefSectionOut] = Field(
+        description="The sections in reading order, as a JSON array of objects (not a string).")
 
 
 class FaithfulnessVerdict(BaseModel):
@@ -117,8 +121,8 @@ def _block(tag: str, obj: Any) -> str:
 
 def summarizer_user(payload: dict) -> str:
     who = payload["company"] + (f" ({payload['ticker']})" if payload.get("ticker") else "")
-    return (f"Write the brief for {who}, as of {payload['as_of']}. Call {tool_name(BriefDraft)} once.\n\n"
-            + _block("report", payload))
+    return (f"Write the brief for {who}, as of {payload['as_of']}. Call {tool_name(BriefDraft)} once, with "
+            "sections as a JSON array of objects, not a string.\n\n" + _block("report", payload))
 
 
 def judge_user(sentence: str, evidence: list[dict]) -> str:

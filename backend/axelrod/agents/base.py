@@ -24,7 +24,8 @@ from ..runtime import StopRequested
 if TYPE_CHECKING:
     from ..runtime import RunContext
 
-__all__ = ["AgentRunner", "AgentOutputError", "tool_name", "tool_spec", "register_fake", "register_fake_scan"]
+__all__ = ["AgentRunner", "AgentOutputError", "tool_name", "tool_spec", "coerce_json_strings", "register_fake",
+           "register_fake_scan"]
 
 TERMINAL = ("done", "failed", "stopped")
 _PREVIOUS_INPUT_CHARS = 4000
@@ -80,20 +81,162 @@ def tool_spec(output: type[BaseModel]) -> ToolSpec:
                     input_schema=inline_refs(output.model_json_schema()))
 
 
-def unstringify(tool_input: dict, schema: dict) -> dict:
-    """Models sometimes send a nested array or object as a JSON string. Parse those back."""
-    props = schema.get("properties", {}) if isinstance(schema, dict) else {}
-    out = dict(tool_input)
-    for key, value in out.items():
-        want = (props.get(key) or {}).get("type")
-        if isinstance(value, str) and want in ("array", "object"):
-            try:
-                parsed = json.loads(value)
-            except ValueError:
+# ---------------------------------------------------------------------------
+# JSON strings where the schema wants an array or object
+# ---------------------------------------------------------------------------
+# Sonnet 5 sometimes sends a nested array or object field as a JSON-encoded string, and sometimes the
+# whole input wrapped once more ({"sections": "{\"sections\": [...]}"}, seen live in R0). Code parses
+# those back before validation. Only strings at a place where the schema allows an array or an object
+# and no string are touched, and a parse is kept only when it gives that container type. Scalars are
+# never coerced: "5" stays "5" and pydantic decides.
+
+_MAX_REF_HOPS = 32
+
+
+def _resolve(node: Any, defs: dict) -> dict:
+    """Follow a local $ref (inline_refs leaves them only for recursive definitions)."""
+    for _ in range(_MAX_REF_HOPS):
+        if not isinstance(node, dict):
+            return {}
+        ref = node.get("$ref")
+        if not (isinstance(ref, str) and ref.startswith("#/$defs/")):
+            return node
+        target = defs.get(ref.rsplit("/", 1)[-1])
+        if not isinstance(target, dict):
+            return {}
+        node = {**target, **{k: v for k, v in node.items() if k != "$ref"}}
+    return {}
+
+
+def _branches(node: Any, defs: dict) -> list[dict]:
+    """The schemas a value may match: anyOf / oneOf alternatives (Optional, unions), else the node."""
+    node = _resolve(node, defs)
+    alts = node.get("anyOf") or node.get("oneOf")
+    if isinstance(alts, list):
+        return [b for a in alts for b in _branches(a, defs)]
+    all_of = node.get("allOf")
+    if isinstance(all_of, list) and len(all_of) == 1:
+        return _branches({**_resolve(all_of[0], defs), **{k: v for k, v in node.items() if k != "allOf"}}, defs)
+    return [node]
+
+
+def _types(branch: dict) -> set[str]:
+    t = branch.get("type")
+    if isinstance(t, str):
+        return {t}
+    if isinstance(t, list):
+        return {x for x in t if isinstance(x, str)}
+    if "properties" in branch or "additionalProperties" in branch:
+        return {"object"}
+    if "items" in branch or "prefixItems" in branch:
+        return {"array"}
+    return set()                    # Any, const or enum without a type: never coerced
+
+
+def _kinds(branches: list[dict]) -> set[str]:
+    """Every type the alternatives allow, null aside."""
+    return set().union(*(_types(b) for b in branches)) - {"null"}
+
+
+def _is_kind(value: Any, kinds: set[str]) -> bool:
+    return isinstance(value, list) and "array" in kinds or isinstance(value, dict) and "object" in kinds
+
+
+def _object_branch(branches: list[dict], value: dict) -> dict | None:
+    """The object alternative that fits the value best: a matching const first, then the most known keys."""
+    objs = [b for b in branches if "object" in _types(b)]
+
+    def score(b: dict) -> tuple[int, int]:
+        props = b.get("properties") or {}
+        consts = sum(1 for k, p in props.items() if isinstance(p, dict) and "const" in p
+                     and value.get(k) == p["const"])
+        return consts, sum(1 for k in value if k in props)
+
+    return max(objs, key=score) if objs else None
+
+
+def _from_json_string(text: str, kinds: set[str], name: str | None, parent_props: dict
+                      ) -> tuple[Any, dict, bool]:
+    """(value, wrapper siblings, coerced). A string that parses to the wanted container replaces itself.
+    A parse that gives the parent object instead ({name: <container>, ...}) is unwrapped, and its other
+    keys come back as siblings for the parent to fill where they are missing."""
+    if "string" in kinds or not kinds & {"array", "object"}:
+        return text, {}, False
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, str):                     # encoded twice
+            parsed = json.loads(parsed)
+    except ValueError:
+        return text, {}, False
+    if _is_kind(parsed, kinds):
+        return parsed, {}, True
+    if (isinstance(parsed, dict) and name is not None and name in parsed and _is_kind(parsed[name], kinds)
+            and all(k in parent_props for k in parsed)):
+        return parsed[name], {k: v for k, v in parsed.items() if k != name}, True
+    return text, {}, False
+
+
+def _coerce(value: Any, schema: Any, defs: dict, path: str, hits: list[str]) -> Any:
+    """A copy of value with every JSON string the schema wants as a container parsed, recursively."""
+    branches = _branches(schema, defs)
+    if isinstance(value, str):
+        value, _, ok = _from_json_string(value, _kinds(branches), None, {})
+        if not ok:
+            return value
+        hits.append(path or "(root)")
+    if isinstance(value, dict):
+        branch = _object_branch(branches, value)
+        return value if branch is None else _coerce_object(value, branch, defs, path, hits)
+    if isinstance(value, list):
+        arrays = [b for b in branches if "array" in _types(b)]
+        if not arrays:
+            return value
+        items, prefix = arrays[0].get("items"), arrays[0].get("prefixItems") or []
+        out = []
+        for i, v in enumerate(value):
+            sub = prefix[i] if i < len(prefix) else items
+            out.append(_coerce(v, sub, defs, f"{path}[{i}]", hits) if isinstance(sub, dict) else v)
+        return out
+    return value
+
+
+def _coerce_object(value: dict, branch: dict, defs: dict, path: str, hits: list[str]) -> dict:
+    props = branch.get("properties") or {}
+    extra = branch.get("additionalProperties")
+    out: dict = {}
+    fill: dict = {}
+    for k, v in value.items():
+        sub = props.get(k, extra)
+        if not isinstance(sub, dict):
+            out[k] = v
+            continue
+        where = f"{path}.{k}" if path else str(k)
+        if isinstance(v, str):
+            v, siblings, ok = _from_json_string(v, _kinds(_branches(sub, defs)), str(k), props)
+            if not ok:
+                out[k] = v
                 continue
-            if isinstance(parsed, list if want == "array" else dict):
-                out[key] = parsed
+            hits.append(where)
+            fill.update({sk: sv for sk, sv in siblings.items() if sk not in value})
+        out[k] = _coerce(v, sub, defs, where, hits)
+    for k, v in fill.items():
+        where = f"{path}.{k}" if path else str(k)
+        hits.append(where)
+        out[k] = _coerce(v, props[k], defs, where, hits)
     return out
+
+
+def coerce_json_strings(tool_input: Any, schema: dict) -> tuple[Any, list[str]]:
+    """The tool input with JSON strings parsed where the schema wants an array or object, and the paths
+    that were parsed ("sections", "items[2].refs"). The input itself is never changed."""
+    hits: list[str] = []
+    defs = schema.get("$defs", {}) if isinstance(schema, dict) else {}
+    return _coerce(tool_input, schema, defs if isinstance(defs, dict) else {}, "", hits), hits
+
+
+def unstringify(tool_input: dict, schema: dict) -> dict:
+    """coerce_json_strings without the paths."""
+    return coerce_json_strings(tool_input, schema)[0]
 
 
 def brief_errors(err: ValidationError, limit: int = 12) -> str:
@@ -108,11 +251,17 @@ def brief_errors(err: ValidationError, limit: int = 12) -> str:
     return "\n".join(lines)
 
 
+RETRY_SHAPE_RULE = ("Every list field must be a real JSON array and every object field a real JSON object. "
+                    "Never put a list or an object inside a string, and never wrap the whole input in a string.")
+
+
 def retry_prompt(user: str, tool: str, previous: dict, errors: str) -> str:
-    """The original prompt plus the rejected input and why it was rejected."""
+    """The original prompt plus the rejected input, why it was rejected, and the array/object rule
+    (the R0 failure was a list sent as a JSON string, twice)."""
     sent = json.dumps(previous, ensure_ascii=False, default=str)[:_PREVIOUS_INPUT_CHARS]
     return (f"{user}\n\n---\nYour previous call to {tool} was rejected.\nYou sent:\n{sent}\n\n"
-            f"Validation errors:\n{errors}\n\nCall {tool} again with input that fixes every error.")
+            f"Validation errors:\n{errors}\n\n{RETRY_SHAPE_RULE}\n"
+            f"Call {tool} again with input that fixes every error.")
 
 
 # ---------------------------------------------------------------------------
@@ -200,9 +349,19 @@ class AgentRunner:
                 raise StopRequested(e.reason) from e
             raise
 
+    def _coerced(self, tool_input: dict, spec: ToolSpec, attempt: int) -> Any:
+        """The tool input with JSON-string arrays and objects parsed, noted in the transcript and the log."""
+        fixed, paths = coerce_json_strings(tool_input, spec.input_schema)
+        if paths:
+            self._line("coerced", attempt=attempt, paths=paths)
+            shown = ", ".join(paths[:6]) + (f" and {len(paths) - 6} more" if len(paths) > 6 else "")
+            self._log(f"{spec.name}: parsed {len(paths)} field(s) the model sent as JSON strings ({shown})")
+        return fixed
+
     async def ask(self, system: str, user: str, output: type[BaseModel], *, max_tokens: int = 4096) -> BaseModel:
-        """Forced tool use through ctx.gateway.invoke, validated with output.model_validate, one retry
-        that shows the model its validation error. Transcript to 00-Meta/agents/<agent_id>.jsonl.
+        """Forced tool use through ctx.gateway.invoke, validated with output.model_validate (after
+        coerce_json_strings parses arrays and objects the model sent as JSON strings), one retry that
+        shows the model its validation error. Transcript to 00-Meta/agents/<agent_id>.jsonl.
 
         Raises Blocked (gateway deny), StopRequested (kill switch, agent marked stopped) or
         AgentOutputError (invalid twice). The caller still calls finish() for the other outcomes.
@@ -220,7 +379,7 @@ class AgentRunner:
             try:
                 if res.stop_reason == "max_tokens":
                     raise AgentOutputError(f"the output was cut off at {max_tokens} tokens")
-                obj = output.model_validate(unstringify(res.tool_input, spec.input_schema))
+                obj = output.model_validate(self._coerced(res.tool_input, spec, attempt))
             except (ValidationError, AgentOutputError) as e:
                 errors = brief_errors(e) if isinstance(e, ValidationError) else f"(root): {e}. Answer more briefly."
                 self._line("invalid", attempt=attempt, errors=errors)

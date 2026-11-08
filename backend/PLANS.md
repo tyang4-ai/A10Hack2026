@@ -523,7 +523,7 @@ Stage W2. Agent: `builder`. Added 2026-11-07 8:15 PM from the G2 verifier's find
 
 ## R0 fixes (from the full local rehearsal run)
 
-Added 2026-11-07 8:45 PM. The rehearsal `run_20261108_0bsu0o` (live models, STORE=local, all 10 sources) reached the report in about 5 minutes for $1.20, then failed at summarize. All the live gateway beats worked: 3 link-follows blocked, S-010 flagged PROMPT_ATTACK:HIGH and quarantined, the example.org link blocked. The report has 353 data items (289 pass, 16 fixed, 48 fail), 16 conclusions, 6 scores and 55 holes, but only 2 of 6 criteria are scored. The saved report is `backend/.data/r0_report.json`, and the run's state is under `backend/.data/r0/`. Read them for real examples, and never commit them. Three builders fix this in parallel, each on its own files.
+Added 2026-11-07 8:38 PM. The rehearsal `run_20261108_0bsu0o` (live models, STORE=local, all 10 sources) reached the report in about 5 minutes for $1.20, then failed at summarize. All the live gateway beats worked: 3 link-follows blocked, S-010 flagged PROMPT_ATTACK:HIGH and quarantined, the example.org link blocked. The report has 353 data items (289 pass, 16 fixed, 48 fail), 16 conclusions, 6 scores and 55 holes, but only 2 of 6 criteria are scored. The saved report is `backend/.data/r0_report.json`, and the run's state is under `backend/.data/r0/`. Read them for real examples, and never commit them. Three builders fix this in parallel, each on its own files.
 
 ### B-fix-brief
 **Owns.** `axelrod/agents/base.py`, `axelrod/agents/summarizer.py`, `tests/test_agent_coerce.py` (new).
@@ -700,3 +700,5 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - Code only lowers model claims: research_stage is forced N/A with a coverage-history Hole, and data coverage is "low" for a 10-year criterion with fewer than ten fiscal years of cited data.
 - Repair order: conclusions first, then scores and charts that failed only because of them, then the rest. At most two repairs, then the item stays fail and becomes a Hole. Blocked items are never touched. Each failed extractor agent gets a Hole.
 - Public additions: `finalize.in_scope`, `build_rollup`, `build_holes`, `CertaintyBook`, `emit_verified`; `verify.run_checks(ctx, item)`, `tally`, `judge_claim`; `repair.repair_item`, `redisplay`, `replace_number`; `draft.point_value`, `ANALYST_ONLY`.
+
+**2026-11-07 8:50 PM, B-fix-brief REPORT.** `agents/base.py` adds `coerce_json_strings(tool_input, schema) -> (fixed, paths)`, applied before validation. It parses strings where the schema expects an array or object, recursively, and unwraps an answer that was wrapped in its own field name (`{"sections": "{\"sections\": [...]}"}`). Scalars and string-typed fields are never touched. Each coercion logs an `agent.log` line, and the transcript keeps the raw input. `RETRY_SHAPE_RULE` is added to retries. The real SHL summarizer prompt is about 64k tokens in, about $0.17 per try.
