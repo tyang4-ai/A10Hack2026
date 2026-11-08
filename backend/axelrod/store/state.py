@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from ..contract import RUBRIC, m
 from ..ids import IdAllocator
+from .events import lock_for
 
 if TYPE_CHECKING:
     from ..config import Settings
@@ -33,6 +34,16 @@ _REPORT_STATUS_BY_STAGE: dict[str, ReportStatus] = {
 }
 _CATEGORY_ORDER = [c["id"] for c in RUBRIC["categories"]]
 _CATEGORY_LABEL = {c["id"]: c["label"] for c in RUBRIC["categories"]}
+
+# v0.3: every run has one orchestrator, Bobby. Every other agent is one of his goons, numbered in spawn order.
+BOBBY_ID = "bobby"
+BOBBY_NAME = "Bobby"
+ORCHESTRATOR_ROLE = "orchestrator"
+
+
+def agent_name(role: str, goon_number: int) -> str:
+    """The display name for an agent. The one place names come from, so no caller names an agent itself."""
+    return BOBBY_NAME if role == ORCHESTRATOR_ROLE else f"Bobby's goon #{goon_number}"
 
 
 class RunState(BaseModel):
@@ -66,6 +77,41 @@ class RunState(BaseModel):
     report_generated_at: str | None = None
     report_markdown_path: str | None = None
     disclaimer: str = DISCLAIMER
+
+    # v0.2 / v0.3 (V1-shapes). Filled by later plans, empty until then.
+    messages: list[m.AgentMessage] = []                   # agent chat, oldest first (V7-chat)
+    decisions: list[m.AgentDecisionData] = []             # Bobby's calls, oldest first (V3-rework)
+
+    # -- agents ---------------------------------------------------------------------------
+
+    def goon_count(self) -> int:
+        """Agents registered so far that are not Bobby."""
+        return sum(a.role != ORCHESTRATOR_ROLE for a in self.agents.values())
+
+    def register_agent(self, agent: m.Agent) -> m.Agent:
+        """Put an agent in the run and give it its name: "Bobby", or "Bobby's goon #<n>" in spawn order.
+
+        Every place that registers an agent calls this, so names never come from callers. Registering the
+        same agent_id again keeps the name it already has (a goon number is never spent twice)."""
+        with lock_for(self.run.run_id):
+            old = self.agents.get(agent.agent_id)
+            if old is not None and old.name:
+                agent.name = old.name
+            else:
+                agent.name = agent_name(agent.role, self.goon_count() + 1)
+            self.agents[agent.agent_id] = agent
+            return agent
+
+    def name_agents(self) -> int:
+        """Give a name to every agent that has none, in spawn order (snapshots from before v0.3). Returns how many."""
+        named, goons = 0, 0
+        for agent in self.agents.values():
+            if agent.role != ORCHESTRATOR_ROLE:
+                goons += 1
+            if agent.name is None:
+                agent.name = agent_name(agent.role, goons)
+                named += 1
+        return named
 
     # -- item views -------------------------------------------------------------------------
 

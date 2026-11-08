@@ -14,6 +14,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from ..cache import run_cache_mode
 from ..config import BACKEND_DIR, Settings
 from ..contract import m
 from ..ids import new_run_id, now_iso
@@ -59,9 +60,7 @@ class Store:
         With FAKE_MODELS=1 the notes say the run is simulated. mode stays "live", the only fitting contract value.
         """
         now = now_iso()
-        run_id = new_run_id()
-        while run_id in self._runs:
-            run_id = new_run_id()
+        run_id = self.fresh_run_id()
         budget = req.budget_usd if req.budget_usd is not None else self.settings.budget_usd
         notes = req.notes
         if self.settings.fake_models:
@@ -69,11 +68,19 @@ class Store:
         run = m.Run(run_id=run_id, company=req.company.strip(), ticker=(req.ticker or "").strip() or None,
                     depth=req.depth, status="running", stage="plan", created_at=now, updated_at=now,
                     created_via=req.created_via, notes=notes, policy_version=0, counts=m.RunCounts(),
-                    usage=m.Usage(budget_usd=budget), last_seq=0, mode="live")
+                    usage=m.Usage(budget_usd=budget), last_seq=0, mode="live",
+                    cache_mode=run_cache_mode(self.settings))
         state = RunState(run=run)
         register_run(run_id, run.company)
         self._runs[run_id] = state
         return state
+
+    def fresh_run_id(self) -> str:
+        """A new run id no run in this store has (a fork needs one too)."""
+        run_id = new_run_id()
+        while run_id in self._runs:
+            run_id = new_run_id()
+        return run_id
 
     def get(self, run_id: str) -> RunState:
         """Raises KeyError for an unknown run (the API turns it into 404)."""
@@ -241,6 +248,7 @@ class Store:
 
     def _adopt(self, state: RunState) -> None:
         self.put(state)
+        state.name_agents()             # snapshots from before v0.3 have unnamed agents
         state.recount()
         state.recount_gateway()
         if state.events:
@@ -333,6 +341,7 @@ class Store:
                 events_file = folder / "events.jsonl"
                 state.events = parse_jsonl(events_file.read_text(encoding="utf-8")) if events_file.is_file() else []
                 state.run.mode = "replay"
+                state.name_agents()
                 if state.events:
                     state.run.last_seq = state.events[-1].seq
                 state.recount()

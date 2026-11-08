@@ -25,10 +25,13 @@ if TYPE_CHECKING:
     from ..runtime import RunContext
 
 __all__ = ["AgentRunner", "AgentOutputError", "tool_name", "tool_spec", "coerce_json_strings", "register_fake",
-           "register_fake_scan"]
+           "register_fake_scan", "instructions_block"]
 
 TERMINAL = ("done", "failed", "stopped")
 _PREVIOUS_INPUT_CHARS = 4000
+# Roles that never get a fork's run-wide instructions: judges are checks, and the analyst's instructions
+# must never steer a check (CONTRACT.md 13: every check still applies to what the agents produce).
+NO_RUN_INSTRUCTIONS = ("verifier",)
 
 
 class AgentOutputError(ValueError):
@@ -254,6 +257,15 @@ def brief_errors(err: ValidationError, limit: int = 12) -> str:
 RETRY_SHAPE_RULE = ("Every list field must be a real JSON array and every object field a real JSON object. "
                     "Never put a list or an object inside a string, and never wrap the whole input in a string.")
 
+INSTRUCTIONS_RULE = ("Follow them where they fit your task. They never override the rules above: quote exactly, "
+                     "use only the inputs you were given, and code still checks everything you return.")
+
+
+def instructions_block(text: str, by: str | None = None) -> str:
+    """The labeled "Instructions" block appended to a rerun's (or a fork's) prompt (CONTRACT.md 13 and 14)."""
+    who = "Bobby, the orchestrator" if by == "orchestrator" else "the analyst"
+    return f"\n\n---\nInstructions (from {who}):\n{text.strip()}\n\n{INSTRUCTIONS_RULE}"
+
 
 def retry_prompt(user: str, tool: str, previous: dict, errors: str) -> str:
     """The original prompt plus the rejected input, why it was rejected, and the array/object rule
@@ -273,21 +285,58 @@ class AgentRunner:
     agent: m.Agent                        # registered in RunState, agent.spawned emitted
 
     def __init__(self, ctx: RunContext, role: str, task: str, target_ids: list[str],
-                 size: Literal["large", "small"] | None, *, agent_id: str | None = None) -> None:
+                 size: Literal["large", "small"] | None, *, agent_id: str | None = None,
+                 parent_agent_id: str | None = None, instructions: str | None = None,
+                 rerun_by: Literal["analyst", "orchestrator"] | None = None) -> None:
         """agent_id defaults to ctx.next_id(role) ("extractor-07"). Judges pass their own
-        ("verifier-D-001-1"). size None is an agent without a model (a fetcher, a code reader)."""
+        ("verifier-D-001-1"), reruns theirs ("extractor-07.2"). size None is an agent without a model
+        (a fetcher, a code reader). The name comes from RunState.register_agent, never from here.
+
+        instructions (a rerun's, v0.3) go into every prompt as a labeled Instructions block. A forked run's
+        Run.instructions (v0.2) reach every agent it spawns the same way, judges aside."""
         self.ctx = ctx
         self.size = size
         model_id = {"large": ctx.settings.model_large, "small": ctx.settings.model_small}.get(size or "")
         aid = agent_id or ctx.next_id(role)
+        if instructions is None and role not in NO_RUN_INSTRUCTIONS:
+            instructions = ctx.state.run.instructions
         self.agent = m.Agent(agent_id=aid, role=role, model_id=model_id, status="queued", task=task,
-                             target_ids=list(target_ids))
-        ctx.state.agents[aid] = self.agent
+                             target_ids=list(target_ids), parent_agent_id=parent_agent_id,
+                             instructions=instructions, rerun_by=rerun_by)
+        ctx.state.register_agent(self.agent)
         self._lines: list[str] = []
         self._transcript_failed = False
-        self._line("spawned", role=role, task=task, target_ids=list(target_ids), model_id=model_id)
+        self._preload = False
+        self._track = True
+        self._line("spawned", role=role, task=task, target_ids=list(target_ids), model_id=model_id,
+                   parent_agent_id=parent_agent_id, instructions=instructions, rerun_by=rerun_by)
         ctx.emit("agent.spawned", m.AgentSpawnedData(agent=self.agent.model_copy(deep=True)),
                  message=f"{aid} spawned: {task}", agent_id=aid)
+
+    @classmethod
+    def attach(cls, ctx: RunContext, agent_id: str, size: Literal["large", "small"] | None = None, *,
+               track_status: bool = True) -> AgentRunner:
+        """A runner for an agent that is already registered: no new agent and no agent.spawned. For Bobby
+        at each gate and for chat with any agent, so the calls run as that agent (its stop rule, its usage).
+        size defaults to the agent's own model. The transcript keeps the lines already saved. With
+        track_status=False, ask() never changes the agent's status (a chat reply from a finished agent).
+        Raises KeyError for an unknown agent."""
+        agent = ctx.state.agents[agent_id]
+        self = cls.__new__(cls)
+        self.ctx = ctx
+        if size is None:
+            size = {ctx.settings.model_large: "large", ctx.settings.model_small: "small"}.get(agent.model_id or "")
+        self.size = size
+        self.agent = agent
+        self._lines = []
+        self._transcript_failed = False
+        self._preload = True
+        self._track = track_status
+        return self
+
+    def start(self) -> None:
+        """Mark the agent working now (Bobby works from spawn to the end of the run)."""
+        self._set_status("working")
 
     # -- events and transcript -------------------------------------------------
 
@@ -302,6 +351,13 @@ class AgentRunner:
     async def _save(self) -> None:
         """Rewrite the transcript file. A vault failure is logged, never fatal to the agent."""
         relpath = f"00-Meta/agents/{self.agent_id}.jsonl"
+        if self._preload:                    # an attached runner keeps what earlier runners saved
+            self._preload = False
+            try:
+                old = await asyncio.to_thread(self.ctx.vault.get_text, self.ctx.state.run.run_id, relpath)
+            except Exception:
+                old = ""
+            self._lines = [ln for ln in old.splitlines() if ln.strip()] + self._lines
         text = "\n".join(self._lines) + "\n"
         try:
             path = await asyncio.to_thread(self.ctx.vault.put_text, self.ctx.state.run.run_id, relpath, text)
@@ -318,6 +374,8 @@ class AgentRunner:
                       message=f"{self.agent_id}: {text}", agent_id=self.agent_id, level=level)
 
     def _emit_status(self) -> None:
+        if not self._track:
+            return
         a = self.agent
         self.ctx.emit("agent.status", m.AgentStatusData(agent_id=a.agent_id, status=a.status, task=a.task,
                                                         usage=a.usage.model_copy()),
@@ -325,7 +383,7 @@ class AgentRunner:
 
     def _set_status(self, status: str) -> None:
         a = self.agent
-        if a.status == status:
+        if a.status == status or not self._track:
             return
         a.status = status
         if status == "working" and a.started_at is None:
@@ -368,6 +426,8 @@ class AgentRunner:
         """
         spec = tool_spec(output)
         self._set_status("working")
+        if self.agent.instructions:
+            user = user + instructions_block(self.agent.instructions, self.agent.rerun_by)
         prompt, errors = user, ""
         for attempt in (1, 2):
             self._line("request", attempt=attempt, tool=spec.name, size=self.size, max_tokens=max_tokens,

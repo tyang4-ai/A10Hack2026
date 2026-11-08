@@ -244,9 +244,10 @@ def test_pre_approval_policy_shows_what_the_gateway_enforces(settings):
     assert (sys_rule.rule_id, sys_rule.effect, sys_rule.action, sys_rule.origin) == (
         "R-sys-models", "allow", "model.invoke", "system")
     scopes = {s.role: s for s in view.role_scopes}
-    assert set(scopes) == {"planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer",
-                           "reviser"}
+    assert set(scopes) == {"orchestrator", "planner", "fetcher", "extractor", "drafter", "verifier", "repairer",
+                           "summarizer", "reviser"}
     assert scopes["planner"].models == [settings.model_large] and scopes["fetcher"].actions == ["fetch"]
+    assert scopes["orchestrator"].actions == ["model.invoke"] and scopes["orchestrator"].models == [settings.model_large]
     assert view.budget_usd == settings.budget_usd
     # The view matches what decide does: the planner may call its model, every fetch is default deny.
     planner = m.Agent(agent_id="planner-01", role="planner", status="working", task="t")

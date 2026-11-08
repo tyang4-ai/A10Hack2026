@@ -131,6 +131,16 @@ def markdown_text(pages: list[str]) -> str:
 # ---------------------------------------------------------------------------
 
 
+def doc_origin(result: FetchResult, fetched_at: str) -> tuple[str, str]:
+    """(Document.origin, collected_at) from what the gateway says about the body. A live fetch is "fetched",
+    collected now. A cache or archive copy keeps its own collection date, so the label never lies."""
+    origin = getattr(result, "origin", None) or "fetched"
+    if origin not in ("fetched", "cache", "archive"):
+        origin = "fetched"
+    collected = getattr(result, "collected_at", None)
+    return origin, (collected if origin != "fetched" and collected else fetched_at)
+
+
 async def ingest(ctx: RunContext, source: m.Source, result: FetchResult, *,
                  agent: m.Agent | None = None) -> m.Document:
     """Store result's body for source and return the Document (pages go into ctx.state.pages).
@@ -153,11 +163,14 @@ async def ingest(ctx: RunContext, source: m.Source, result: FetchResult, *,
     raw_rel, text_rel, meta_rel = doc_relpaths(source, parsed.content_type)
     raw_path = await asyncio.to_thread(ctx.vault.put_bytes, run_id, raw_rel, result.body)
     text_path = await asyncio.to_thread(ctx.vault.put_text, run_id, text_rel, markdown_text(parsed.pages))
+    fetched_at = now_iso()
+    origin, collected_at = doc_origin(result, fetched_at)
     doc = m.Document(
         doc_id=doc_id, source_id=source.source_id, title=source.title, url=source.url,
         content_type=parsed.content_type, paginated=parsed.paginated, pages=len(parsed.pages),
-        sha256=hashlib.sha256(result.body).hexdigest(), bytes=len(result.body), fetched_at=now_iso(),
+        sha256=hashlib.sha256(result.body).hexdigest(), bytes=len(result.body), fetched_at=fetched_at,
         vault_paths=m.DocVaultPaths(raw=raw_path, text=text_path, meta=""), quarantined=quarantined, scan=scan,
+        origin=origin, collected_at=collected_at,
     )
     doc.vault_paths.meta = await asyncio.to_thread(ctx.vault.put_text, run_id, meta_rel, meta_json(doc, result))
 

@@ -6,6 +6,10 @@ Without --run: create an SHL run, poll until awaiting_approval, check the approv
 approve every priority source, check the policy, read every panel, then stop the run. If the run already
 finished by then (a later stage failed, or the mock's replay ran out), a second run is stopped while it
 waits for approval, so the stop route is still checked.
+The v0.2 and v0.3 routes are covered too: Bobby first in /agents and every agent named, stop one agent,
+agent chat, rerun one agent, resume and rerun from a step, with their 404, 409 and 422 answers. A real API
+whose control module is still a stub answers 409 invalid_state "not built yet (<plan>)": that passes, and
+the plan is listed in the notes.
 With --run: read an existing run through every GET route.
 Uses only the standard library for HTTP. The key comes from --key or AXELROD_API_KEY and is never printed.
 """
@@ -27,6 +31,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, so `b
 from backend.axelrod.contract import m  # noqa: E402
 
 FINISHED = ("done", "stopped", "failed")
+STAGES = ("plan", "approve", "collect", "extract", "draft", "verify", "repair", "summarize", "verify_summary",
+          "complete")
+STUB = "not built yet"
 
 
 class Smoke:
@@ -106,6 +113,31 @@ class Smoke:
             return None
         self.ok(f"{label} -> {status} {code}")
         return err
+
+    def check_or_stub(self, label: str, method: str, path: str, model: Any, *, body: Any = None,
+                      status: int = 200) -> Any:
+        """check(), except that a stub's 409 invalid_state "not built yet (<plan>)" also passes (and is noted).
+        Returns the parsed model, or None for a stub or a failure."""
+        code, data = self.call(method, path, body)
+        if code == 409:
+            try:
+                err = m.ErrorResponse.model_validate(data).error
+            except Exception:
+                err = None
+            if err is not None and err.code == "invalid_state" and err.message.startswith(STUB):
+                self.ok(f"{label} -> 409 {err.message}")
+                self.note(f"{label}: {err.message}")
+                return None
+        if code != status:
+            self.fail(label, f"HTTP {code}, expected {status} or a stub's 409: {str(data)[:300]}")
+            return None
+        try:
+            parsed = model.model_validate(data)
+        except Exception as e:
+            self.fail(label, f"does not match {model.__name__}: {str(e)[:500]}")
+            return None
+        self.ok(f"{label} -> {model.__name__}")
+        return parsed
 
     def expect(self, label: str, cond: bool, why: str) -> None:
         if cond:
@@ -232,7 +264,108 @@ class Smoke:
         self.check("POST comment", "POST", f"{r}/comments", m.Comment, status=201,
                    body={"target_type": "run", "text": "contract smoke comment"})
         self.read_everything(rid)
+        self.agent_controls(rid)
         self.stop_flow(rid, company, ticker, wait_s)
+
+    def agent_controls(self, rid: str) -> None:
+        """v0.2 and v0.3 routes on a live (or just finished) run: Bobby and his goons, stop one agent, chat,
+        rerun one agent, and resume or rerun-from-a-step refused while the run isn't stopped."""
+        r = f"/runs/{rid}"
+        listing = self.check("GET agents (Bobby and his goons)", "GET", f"{r}/agents", m.AgentList)
+        agents = listing.agents if listing else []
+        first = agents[0] if agents else None
+        self.expect("Bobby is the first agent", first is not None and (first.agent_id, first.role, first.name) == (
+            "bobby", "orchestrator", "Bobby"), f"first agent: {first and (first.agent_id, first.role, first.name)}")
+        unnamed = [a.agent_id for a in agents if not a.name]
+        goons = [a for a in agents if a.role != "orchestrator"]
+        self.expect("every agent has a name", not unnamed, f"no name: {unnamed}")
+        self.expect("every other agent is one of Bobby's goons",
+                    all((a.name or "").startswith("Bobby's goon #") for a in goons),
+                    f"names: {[a.name for a in goons]}")
+        for what, method, path, body in (("stop", "POST", "stop", {}), ("messages", "GET", "messages", None),
+                                         ("rerun", "POST", "rerun", {"instructions": "x"})):
+            self.expect_error(f"{what} an unknown agent", method, f"{r}/agents/nobody-99/{path}", 404, "not_found",
+                              body=body)
+        self.expect_error("rerun an agent without instructions", "POST", f"{r}/agents/bobby/rerun", 422,
+                          "validation_error", body={"instructions": ""})
+        self.expect_error("chat without text", "POST", f"{r}/agents/bobby/messages", 422, "validation_error",
+                          body={"text": ""})
+        self.expect_error("rerun Bobby", "POST", f"{r}/agents/bobby/rerun", 409, "invalid_state",
+                          body={"instructions": "try harder"})
+        self.check_or_stub("GET Bobby's chat", "GET", f"{r}/agents/bobby/messages", m.AgentMessageList)
+        run = self.check("GET run", "GET", r, m.Run, quiet=True)
+        if run is None:
+            return
+        if run.status in FINISHED:
+            self.note(f"{rid} finished ({run.status}) before the agent controls, so only the 409s are checked")
+            self.expect_error("stop an agent of a finished run", "POST", f"{r}/agents/bobby/stop", 409,
+                              "invalid_state", body={})
+            return
+        msg = self.check_or_stub("POST a chat message to Bobby", "POST", f"{r}/agents/bobby/messages",
+                                 m.AgentMessage, body={"text": "What will you check after extract?"}, status=201)
+        if msg is not None:
+            self.expect("the chat message is the analyst's, sent", (msg.author, msg.status) == ("analyst", "sent"),
+                        f"{msg.author} {msg.status}")
+        self.expect_error("resume a run that isn't stopped", "POST", f"{r}/resume", 409, "invalid_state", body={})
+        self.expect_error("rerun from a step while the run is going", "POST", f"{r}/rerun", 409, "invalid_state",
+                          body={"from_stage": "approve", "instructions": "contract smoke"})
+        done = next((a for a in goons if a.status in ("done", "failed") and a.role not in ("fetcher",)), None)
+        if done is not None:
+            new = self.check_or_stub(f"rerun {done.agent_id}", "POST", f"{r}/agents/{done.agent_id}/rerun", m.Agent,
+                                     body={"instructions": "contract smoke: same task", "recheck": False},
+                                     status=201)
+            if new is not None:
+                self.expect("the rerun names its parent", new.parent_agent_id == done.agent_id
+                            and new.rerun_by == "analyst" and bool(new.name), f"{new}")
+        else:
+            self.note("no finished goon to rerun yet, rerun one agent only checked for its 404, 409 and 422")
+        # Bobby works until the run ends, so stopping him is deterministic (the run carries on with proceed).
+        stopped = self.check_or_stub("stop Bobby", "POST", f"{r}/agents/bobby/stop", m.Agent,
+                                     body={"reason": "contract smoke"})
+        if stopped is not None:
+            self.expect("Bobby is stopped", stopped.status == "stopped", f"status {stopped.status}")
+            self.expect_error("stop Bobby twice", "POST", f"{r}/agents/bobby/stop", 409, "invalid_state", body={})
+            run = self.check("GET run after stopping one agent", "GET", r, m.Run, quiet=True)
+            self.expect("the run keeps going after one agent stops", run is not None and run.status != "stopped",
+                        f"status {run and run.status}")
+
+    def stopped_controls(self, rid: str, run: m.Run) -> None:
+        """On a stopped run: chat, rerun one agent and stop one agent are refused, rerun from a step checks
+        the step, and resume is the very last call (it changes the run)."""
+        r = f"/runs/{rid}"
+        self.expect_error("chat on a stopped run", "POST", f"{r}/agents/bobby/messages", 409, "invalid_state",
+                          body={"text": "hello"})
+        self.expect_error("rerun an agent of a stopped run", "POST", f"{r}/agents/bobby/rerun", 409,
+                          "invalid_state", body={"instructions": "x"})
+        self.expect_error("stop an agent of a stopped run", "POST", f"{r}/agents/bobby/stop", 409, "invalid_state",
+                          body={})
+        self.expect_error("rerun from complete", "POST", f"{r}/rerun", 409, "invalid_state",
+                          body={"from_stage": "complete", "instructions": "x"})
+        self.expect_error("rerun from an unknown step", "POST", f"{r}/rerun", 422, "validation_error",
+                          body={"from_stage": "nowhere", "instructions": "x"})
+        if run.stage in STAGES and STAGES.index(run.stage) < STAGES.index("verify_summary"):
+            self.expect_error("rerun from a step the run never reached", "POST", f"{r}/rerun", 409,
+                              "invalid_state", body={"from_stage": "verify_summary", "instructions": "x"})
+        child = self.check_or_stub("rerun from approve (fork)", "POST", f"{r}/rerun", m.Run,
+                                   body={"from_stage": "approve", "instructions": "contract smoke fork"},
+                                   status=201)
+        if child is not None:
+            self.expect("the fork names its parent", (child.parent_run_id, child.rerun_from) == (rid, "approve")
+                        and child.run_id != rid, f"{child.parent_run_id} {child.rerun_from}")
+            parent = self.check("GET parent after the fork", "GET", r, m.Run, quiet=True)
+            self.expect("the parent never changes", parent is not None and parent.status == "stopped",
+                        f"status {parent and parent.status}")
+            self.call("POST", f"/runs/{child.run_id}/stop", {"reason": "contract smoke cleanup"})
+        resumed = self.check_or_stub("resume", "POST", f"{r}/resume", m.Run, body={"reason": "contract smoke"})
+        if resumed is not None:
+            deadline = time.monotonic() + 5.0       # the mock flips the status a moment after it answers
+            while resumed is not None and resumed.status == "stopped" and time.monotonic() < deadline:
+                time.sleep(0.1)
+                resumed = self.check("poll run", "GET", r, m.Run, quiet=True)
+            self.expect("the run is running again", resumed is not None and resumed.status != "stopped",
+                        f"status {resumed and resumed.status}")
+            self.expect_error("resume twice", "POST", f"{r}/resume", 409, "invalid_state", body={})
+            self.call("POST", f"{r}/stop", {"reason": "contract smoke cleanup"})
 
     def stop_flow(self, rid: str, company: str, ticker: str | None, wait_s: float) -> None:
         r = f"/runs/{rid}"
@@ -268,6 +401,8 @@ class Smoke:
         if run is not None:
             self.expect("run stays stopped", run.status == "stopped", f"status {run.status}")
         self.all_events(rid)
+        if run is not None and run.status == "stopped":
+            self.stopped_controls(rid, run)
 
     def comment_rejected(self, rid: str, comment: m.Comment, timeout: float = 3.0) -> bool:
         """Rejected in the response, or (the mock resolves it a moment later) in GET /comments soon after."""

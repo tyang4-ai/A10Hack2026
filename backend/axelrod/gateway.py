@@ -44,7 +44,9 @@ METADATA_HOSTS = frozenset({"instance-data", "instance-data.ec2.internal"})
 _NUMERIC_V4 = re.compile(r"(?:0x[0-9a-f]+|\d+)(?:\.(?:0x[0-9a-f]+|\d+)){0,3}")
 
 # Which model sizes each role may call. The fetcher is the only role that may fetch.
+# The orchestrator (Bobby, v0.3) makes the big calls on the large model and never fetches.
 ROLE_SIZES: dict[str, tuple[str, ...]] = {
+    "orchestrator": ("large",),
     "planner": ("large",),
     "fetcher": (),
     "extractor": ("small",),
@@ -76,6 +78,9 @@ class FetchResult:
     content_type: str
     body: bytes
     request_id: str
+    origin: str = "fetched"             # v0.2 Document.origin: fetched (live), cache or archive
+    collected_at: str | None = None     # when the bytes were first collected. None means now (a live fetch)
+    cache: str | None = None            # v0.2 gateway.request cache: "hit", "miss" or None (cache off)
 
 
 @dataclass
@@ -155,10 +160,13 @@ def host_matches(host: str, domain: str) -> bool:
 
 
 def rule_matches(rule: m.PolicyRule, role: str, action: str, target: str,
-                 parts: tuple[str, str, str] | None) -> bool:
-    """Does this rule apply to (role, action, target)? Missing scope fields fail closed:
-    a fetch allow rule with no domain matches nothing, a fetch deny rule with no domain matches everything."""
+                 parts: tuple[str, str, str] | None, *, agent_id: str | None = None) -> bool:
+    """Does this rule apply to (role, action, target) for this agent? Missing scope fields fail closed:
+    a fetch allow rule with no domain matches nothing, a fetch deny rule with no domain matches everything.
+    A rule with agent_id set (v0.2, R-stop-<agent_id>) applies to that one agent only."""
     if rule.action != action or (rule.roles and role not in rule.roles):
+        return False
+    if rule.agent_id is not None and rule.agent_id != agent_id:
         return False
     if action == "model.invoke":
         return rule.model_id is None or rule.model_id == target
@@ -392,12 +400,13 @@ class Gateway:
         # 4. explicit deny: link-local hosts first (no rule can allow them), then the policy's deny rules
         if parts is not None and is_link_local(parts[1]):
             return "blocked", None, f"{parts[1]}: link-local address, never fetched."
+        aid = agent.agent_id
         for rule in policy.rules:
-            if rule.effect == "deny" and rule_matches(rule, role, action, target, parts):
+            if rule.effect == "deny" and rule_matches(rule, role, action, target, parts, agent_id=aid):
                 return "blocked", rule.rule_id, _deny_reason(rule)
         # 5. allow
         for rule in policy.rules:
-            if rule.effect == "allow" and rule_matches(rule, role, action, target, parts):
+            if rule.effect == "allow" and rule_matches(rule, role, action, target, parts, agent_id=aid):
                 if action == "model.invoke":
                     return "allowed", rule.rule_id, f"Role '{role}' may call this model."
                 return "allowed", rule.rule_id, f"{rule.rule_id} allows {rule.domain}{rule.path_prefix or ''}."
@@ -425,11 +434,14 @@ class Gateway:
     def _emit_request(self, agent: m.Agent, request_id: str, action: str, target: str, decision: str,
                       rule_id: str | None, reason: str, t0: float, *, source_id: str | None = None,
                       http_status: int | None = None, nbytes: int | None = None, tokens_in: int | None = None,
-                      tokens_out: int | None = None, cost_usd: float | None = None) -> None:
+                      tokens_out: int | None = None, cost_usd: float | None = None, cache: str | None = None,
+                      cached_at: str | None = None) -> None:
+        """One gateway.request. cache and cached_at stay None while the demo cache is off (v0.2)."""
         data = m.GatewayRequestData(
             request_id=request_id, role=agent.role, action=action, target=target, decision=decision,
             rule_id=rule_id, reason=reason, source_id=source_id, latency_ms=_ms(t0), http_status=http_status,
-            bytes=nbytes, tokens_in=tokens_in, tokens_out=tokens_out, cost_usd=cost_usd)
+            bytes=nbytes, tokens_in=tokens_in, tokens_out=tokens_out, cost_usd=cost_usd, cache=cache,
+            cached_at=cached_at)
         if action == "model.invoke":
             detail = f" ({tokens_in} in / {tokens_out} out)" if tokens_in is not None else f": {reason}"
             message = f"{agent.agent_id} -> {target} {decision}{detail}"

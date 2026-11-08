@@ -4,9 +4,9 @@ The gateway's R-revoke rule stops new requests to the source, but items already 
 the report. So after Gateway.revoke, this module re-runs the code check citations_resolve on every data item from
 that source, then on the items that cite those (D, then C, then E and G), then on brief sentences when a brief
 exists. An item whose check changes goes blocked (blocked never counts as a pass) with the detail
-"source revoked: S-006", its certainty is recomputed by contract/certainty.py, and item.verified (summary.verified
-for a sentence) is emitted. item.updated with reason "source_revoked" goes out first once the contract allows that
-reason; until then item.verified alone carries the new verification and certainty.
+"source revoked: S-006", its certainty is recomputed by contract/certainty.py, and two events go out for it:
+item.updated with reason "source_revoked" (contract v0.2) carrying the whole new version, then item.verified with
+the verification and certainty (summary.verified for a sentence).
 
 A final report keeps its rollup: finalize is not re-run. The score items' details name the rollup criteria that
 still count them. A source revoked before its items exist is simply never extracted (collect's fetch is blocked).
@@ -42,7 +42,7 @@ class CascadeResult:
 
 
 def update_reason_allowed() -> bool:
-    """True once contract/models.py lists "source_revoked" as an item.updated reason (emit validates it)."""
+    """True when contract/models.py lists "source_revoked" as an item.updated reason (it does since v0.2)."""
     ann = m.ItemUpdatedData.model_fields["reason"].annotation
     return UPDATE_REASON in get_args(ann)
 
@@ -266,12 +266,10 @@ def revoke_cascade(ctx: RunContext, source_id: str) -> CascadeResult:
         state.items[iid] = new
         changed.append(new)
     certs = _item_certainties(state)
-    with_reason = update_reason_allowed()
     for item in changed:
         item.certainty = _certainty_of(item, certs)
-        if with_reason:
-            ctx.emit("item.updated", {"item": item, "reason": UPDATE_REASON}, level="warn",
-                     message=f"{item.id}: {source_id} was revoked, re-checking citations")
+        ctx.emit("item.updated", m.ItemUpdatedData(item=item, reason=UPDATE_REASON), level="warn",
+                 message=f"{item.id}: {source_id} was revoked, re-checking citations")
         ctx.emit("item.verified", m.ItemVerifiedData(item_id=item.id, verification=item.verification,
                                                      certainty=item.certainty),
                  level="warn", message=_message(item, source_id))

@@ -3,15 +3,22 @@ backed by RunState instead of fixtures.
 
 Run with `uvicorn backend.axelrod.api:app` from the repo root. `create_app(settings)` builds a fresh app
 (tests use it with their own DATA_DIR). Settings are read at startup, not at import.
+
+The v0.2 and v0.3 control routes (stop one agent, chat, resume, rerun from a step, rerun one agent) check the
+same states as the mock, then call one control module each (agentstop, chat, resume, fork, rework). While a
+module is still a stub (NotImplementedError("<plan id>")) its route answers 409 invalid_state
+"not built yet (<plan id>)". A module raises runtime.InvalidState for any other 409.
 """
 from __future__ import annotations
 
 import asyncio
 import hmac
+import importlib
+import inspect
 import logging
 import re
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, Callable, Optional
+from typing import Annotated, Any, Callable, Optional, get_args
 
 from fastapi import Body, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
@@ -19,11 +26,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from . import gates
 from .config import BACKEND_DIR, Settings, get_settings
 from .contract import CONTRACT_VERSION, m
 from .ids import now_iso
 from .orchestrator import start_run
-from .runtime import RunContext
+from .runtime import InvalidState, RunContext
 from .stages import approve
 from .store import Store, Vault
 from .store.events import events_page
@@ -34,6 +42,7 @@ KEY_HEADER = "X-Axelrod-Key"
 TEST_PAGES_DIR = BACKEND_DIR / "data" / "test_pages"
 TEST_PAGE_NAME = re.compile(r"[a-z0-9_-]+\.html")      # fullmatch: a plain file name, no dots, slashes or newline
 SIMULATED_HEADER = "X-Axelrod-Simulated"
+STAGE_ORDER: tuple[str, ...] = get_args(m.Stage)
 log = logging.getLogger(__name__)
 
 
@@ -94,6 +103,7 @@ def create_app(settings: Settings | None = None, *, store: Store | None = None) 
         app.state.rt = rt
         yield
         tasks = [c.task for c in rt.contexts.values() if c.task is not None and not c.task.done()]
+        tasks += [t for c in rt.contexts.values() for t in c.background if not t.done()]
         for t in tasks:
             t.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -204,6 +214,14 @@ def _install_routes(app: FastAPI) -> None:
     app.get(f"{p}/runs/{{run_id}}/comments", response_model=m.CommentList)(list_comments)
     app.post(f"{p}/runs/{{run_id}}/comments", response_model=m.Comment, status_code=201)(add_comment)
     app.post(f"{p}/runs/{{run_id}}/demo/inject-errors", response_model=m.InjectErrorsResponse)(inject_errors)
+    # v0.2 and v0.3 controls (CONTRACT.md 13 and 14)
+    app.post(f"{p}/runs/{{run_id}}/resume", response_model=m.Run)(resume_run)
+    app.post(f"{p}/runs/{{run_id}}/rerun", response_model=m.Run, status_code=201)(rerun_run)
+    app.post(f"{p}/runs/{{run_id}}/agents/{{agent_id}}/stop", response_model=m.Agent)(stop_agent)
+    app.get(f"{p}/runs/{{run_id}}/agents/{{agent_id}}/messages", response_model=m.AgentMessageList)(list_messages)
+    app.post(f"{p}/runs/{{run_id}}/agents/{{agent_id}}/messages", response_model=m.AgentMessage,
+             status_code=201)(send_message)
+    app.post(f"{p}/runs/{{run_id}}/agents/{{agent_id}}/rerun", response_model=m.Agent, status_code=201)(rerun_agent)
 
 
 # -- runs ---------------------------------------------------------------------------------
@@ -237,6 +255,7 @@ async def stop_run(run_id: str, rt: RT, req: Optional[m.StopRequest] = Body(None
     state.kill_switch = True
     state.run.stop_reason = reason
     stage = state.run.stage
+    gates.finish_bobby(ctx, "stopped")      # Bobby ends with the run, before the stop events
     ctx.emit("run.status", {"status": "stopped", "stage": stage}, stage=stage, level="warn", message="Kill switch on")
     ctx.emit("run.stopped", {"reason": reason}, stage=stage, level="warn", message=f"Run stopped: {reason}")
     _kill_policy(ctx, reason)
@@ -434,7 +453,7 @@ async def list_comments(run_id: str, rt: RT):
 
 
 async def add_comment(run_id: str, req: m.CommentRequest, rt: RT):
-    """Stored and announced. The reviser that acts on item comments comes later. A stopped run rejects them."""
+    """Stored and announced, then handed to Bobby (comments.on_comment, a side task). A stopped run rejects them."""
     ctx = rt.ctx(run_id)
     state = ctx.state
     if req.target_type in ("item", "summary_sentence") and not req.target_id:
@@ -451,7 +470,119 @@ async def add_comment(run_id: str, req: m.CommentRequest, rt: RT):
         comment.response = "Run is stopped (kill switch). Start a new run to apply comments."
         ctx.emit("comment.resolved", {"comment": comment}, level="warn", message=f"Comment {cid} rejected: run stopped")
     await rt.store.save_async(state)
+    if comment.status == "queued":
+        comments = _control_module("comments")
+        ctx.spawn(comments.on_comment(ctx, comment), name=f"comment-{cid}")    # Bobby reads it (V3-rework)
     return comment
+
+
+# -- v0.2 and v0.3 controls ---------------------------------------------------------------
+
+
+def _control_module(name: str) -> Any:
+    """A control module, imported when a route needs it (like demo and cascade), so the API never imports
+    a later plan's dependencies at startup."""
+    return importlib.import_module(f"{__package__}.{name}")
+
+
+async def _control(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Call a control function. A stub (NotImplementedError("<plan>")) answers 409 "not built yet (<plan>)",
+    an InvalidState answers 409 with its message."""
+    try:
+        out = fn(*args, **kwargs)
+        return await out if inspect.isawaitable(out) else out
+    except NotImplementedError as e:
+        raise ApiError(409, "invalid_state", f"not built yet ({e or 'stub'})") from None
+    except InvalidState as e:
+        raise ApiError(409, "invalid_state", str(e)) from None
+
+
+def _agent(state: RunState, agent_id: str) -> m.Agent:
+    agent = state.agents.get(agent_id)
+    if agent is None:
+        raise ApiError(404, "not_found", f"No agent {agent_id} in {state.run.run_id}")
+    return agent
+
+
+async def stop_agent(run_id: str, agent_id: str, rt: RT, req: Optional[m.StopRequest] = Body(None)):
+    """Stop one agent, the run keeps going (CONTRACT.md 13). 409 if the run or the agent already finished."""
+    ctx = rt.ctx(run_id)
+    state = ctx.state
+    agent = _agent(state, agent_id)
+    if state.is_finished():
+        raise ApiError(409, "invalid_state", f"Run is already {state.run.status}")
+    if agent.status in ("done", "failed", "stopped"):
+        raise ApiError(409, "invalid_state", f"{agent_id} is already {agent.status}")
+    reason = ((req.reason if req else None) or "").strip() or "Stopped by the analyst"
+    out = await _control(_control_module("agentstop").stop_agent, ctx, agent_id, reason)
+    await rt.store.save_async(state)
+    return out
+
+
+async def list_messages(run_id: str, agent_id: str, rt: RT):
+    """One agent's chat, oldest first (CONTRACT.md 13)."""
+    state = rt.state(run_id)
+    _agent(state, agent_id)
+    return await _control(_control_module("chat").list_messages, state, agent_id)
+
+
+async def send_message(run_id: str, agent_id: str, req: m.AgentMessageRequest, rt: RT):
+    """The analyst's message (201). The reply arrives as agent.message events. 409 while the run is stopped."""
+    ctx = rt.ctx(run_id)
+    _agent(ctx.state, agent_id)
+    if ctx.state.run.status == "stopped":
+        raise ApiError(409, "invalid_state", "Run is stopped. Resume it to talk to its agents.")
+    out = await _control(_control_module("chat").send_message, ctx, agent_id, req.text)
+    await rt.store.save_async(ctx.state)
+    return out
+
+
+async def resume_run(run_id: str, rt: RT, req: Optional[m.ResumeRequest] = Body(None)):
+    """Kill switch off, pick up where STOP cut in (CONTRACT.md 13). Only a stopped run can resume."""
+    ctx = rt.ctx(run_id)
+    state = ctx.state
+    if state.run.status != "stopped":
+        raise ApiError(409, "invalid_state", f"Only a stopped run can resume. This one is {state.run.status}.")
+    reason = ((req.reason if req else None) or "").strip() or "Resumed by the analyst"
+    out = await _control(_control_module("resume").resume_run, ctx, reason)
+    await rt.store.save_async(state)
+    return out
+
+
+async def rerun_run(run_id: str, req: m.RerunRequest, rt: RT):
+    """Fork a finished, stopped or failed run from a step it reached (CONTRACT.md 13). The parent never changes."""
+    parent = rt.state(run_id)
+    status, reached = parent.run.status, parent.run.stage
+    if status not in ("done", "stopped", "failed"):
+        raise ApiError(409, "invalid_state", f"Rerun forks a finished, stopped or failed run. This one is {status}.")
+    if req.from_stage == "complete":
+        raise ApiError(409, "invalid_state", "Nothing to rerun after complete. Pick an earlier step.")
+    if STAGE_ORDER.index(req.from_stage) > STAGE_ORDER.index(reached):
+        raise ApiError(409, "invalid_state", f"{run_id} never reached {req.from_stage}")
+    ctx = await _control(_control_module("fork").fork_run, rt.store, rt.vault, rt.settings, parent, req)
+    rt.contexts[ctx.run_id] = ctx
+    await rt.store.save_async(ctx.state)
+    return ctx.state.run
+
+
+async def rerun_agent(run_id: str, agent_id: str, req: m.AgentRerunRequest, rt: RT):
+    """Rerun one goon with instructions in the same run (CONTRACT.md 14). 201 with the new agent."""
+    ctx = rt.ctx(run_id)
+    state = ctx.state
+    agent = _agent(state, agent_id)
+    if state.run.status == "stopped":
+        raise ApiError(409, "invalid_state", "Run is stopped. Resume it before rerunning an agent.")
+    if agent.role == "orchestrator":
+        raise ApiError(409, "invalid_state", "Bobby can't be rerun. Talk to him in the chat instead.")
+    if agent.role == "fetcher":
+        raise ApiError(409, "invalid_state", "Fetchers can't be rerun: they only fetch the approved sources. "
+                                             "Rerun the extractor that read the page instead.")
+    if agent.status in ("queued", "working"):
+        raise ApiError(409, "invalid_state", f"{agent_id} is still {agent.status}. Stop it first.")
+    out = await _control(_control_module("rework").rerun_agent, ctx, agent_id, req.instructions, req.recheck,
+                         by="analyst")
+    await rt.store.save_async(state)
+    return out
 
 
 app = create_app()

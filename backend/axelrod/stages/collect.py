@@ -169,10 +169,10 @@ def _canon(url: str) -> str:
 
 
 def spawn_fetcher(ctx: RunContext, target_ids: list[str]) -> m.Agent:
-    """Register a fetcher agent (no model) in RunState and emit agent.spawned."""
+    """Register a fetcher agent (no model) in RunState, named there, and emit agent.spawned."""
     agent = m.Agent(agent_id=ctx.next_id("fetcher"), role="fetcher", status="working", task=TASK,
                     target_ids=target_ids, started_at=now_iso())
-    ctx.state.agents[agent.agent_id] = agent
+    ctx.state.register_agent(agent)
     ctx.emit("agent.spawned", m.AgentSpawnedData(agent=agent.model_copy(deep=True)),
              message=f"{agent.agent_id} spawned: {TASK}", stage=STAGE, agent_id=agent.agent_id)
     return agent

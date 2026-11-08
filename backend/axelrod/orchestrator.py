@@ -1,5 +1,9 @@
 """The pipeline loop for one run: stages in contract order, run.status between them,
-StopRequested becomes `stopped`, any other exception becomes `failed` with Run.error."""
+StopRequested becomes `stopped`, any other exception becomes `failed` with Run.error.
+
+Bobby (gates.spawn_bobby) is the run's first agent, spawned right after the first run.status. After plan,
+extract, repair and verify_summary the loop calls gates.after_stage, his gate. A gate never fails the run:
+an error there is logged and the run proceeds, as if he had said proceed."""
 from __future__ import annotations
 
 import asyncio
@@ -8,6 +12,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
+from . import gates
 from .contract import m
 from .ids import now_iso
 from .runtime import RunContext, StopRequested
@@ -50,9 +55,13 @@ async def run_pipeline(ctx: RunContext) -> None:
         for stage, module in STAGES:
             ctx.check_stop()
             ctx.emit("run.status", {"status": "running", "stage": stage}, stage=stage, message=f"Stage {stage}")
+            gates.spawn_bobby(ctx)                  # once: the first agent of the run
             await _run_stage(ctx, stage, module)
+            if stage in gates.GATE_STAGES:
+                await _gate(ctx, stage)
             await ctx.store.save_async(ctx.state)
         ctx.check_stop()
+        gates.finish_bobby(ctx)
         ctx.emit("run.status", {"status": "done", "stage": "complete"}, stage="complete", message="Run done")
         ctx.emit("run.completed", {}, stage="complete", message=f"Run complete for {ctx.state.run.company}")
     except StopRequested as e:
@@ -85,6 +94,21 @@ async def _run_stage(ctx: RunContext, stage: str, module: str | StageRunner) -> 
         raise StageNotBuilt(f"stage {stage} is not built yet ({e or 'stub'})") from e
 
 
+async def _gate(ctx: RunContext, stage: str) -> None:
+    """Bobby's call after a gate stage. STOP still stops the run. Any other error is logged and the run
+    proceeds: Bobby advises, code decides, so he can never fail a run."""
+    try:
+        await gates.after_stage(ctx, stage)
+    except (StopRequested, asyncio.CancelledError):
+        raise
+    except Exception as e:
+        ctx.check_stop()
+        log.exception("gate after %s failed for %s", stage, ctx.run_id)
+        if gates.bobby(ctx) is not None:
+            ctx.emit("agent.log", m.AgentLogData(text=f"Gate after {stage} failed ({describe(e)}). The run proceeds."),
+                     agent_id=gates.BOBBY_ID, level="warn", message=f"bobby: gate after {stage} failed, proceeding")
+
+
 def describe(e: BaseException) -> str:
     if isinstance(e, StageNotBuilt):
         return str(e)
@@ -99,6 +123,7 @@ def _on_stop(ctx: RunContext, reason: str) -> None:
     if state.run.status != "stopped":
         state.kill_switch = True
         state.run.stop_reason = state.run.stop_reason or reason
+        gates.finish_bobby(ctx, "stopped")          # Bobby ends with the run, before its last events
         ctx.emit("run.status", {"status": "stopped", "stage": stage}, stage=stage, level="warn",
                  message="Kill switch on")
         ctx.emit("run.stopped", {"reason": state.run.stop_reason}, stage=stage, level="warn",
@@ -111,6 +136,7 @@ def _on_fail(ctx: RunContext, error: str) -> None:
     if state.run.status in ("done", "stopped", "failed"):
         return
     stage = state.run.stage
+    gates.finish_bobby(ctx, "failed")               # Bobby ends with the run, before its last events
     ctx.emit("run.status", {"status": "failed", "stage": stage}, stage=stage, level="error",
              message=f"Run failed at {stage}")
     ctx.emit("run.failed", {"error": error}, stage=stage, level="error", message=f"Run failed: {error}")

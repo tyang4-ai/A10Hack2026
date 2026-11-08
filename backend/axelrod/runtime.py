@@ -6,8 +6,10 @@ gapless event log.
 from __future__ import annotations
 
 import asyncio
+import logging
+from collections.abc import Coroutine
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -22,8 +24,16 @@ if TYPE_CHECKING:
     from .store.vault import Vault
 
 
+log = logging.getLogger(__name__)
+
+
 class StopRequested(Exception):
     """Raised by RunContext.check_stop when the kill switch is on. The orchestrator turns it into `stopped`."""
+
+
+class InvalidState(Exception):
+    """A control action the run's state doesn't allow right now (rerun a fetcher, resume a running run).
+    Control modules raise it, and the API answers 409 invalid_state with the message."""
 
 
 @dataclass
@@ -35,6 +45,7 @@ class RunContext:
     settings: Settings
     approval: asyncio.Event = field(default_factory=asyncio.Event)   # set by POST /approval (and by POST /stop)
     task: asyncio.Task | None = None                                 # the pipeline task, kept so it isn't collected
+    background: set[asyncio.Task] = field(default_factory=set)        # spawn()ed side tasks (comments, reruns, chat)
 
     @classmethod
     def create(cls, state: RunState, store: Store, vault: Vault, settings: Settings,
@@ -73,3 +84,20 @@ class RunContext:
         """Raise StopRequested when the kill switch is on."""
         if self.stopped():
             raise StopRequested(self.state.run.stop_reason or "Stopped by user")
+
+    def spawn(self, coro: Coroutine[Any, Any, Any], *, name: str) -> asyncio.Task:
+        """Run a side task for this run (a comment for Bobby, a rerun, a chat reply) next to the pipeline.
+        The context keeps a reference until it ends, so it is never garbage collected mid-flight, and an
+        exception is logged instead of vanishing. A StopRequested just ends the task."""
+        task = asyncio.get_running_loop().create_task(coro, name=f"{name}-{self.run_id}")
+        self.background.add(task)
+        task.add_done_callback(self._side_task_done)
+        return task
+
+    def _side_task_done(self, task: asyncio.Task) -> None:
+        self.background.discard(task)
+        if task.cancelled():
+            return
+        err = task.exception()
+        if err is not None and not isinstance(err, StopRequested):
+            log.error("side task %s failed", task.get_name(), exc_info=err)
