@@ -1,12 +1,15 @@
 DEMO RUN: run_20261108_rzpoj7 (picked 1:32 AM)
 
 - **Deploy at 2:06 AM:** the typo-tolerant company match ("siemens heathineers" failed run_20261108_mr8gct at 1:58 AM), `axelrod` service only. Then `BUDGET_USD=50`.
+- **Deploy at 2:57 AM:** 233bf5e to EC2, `axelrod` service only (contract 0.3.1: DELETE /runs/{id} and PDF page images, planted faults, STAGE_PACING). Then the three env values below. Delete on EC2 needs the role's `s3:DeleteObject` on `runs/*` (prepared in ec2_role.py, the user applies it). Until then DELETE answers 500 and deletes nothing.
 - **Run:** R2 on EC2, 647 items, 96.6% pass or fixed, 5 of 6 criteria scored, rollup -0.6, certainty 94 (report) and 74 (brief), brief 2.5 pages, $2.84. Tag `demo-ok-2`, replay in `backend/data/replay/run_20261108_rzpoj7`. Backup: demo-ok-1 run_20261108_pin2ve. The comparison is under Now.
 - **Deployed:** 4f10702 on EC2 (`axelrod` service, port 8000). Later commits are only this board, DEMO.md and the R2 replay, which EC2 doesn't need because a stored run wins over a replay with the same id. Invoke URL `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com`. Webapp: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`. No API key yet (Needs Gordon).
 - **Server env for the demo** (set 1:33 AM in `/etc/axelrod.env`):
   - `CACHE_DOCUMENTS=on`: the gateway decides every fetch, then serves it from the S3 cache.
   - `CACHE_MODELS=record`: model calls stay live and each answer is also recorded, so the in-person rehearsals record the demo path for the replay fallback. Runs say `cache_mode: documents`.
-  - `DEMO_PACING=0.8`: seconds before each fetch. In the scripted check, STOP landed at about 52 s with a 10 s approval, revoking S-006 right after the first fetches. Set what the in-person rehearsal needs: `bash backend/infra/remote.sh --set-env DEMO_PACING=<seconds>`, or ask this session.
+  - `STAGE_PACING=3` (since 2:57 AM, replaces DEMO_PACING, which is gone from the code): a pause of that many seconds at the start of each stage, never at approve. STOP ends it at once. Change it with `bash backend/infra/remote.sh --set-env STAGE_PACING=<seconds>`.
+  - `DEMO_FAULTS=fetch,judge` (since 2:57 AM): the planted faults, both labeled simulated. S-017 (a broken download: 503, one retry, then failed and a hole) and one malformed judge verdict per run (flagged, the judge rerun).
+  - `PROTECTED_RUNS=run_20261108_rzpoj7,run_20261108_pin2ve` (since 2:57 AM): DELETE refuses the demo run and its backup.
   - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=50` (per run, since 2:06 AM, asked for in this session because $1 failed a rehearsal that ran past STOP: run_20261108_z7ddk1 ran out at draft. A full run costs about $3. The public URL still has no API key), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
 - **Fallback if Bedrock throttles:** `--set-env CACHE_MODELS=replay` serves recorded answers at $0, labeled `documents_and_models`. So far that's R2's 291 answers. It's untested on the live segment until a rehearsal has run with `record`.
 - **Cut:** the scripted G6b rehearsal and B-rehearse (Gordon, 1 AM). The script stays in the repo, unused. Nothing else: v2 steps 1 to 12 are built.
@@ -183,3 +186,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 2:08 AM: deployed afd37aa, BUDGET_USD=50. Live check: run_20261108_7q87xb typed "siemens heathineers" reached approval as Siemens Healthineers (SHL), $0.004, stopped.
 - Sun 2:30 AM: new work started (delete runs, PDF page images, planted faults, STAGE_PACING). Route stubs committed (e3e3a4c). Contract 0.3.1 prepared, waiting on the user to push main.
 - Sun 2:45 AM: contract 0.3.1 pushed to main by the user (a466302) and merged. B-pdfpage done (PDF page PNGs with highlighted quotes, about 0.1 s per page). F-delete-pdf started in a frontend worktree. Guard: ownership rules off locally at the user's request (OWNERSHIP_RULES = False, not committed); the push rules for main and frontend are unchanged (the classifier stopped that edit). ec2_role.py now grants s3:DeleteObject on runs/* and dynamodb:DeleteItem, not applied yet: the classifier stopped the aws-operator, so the user applies it.
+- Sun 2:57 AM: B-delete-pace and B-faults done and committed (suite 978 passed). Deploy noted here first.
