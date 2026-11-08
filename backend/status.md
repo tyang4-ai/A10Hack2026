@@ -25,7 +25,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-reason | builder | W2 | done | 20 passed (suite 366) | unsupported conclusion 0/3 votes and downgraded, rollup matches hand example, research_stage N/A with a Hole |
 | B-brief | builder | W2 | done | 23 passed | fixture brief 18 sentences, 2.0 pages. Unfaithful sentence 0/3 votes, one-word copy edit caught and restored |
 | B-cli | builder | W2 | done | 21 passed (suite 334) | tail colors traffic, inject-errors 3/3 caught then re-cited. CLI uses urllib (own API only) |
-| A-deploy | aws-operator | W2 | running | | |
+| A-deploy | aws-operator | W2 | done | healthz, runs, CORS, test page, IMDSv2, role calls | EC2 i-0dec5cc5824a11aec behind API Gateway. Deploys go through S3 (`infra/deploy.sh`). Env changes via `infra/remote.sh --set-env` |
 | B-g2fix | builder | W2 | done | suite 366 passed | skipped scan now quarantines, link-local blocked (metadata URL too), pre-approval policy shows system rules, fake runs labeled |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
 | B-fix-brief | builder | R0 fix | done | suite 415, 1 live | Sonnet wrapped its whole answer in an extra string. Runner now unwraps it safely. Both R0 outputs replay as valid |
@@ -52,6 +52,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## AWS
 
 See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here once known.
+
+- **Invoke URL: https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com** (API at `/api/v1`, health at `/healthz`, test page at `/test-pages/injection.html`).
+- Deploy: `bash backend/infra/deploy.sh` ships the committed HEAD through S3 and prints the deployed sha. `bash backend/infra/remote.sh --set-env KEY=VALUE` changes `/etc/axelrod.env` and restarts the service. Logs: `bash backend/infra/remote.sh 'journalctl -u axelrod --no-pager -n 50'`.
 
 - Models: large `us.anthropic.claude-sonnet-5`, small `us.anthropic.claude-haiku-4-5-20251001-v1:0`. Both pass a forced tool call.
 - Concurrency: 50 parallel Haiku 50/50 ok, p95 931 ms. 8 parallel Sonnet 8/8 ok, p95 1.5 s. No throttles. `.env`: MAX_CONCURRENCY_SMALL=32, MAX_CONCURRENCY_LARGE=8.
@@ -103,6 +106,10 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
+- (10:05 PM, pass to Tong now) **VITE_API_URL=https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com/api/v1**. It serves the recorded R0b run (mode replay) right now, and the real SHL run (G5) shortly.
+- (10:05 PM, decision) The deployed API has no key, so anyone with the URL can start runs that spend Bedrock money (capped at $5 per run, not in total). Setting `AXELROD_API_KEY` would make Tong's UI send an `X-Axelrod-Key` header on every call. My default: no key for now, since the URL is only shared with the team. Say "set a key" and I'll set it and tell you the value to pass to Tong.
+- (10:05 PM, not blocking) The API Gateway integration points at the instance's public DNS, which changes if the instance is ever stopped and started. Option: add an Elastic IP (not in the plan). Without one, the fix is one `apigatewayv2 update-integration` command, written in AWS_RESOURCES.md. My default: leave it, and don't stop the instance.
+
 - (9:46 PM, pass to Tong) A real, finished SHL run now exists as a replay: `backend/data/replay/run_20261108_whhj0d` on the backend branch. Any backend started from this branch serves it as `mode: replay` (labeled recorded), so Tong can build the report, brief, document and vault panels against real data before the EC2 URL exists. Run it with `STORE=local python -m uvicorn backend.axelrod.api:app --port 8001`, then point VITE_API_URL at it.
 
 - (9:22 PM, demo script) **ROTIC scores -1, not +1.** On our SHL data the ROTIC proxy is a 9.8% mean (FY2023 8.4%, FY2025 11.0%, FY2026 10.0%), just under the 10% bar, and only 3 of 10 fiscal years have the inputs, so certainty is low. vs peers (FY2025): SHL 11.0%, GE HealthCare 25.2%, Philips 18.1%, so that also scores -1. The builder did not tune toward a score, and we shouldn't. docs/PLAN.md's beat "ROTIC scores +1, but with low certainty" needs new words. Suggested: "ROTIC scores -1, and we flag low certainty: only three of ten years since listing have the inputs. We tell you how much to trust each line, and why." The final R1 run may differ a little, so I'll confirm the numbers after it.
@@ -117,7 +124,6 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 - (7:49 PM, not blocking) The reviser role gets the small model in PLANS.md but Sonnet in `mock/build_fixtures.py` ROLE_SCOPES. The real gateway follows PLANS.md. Either change the mock on main or say "reviser uses Sonnet" and I'll switch the backend. The reviser is P1 (W3), so this can wait.
 
-- (9:18 PM, **waiting on you now**) A-deploy is paused at the guard prompt to open port 8000 on the security group `axelrod-api-sg` (it exists with no inbound rule, and no instance yet). Approve it in the terminal. Nothing else is blocked. The G4 cutoff is 2:30 AM, and the fallback is the API on the laptop.
 
 - (7:25 PM, not blocking) The workshop blocks Claude Sonnet 5.5 and Haiku 5.5 (policy `ws-bedrock-model-allowlist-policy-1`). We are building on Sonnet 5 and Haiku 4.5, which work. If you want 5.5, ask an ACM organizer to allow `anthropic.claude-sonnet-5-5` and `anthropic.claude-haiku-5-5`. Either way, Devpost and the pitch should name the models we really use.
 
@@ -138,3 +144,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:38 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.
 - Sat 9:42 PM: all R0 fixes in (brief, extract, draft, repair, checks). Started rehearsal R0b.
 - Sat 9:46 PM: R0b full rehearsal done (94.5% items pass or fixed, brief 2.8 pages, $2.06). Exported and committed as the replay fallback.
+- Sat 10:05 PM: A-deploy done (Gordon approved port 8000). G4 curl checks pass.
