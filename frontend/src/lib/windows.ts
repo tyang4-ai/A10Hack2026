@@ -137,6 +137,8 @@ interface WinState {
   dirty: boolean;
   suggest: LayoutName | null;
   snap: Geo | null;
+  // Live geometry of neighbours while an edge they share is being dragged.
+  peek: Record<string, Geo>;
   desk: { w: number; h: number };
   palette: boolean;
   hydrated: boolean;
@@ -150,6 +152,7 @@ interface WinState {
   show: (id: string) => void;
   move: (id: string, x: number, y: number) => void;
   resize: (id: string, g: Geo, max?: boolean) => void;
+  resizeMany: (geos: Record<string, Geo>) => void;
   minimize: (id: string) => void;
   toggleMax: (id: string) => void;
   applyLayout: (name: LayoutName, opts?: { reset?: boolean }) => void;
@@ -182,6 +185,7 @@ export const useWindows = create<WinState>((set, get) => ({
   dirty: false,
   suggest: null,
   snap: null,
+  peek: {},
   desk: { w: 1280, h: 720 },
   palette: false,
   hydrated: false,
@@ -252,6 +256,13 @@ export const useWindows = create<WinState>((set, get) => ({
     if (!w) return;
     // Placing a window by hand turns auto tiling off.
     set({ wins: { ...wins, [id]: { ...w, ...clampGeo(g), max } }, dirty: true, auto: false });
+  },
+
+  // Commit a shared-edge resize: every window on the dragged line at once.
+  resizeMany: (geos) => {
+    const wins = { ...get().wins };
+    for (const [id, g] of Object.entries(geos)) if (wins[id]) wins[id] = { ...wins[id], ...clampGeo(g), max: false };
+    set({ wins, peek: {}, dirty: true, auto: false });
   },
 
   minimize: (id) => {

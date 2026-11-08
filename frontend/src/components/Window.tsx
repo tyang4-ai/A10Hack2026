@@ -4,7 +4,7 @@
 // While dragging, geometry lives in local state, so only this window re-renders;
 // the store is updated once, when the pointer is released.
 import { memo, useMemo, useRef, useState } from "react";
-import { clampGeo, MODULE_KINDS, useWindows, type Geo } from "@/lib/windows";
+import { clampGeo, MODULE_KINDS, useWindows, type Geo, type Win } from "@/lib/windows";
 import { KIND_META, TitleExtras, WindowBody, WinSubtitle, winTitle } from "./WindowContent";
 
 type Mode = "move" | "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
@@ -67,19 +67,75 @@ export function emptyAt(self: string, fx: number, fy: number, minW: number, minH
   return best;
 }
 
-function resizeGeo(g: Geo, mode: Mode, dx: number, dy: number, minW: number, minH: number): Geo {
-  let { x, y, w, h } = g;
-  if (mode.includes("e")) w = Math.min(Math.max(g.w + dx, minW), 1 - g.x);
-  if (mode.includes("s")) h = Math.min(Math.max(g.h + dy, minH), 1 - g.y);
-  if (mode.includes("w")) {
-    x = Math.min(Math.max(g.x + dx, 0), g.x + g.w - minW);
-    w = g.w + g.x - x;
+// Resizing moves an edge line, not just one window's edge. Every window with an
+// edge on that line, touching the dragged window's span (or a window already in
+// the group), moves with it, so two windows that share an edge resize together.
+// Hold Alt to resize only the one window.
+type Side = "n" | "s" | "e" | "w";
+interface EdgeGroup {
+  axis: "x" | "y";
+  line: number;
+  ends: string[]; // windows whose right (or bottom) edge is on the line
+  starts: string[]; // windows whose left (or top) edge is on the line
+}
+
+function edgeGroup(id: string, side: Side, wins: Record<string, Win>, alone: boolean): EdgeGroup {
+  const eps = 1e-4;
+  const a = wins[id];
+  const axis = side === "e" || side === "w" ? "x" : "y";
+  const pos = (w: Win) => (axis === "x" ? w.x : w.y);
+  const size = (w: Win) => (axis === "x" ? w.w : w.h);
+  const cpos = (w: Win) => (axis === "x" ? w.y : w.x);
+  const csize = (w: Win) => (axis === "x" ? w.h : w.w);
+  const atEnd = side === "e" || side === "s";
+  const line = atEnd ? pos(a) + size(a) : pos(a);
+  const g: EdgeGroup = { axis, line, ends: atEnd ? [id] : [], starts: atEnd ? [] : [id] };
+  if (alone) return g;
+  let lo = cpos(a);
+  let hi = cpos(a) + csize(a);
+  const others = Object.values(wins).filter((w) => w.id !== id && !w.min && !w.max);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const w of others) {
+      if (g.ends.includes(w.id) || g.starts.includes(w.id)) continue;
+      if (cpos(w) >= hi - eps || cpos(w) + csize(w) <= lo + eps) continue;
+      const end = Math.abs(pos(w) + size(w) - line) < eps;
+      const start = Math.abs(pos(w) - line) < eps;
+      if (!end && !start) continue;
+      (end ? g.ends : g.starts).push(w.id);
+      lo = Math.min(lo, cpos(w));
+      hi = Math.max(hi, cpos(w) + csize(w));
+      grew = true;
+    }
   }
-  if (mode.includes("n")) {
-    y = Math.min(Math.max(g.y + dy, 0), g.y + g.h - minH);
-    h = g.h + g.y - y;
+  return g;
+}
+
+// Move each group's line by the drag, clamped so no window goes under its minimum size.
+function applyGroups(groups: EdgeGroup[], orig: Record<string, Win>, dx: number, dy: number, minW: number, minH: number): Record<string, Geo> {
+  const out: Record<string, Geo> = {};
+  const geo = (id: string): Geo => out[id] ?? { x: orig[id].x, y: orig[id].y, w: orig[id].w, h: orig[id].h };
+  for (const g of groups) {
+    const x = g.axis === "x";
+    const min = x ? minW : minH;
+    const P = (q: Geo) => (x ? q.x : q.y);
+    const S = (q: Geo) => (x ? q.w : q.h);
+    let lo = 0;
+    let hi = 1;
+    for (const id of g.ends) lo = Math.max(lo, P(geo(id)) + min);
+    for (const id of g.starts) hi = Math.min(hi, P(geo(id)) + S(geo(id)) - min);
+    const L = Math.min(Math.max(g.line + (x ? dx : dy), lo), Math.max(lo, hi));
+    for (const id of g.ends) {
+      const q = geo(id);
+      out[id] = x ? { ...q, w: L - q.x } : { ...q, h: L - q.y };
+    }
+    for (const id of g.starts) {
+      const q = geo(id);
+      const end = P(q) + S(q);
+      out[id] = x ? { ...q, x: L, w: end - L } : { ...q, y: L, h: end - L };
+    }
   }
-  return { x, y, w, h };
+  return out;
 }
 
 const HANDLES: [Exclude<Mode, "move">, string][] = [
@@ -101,7 +157,20 @@ export const Window = memo(function Window({ id }: { id: string }) {
   const { focus, minimize, toggleMax, close, resize, swap } = useWindows.getState();
   const [live, setLive] = useState<Geo | null>(null);
   const liveRef = useRef<Geo | null>(null);
-  const drag = useRef<{ mode: Mode; sx: number; sy: number; g: Geo; orig: Geo; desk: DOMRect; moved: boolean; target: string | null } | null>(null);
+  const peek = useWindows((s) => s.peek[id]);
+  const drag = useRef<{
+    mode: Mode;
+    sx: number;
+    sy: number;
+    g: Geo;
+    orig: Geo;
+    desk: DOMRect;
+    moved: boolean;
+    target: string | null;
+    groups: EdgeGroup[];
+    wins: Record<string, Win>;
+    result: Record<string, Geo> | null;
+  } | null>(null);
 
   // The body only re-renders when its own data changes, never while the window moves.
   const kind = win?.kind;
@@ -111,7 +180,7 @@ export const Window = memo(function Window({ id }: { id: string }) {
   if (!win) return null;
   const meta = KIND_META[win.kind];
   const title = winTitle(win);
-  const geo: Geo = live ?? (win.max ? FULL : win);
+  const geo: Geo = live ?? peek ?? (win.max ? FULL : win);
 
   const setGeo = (g: Geo | null) => {
     liveRef.current = g;
@@ -130,7 +199,9 @@ export const Window = memo(function Window({ id }: { id: string }) {
     let g: Geo = win.max ? FULL : orig;
     // Dragging a maximized window restores its size under the pointer.
     if (win.max && mode === "move") g = clampGeo({ ...orig, x: (e.clientX - desk.left) / desk.width - orig.w / 2, y: 0 });
-    drag.current = { mode, sx: e.clientX, sy: e.clientY, g, orig, desk, moved: false, target: null };
+    const wins = useWindows.getState().wins;
+    const groups = mode === "move" ? [] : (mode.split("") as Side[]).map((side) => edgeGroup(id, side, wins, e.altKey));
+    drag.current = { mode, sx: e.clientX, sy: e.clientY, g, orig, desk, moved: false, target: null, groups, wins, result: null };
     focus(id);
   };
 
@@ -158,7 +229,12 @@ export const Window = memo(function Window({ id }: { id: string }) {
       const cur = useWindows.getState().snap;
       if (JSON.stringify(snap) !== JSON.stringify(cur)) useWindows.setState({ snap });
     } else {
-      setGeo(resizeGeo(d.g, d.mode, dx, dy, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height)));
+      const res = applyGroups(d.groups, d.wins, dx, dy, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));
+      d.result = res;
+      setGeo(res[id]);
+      // Neighbours on the same edge line follow live, through the store's transient peek.
+      const others = Object.fromEntries(Object.entries(res).filter(([k]) => k !== id));
+      if (Object.keys(others).length) useWindows.setState({ peek: others });
     }
   };
 
@@ -170,6 +246,10 @@ export const Window = memo(function Window({ id }: { id: string }) {
     useWindows.setState({ snap: null });
     const g = liveRef.current;
     setGeo(null);
+    if (d.result) {
+      useWindows.getState().resizeMany(d.result);
+      return;
+    }
     if (!d.moved || !g) return;
     if (useWindows.getState().auto && d.mode === "move") {
       // Dropped on another tile: swap. Dropped anywhere else: snap back into place.
