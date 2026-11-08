@@ -25,7 +25,7 @@ The doors lock around 8 PM. Stay in, or know who can let you back in.
 
 ## Demo script: 3 minutes, webapp first
 
-The live part runs on the deployed webapp with `cache_mode: documents`: every fetch is decided by the gateway, then served from the S3 document cache (Gordon's pre-event archive plus copies from earlier runs), so collection takes seconds and doesn't depend on outside sites. Model calls stay live. If Bedrock is slow, switch to `documents_and_models` (recorded model answers) and say so. The CLI is on screen for about 10 seconds. Rehearse with a stopwatch. Exact clicks and pacing live in `backend/DEMO.md`.
+The live part runs on the deployed webapp with `cache_mode: documents`: every fetch is decided by the gateway, then served from the S3 document cache (Gordon's pre-event archive plus copies from earlier runs), so collection takes seconds and doesn't depend on outside sites. Model calls stay live. If Bedrock is slow, switch to `documents_and_models` (recorded model answers) and say so. The CLI is on screen for about 10 seconds. No scripted demo: we click it ourselves, in person. Rehearse twice with a stopwatch. The clicks, the timings and the `DEMO_PACING` value that worked go in `docs/LAPTOP.md`.
 
 **0:00 to 0:15, the problem.** AI can write an investment memo in a minute, but nobody can trust it. Numbers get made up, and research agents read untrusted pages from the open web. In Axelrod, Bobby, our orchestrator agent, makes the calls and his goons do the work. Every one of them goes through one gateway, and code checks every number.
 
