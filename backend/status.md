@@ -82,7 +82,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 - **Invoke URL: https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com** (API at `/api/v1`, health at `/healthz`, test page at `/test-pages/injection.html`). Frontend: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`.
 - Deploy: `bash backend/infra/deploy.sh` (committed HEAD through S3, prints the deployed sha). Env: `bash backend/infra/remote.sh --set-env KEY=VALUE`. Logs: `bash backend/infra/remote.sh 'journalctl -u axelrod --no-pager -n 50'`.
-- EC2 env now (12:30 AM, full-run settings): `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`, `MAX_CONCURRENCY_SMALL=32`, `DEMO_PACING=0`, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`, `STORE=aws`. Deployed a4ab693 (contract 0.3.0). contract_smoke on EC2: 76/76.
+- EC2 env now: the demo values in the DEMO RUN block at the top (set 1:33 AM, BUDGET_USD=1 since 1:42 AM). Deployed 4f10702 (contract 0.3.0).
 - Models: large `us.anthropic.claude-sonnet-5`, small `us.anthropic.claude-haiku-4-5-20251001-v1:0` (the 5.5 models are denied by the workshop allowlist). Prices per Mtok: Sonnet 5 2.20 / 11.00, Haiku 4.5 1.10 / 5.50.
 - Live spend so far: about $25, all in the workshop account (runs about $2 each, plus tuning).
 
