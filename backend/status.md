@@ -5,21 +5,21 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V1-shapes (step 1), V4-archive (step 7 script), V5-plan2 (step 8). 
-- Next: after V1, V2-gateway (steps 2 and 6), V3-rework (steps 3 to 5, after B-fix-yield), V7-chat (10). Then V6-resume (9) and V8-fork (11), R2, G6b.
+- Running: V2-gateway, V3-rework, V7-chat, V5-plan2, the archive upload (aws-operator).
+- Next: V6-resume (after V3) and V8-fork (after V2). Then R2 on EC2 and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
 ## v2 plans
 
 | Plan | Steps | Agent | Status | Tests | Notes |
 |---|---|---|---|---|---|
-| V1-shapes | 1 | builder | running | | v0.2/v0.3 fields, names (Bobby, goons), route stubs, cache keys |
-| V2-gateway | 2, 6 | builder | todo | | stop one agent, document cache |
-| V3-rework | 3, 4, 5 | builder | todo | | rerun one agent, Bobby at the gates, comments to Bobby |
-| V4-archive | 7 | builder + aws-operator | script done, upload after V1 | 16 passed | dry run on the real archive: 929 files, 988 MB, every file has its original URL and date. S-001, S-003, S-004, S-005 are byte-identical to tonight's fetches |
+| V1-shapes | 1 | builder | done | 34 passed (suite 661) | every v0.2/v0.3 field and event, Bobby first then "Bobby's goon #n", routes and stubs, cache keys. contract_smoke 82/82 mock, 70/70 real |
+| V2-gateway | 2, 6 | builder | running | | stop one agent, document cache |
+| V3-rework | 3, 4, 5 | builder | running | | rerun one agent, Bobby at the gates, comments to Bobby |
+| V4-archive | 7 | builder + aws-operator | script done, uploading | 16 passed | dry run on the real archive: 929 files, 988 MB, every file has its original URL and date. S-001, S-003, S-004, S-005 are byte-identical to tonight's fetches |
 | V5-plan2 | 8 | builder | running | | S-011 and up from the archive |
 | V6-resume | 9 | builder | todo | | |
-| V7-chat | 10 | builder | todo | | |
+| V7-chat | 10 | builder | running | | |
 | V8-fork | 11 | builder | todo | | rerun from a step, model cache (cut first if late) |
 | R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
 
@@ -50,7 +50,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Decisions
 
-- Sat 11:55 PM: the archive upload excludes the licensed LSEG files and the provenance-less TED CSVs (conservative default, Gordon may override). The upload runs after V1 lands, because the cache keys come from V1's `cache.py`.
+- Sat 11:48 PM: the archive upload excludes the licensed LSEG files and the provenance-less TED CSVs (conservative default, Gordon may override). The upload runs after V1 lands, because the cache keys come from V1's `cache.py`.
 
 - Sat 11:35 PM: v2 runs in three waves, so no file has two owners: V1 alone (plus V4 and V5, which touch other files), then V2, V3 and V7, then V6 and V8. V1 puts every new route in `api.py` as a thin call into its own module, so later plans never share `api.py`.
 - Sat 11:35 PM: the archive rule. Gordon's summer archive feeds runs as primary source documents only (his explicit call in docs/BACKEND_V2.md). No script, note or analysis from `Notes/Finance/` is ever opened, copied or run. Sidecars and indexes are read only to find each file's original URL and date.
@@ -78,9 +78,9 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Needs Gordon
 
-- (11:55 PM, archive) The importer leaves out **100 LSEG transcripts and slides**, whose sidecars say "Licensed third-party content. Private research use; do not redistribute", plus **3 TED-EU CSVs** with no sidecar, URL or date (possibly derived data). My default: both stay out of S3, since the demo shows vault files to judges. Say "include LSEG" to add them with `--include-licensed` (1,029 files, 1.09 GB).
+- (11:48 PM, archive) The importer leaves out **100 LSEG transcripts and slides**, whose sidecars say "Licensed third-party content. Private research use; do not redistribute", plus **3 TED-EU CSVs** with no sidecar, URL or date (possibly derived data). My default: both stay out of S3, since the demo shows vault files to judges. Say "include LSEG" to add them with `--include-licensed` (1,029 files, 1.09 GB).
 
-- (11:50 PM, not blocking) Facts without a number ("strong growth in fiscal year 2025") are not year-checked, because their statements add the report's own year, which no quote repeats (checking them wrongly flagged 13 items). Say if you want them checked against the source's period instead.
+- (11:45 PM, not blocking) Facts without a number ("strong growth in fiscal year 2025") are not year-checked, because their statements add the report's own year, which no quote repeats (checking them wrongly flagged 13 items). Say if you want them checked against the source's period instead.
 
 - (11:35 PM, decision, asked again by docs/INTEGRATE.md) **API key** on the deployed API? Today anyone with the URL can start runs (capped at $5 each). With a key, the webapp sends `X-Axelrod-Key` from `NEXT_PUBLIC_AXELROD_KEY`. My default: no key until you say so.
 - (10:05 PM, not blocking) No Elastic IP: the API Gateway integration points at the instance's public DNS, so don't stop the instance. The one-line fix is in AWS_RESOURCES.md.
@@ -97,3 +97,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sat 11:02 PM: G5b, 1 of 6 scored. B-fix-yield launched.
 - Sat 11:32 PM: merged origin/main (contract v0.3.0). Started v2: V1-shapes, V4-archive, V5-plan2.
 - Sat 11:36 PM: B-fix-yield partial and committed. B-fix-judge started.
+- Sat 11:58 PM: V1-shapes done and committed. Wave 2 launched: V2, V3, V7 and the archive upload.
