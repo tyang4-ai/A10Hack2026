@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-extract, B-reason, B-brief, B-cli, A-deploy, B-g2fix (W2). W1 is 5/5 done.
+- Running: B-extract, B-reason, B-cli, A-deploy, B-g2fix (W2). W1 is 5/5 done.
 - Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
 
 ## Plans
@@ -21,7 +21,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-shl-plan | builder | W1 | done | 31 passed, 1 skipped | 10 sources, 7 needs, 36 extract pages checked against PDFs. S-006 is the tier_2 revoke target, fetched 8th |
 | B-extract | builder | W2 | running | | |
 | B-reason | builder | W2 | running | | |
-| B-brief | builder | W2 | running | | |
+| B-brief | builder | W2 | done | 23 passed | fixture brief 18 sentences, 2.0 pages. Unfaithful sentence 0/3 votes, one-word copy edit caught and restored |
 | B-cli | builder | W2 | running | | |
 | A-deploy | aws-operator | W2 | running | | |
 | B-g2fix | builder | W2 | running | | G2 findings: fail closed on skipped scan, deny link-local, pre-approval policy view, label fake runs |
@@ -36,7 +36,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 |---|---|---|---|
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
-| G2 Core | pass | Sat 8:10 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
+| G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
 | G3 Pipeline and pre-smoke | | | |
 | G4 Deploy | | | |
 | G5 Full SHL run, demo-ok-1 | | | |
@@ -81,6 +81,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
+- (8:20 PM, pass to Tong) Brief UI behavior: when a brief sentence is repaired, its new text arrives in the `summary.verified` event and the `/summary` refetch, not in a second `summary.sentence` event. A sentence that fails twice is removed, and it disappears at the `summary.ready` refetch. Blocked sentences stay, marked blocked.
+
 - (7:49 PM, not blocking) The reviser role gets the small model in PLANS.md but Sonnet in `mock/build_fixtures.py` ROLE_SCOPES. The real gateway follows PLANS.md. Either change the mock on main or say "reviser uses Sonnet" and I'll switch the backend. The reviser is P1 (W3), so this can wait.
 
 - (8:00 PM, coming up in the next hour, since W2 started early) A-deploy opens port 8000 on the EC2 security group. The guard asks you before that. If nobody answers in about 10 minutes, A-deploy builds everything except the open port and we use the G4 fallback (API on the laptop) until you're back.
@@ -96,4 +98,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:53 PM: B-ingest, B-gateway, B-shl-plan done. Pushed plan.json and the planted test page so its raw URL answers.
 - Sat 8:01 PM: W2 launched early (6 agents). G2 checks 3 to 5 pass. Verifier running on the 4 finished W1 plans.
 - Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.
-- Sat 8:10 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
+- Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.

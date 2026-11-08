@@ -507,7 +507,7 @@ Stage W2. Agent: `builder`. Added 2026-11-07 8:00 PM because the repo stays priv
 
 ## B-g2fix
 
-Stage W2. Agent: `builder`. Added 2026-11-07 8:10 PM from the G2 verifier's findings. Small and surgical.
+Stage W2. Agent: `builder`. Added 2026-11-07 8:15 PM from the G2 verifier's findings. Small and surgical.
 
 **Owns.** `axelrod/fetch/ingest.py`, `axelrod/gateway.py`, `axelrod/store/state.py`, `axelrod/store/__init__.py`, `tests/test_ingest.py`, `tests/test_gateway.py`, `tests/test_store.py`. Change only what the tasks need. These are finished W1 files.
 
@@ -603,3 +603,9 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `Settings.test_page_url` (`TEST_PAGE_URL`). `GET` and `HEAD /test-pages/{name}` serve `backend/data/test_pages/<name>.html` with `X-Axelrod-Simulated: true`, outside `/api/v1`, with no key needed. The plan stage swaps the planted page's URL, domain and rationale when `TEST_PAGE_URL` is set. It finds the page by its plan.json URL plus "(simulated)" in the title, not by the id.
 - `R-allow-S-010` covers the API host and the path prefix `/test-pages/injection.html` only. `/api/v1/*` on the same host stays default deny. Rules ignore the port.
 - The gateway does not refuse loopback, private or link-local hosts. Mitigation: EC2 requires IMDSv2 (sent to A-deploy). Possible hardening for B-live: deny 169.254.0.0/16 in `decide`.
+
+**2026-11-07 8:20 PM, B-brief REPORT.**
+- The brief's judges and repairer live in `agents/summarizer.py` (tools `brief_draft`, `brief_faithfulness`, `brief_rewrite`). Judges are `verifier-<H id>-1..3`, asked again after a repair. Helpers: `summarize.estimate_pages`, `fit_pages`, `all_sentences`, `make_stats`, `word_budget`. `verify_summary.code_checks(state, s)`, `render_markdown(brief, *, rollup=None, items=None)`, `CHECKS_RELPATH` (writes `12-Verification/brief-checks.json`).
+- A sentence still failing after two repairs is removed and counted in `stats.failed`. Blocked sentences stay, marked blocked. A repaired sentence's new text comes in `summary.verified` and the `/summary` refetch, not in a second `summary.sentence`.
+- `finalize.run` writes `09-Analysis/human-report.md` with `render_markdown` and sets `state.summary.markdown_path` (sent to B-reason).
+- est_pages = words/450 + 0.3 per chart + 0.35 for the scorecard + 0.04 per heading + 0.15 for the frame. The fixture brief has 18 sentences, 319 words and 2.0 pages.
