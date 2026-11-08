@@ -538,3 +538,14 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - Decision: `check_plan.py` may use stdlib urllib. It is a dev check outside any run and stores nothing. The gateway rule covers runtime code (`backend/axelrod/`).
 - Decision: S-002 is the release PDF, not the HTML release page.
 - trafilatura drops `class="comment"` blocks and aria-hidden elements. The test page avoids both so the scan sees both injections.
+
+**2026-11-07 8:00 PM, B-store-api REPORT (what W2 must do).**
+- B-reason `finalize_report(ctx)`: set `state.rollup`, `state.report_certainty`, `state.holes`, `state.report_generated_at`, `state.report_markdown_path` (and optionally `state.sections`), then emit `report.ready`. That event is what turns the report final.
+- B-brief: set `state.summary` (an `m.HumanReport`), then emit `summary.ready`.
+- `usage.updated` carries run-level usage, and `emit` copies it into `run.usage`.
+- Vault `put_*` is sync. From async code use `aput_bytes` / `aput_text` (needed in aws mode). Vault paths are `runs/<run_id>/<slug>/<relpath>`. The state snapshot is `runs/<run_id>/state.json`.
+- `RunContext.create(state, store, vault, settings, gateway=None)`, `ctx.stopped()`, `ctx.run_id`. Orchestrator: `async start_run(store, vault, settings, req) -> RunContext`. API: `create_app(settings=None, *, store=None)`.
+- RunState extras: `kill_switch`, `plan_ready`, `report_ready`, `summary_ready`, `as_of`, `fiscal_note`, `approval_request`, `sections`, `rollup`, `report_certainty`, `report_generated_at`, `report_markdown_path`, `disclaimer`. Helpers: `documents_by_id`, `sorted_sources`, `report_status`, `report_sections`, `human_report`, `policy_view`, `agent_list`, `recount`, `is_finished`.
+- An analyst-added source's api_key lives only in `store.get_secret(source.access.secret_ref)`, never on disk.
+- A stage that still raises NotImplementedError fails the run with "stage <x> is not built yet (<plan>)". On restart, runs left in progress become failed ("Interrupted").
+- Replay format: `backend/data/replay/<name>/{state.json, events.jsonl, vault/}` (text only), written by `Store.export_run`.

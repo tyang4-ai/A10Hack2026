@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W1 Core (started 7:30 PM). G1 passed 7:29 PM.
-- Running: B-store-api, B-gateway, B-verify, B-ingest, B-shl-plan (5 builders in parallel).
+- Running: B-verify. Done: B-store-api, B-gateway, B-ingest, B-shl-plan.
 - Next: G2 when all five REPORTs are in. Cutoff 11:00 PM.
 
 ## Plans
@@ -14,7 +14,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 |---|---|---|---|---|---|
 | P-scaffold | scaffolder | S1 | done | 8 passed | 43 modules import, no heavy imports at load. Role agent ids 2 digits (extractor-01) |
 | A-setup | aws-operator | S1 | done | models, guardrail, 50+8 parallel ok | 5.5 models denied by workshop allowlist, using Sonnet 5 + Haiku 4.5 |
-| B-store-api | builder | W1 | running | | |
+| B-store-api | builder | W1 | done | 51 passed, live S3/DynamoDB ok | contract_smoke passes vs real API and mock, restart keeps runs, 200 concurrent emits gapless |
 | B-gateway | builder | W1 | done | 46 passed, 3 live passed | Haiku and Sonnet forced tool via AgentRunner live ok, guardrail flags injection. Fail closed, budget held at worst case |
 | B-verify | builder | W1 | running | | |
 | B-ingest | builder | W1 | done | 24 passed | ingest_one S-001 live ok (230 pages). Untrusted = news/forum/other or tier_3, scanned, fail closed. S-010 404 until pushed |
