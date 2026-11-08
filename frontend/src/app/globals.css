@@ -181,6 +181,86 @@
   --color-focus: #c2948a;
 }
 
+/* Nebula: deep space blue chrome, dusty mauve accent, dusty lavender links, cool steel secondary text.
+   The palette has no light colour, so the paper is a pale lavender grey. The desk is a shade darker
+   than deep space blue (#0D324D) so the mauve accent keeps 4.5:1; the focus ring is a deeper mauve so
+   it keeps 3:1 on both the desk and the paper. */
+[data-theme="nebula"] {
+  --color-paper: #f5f3f7;
+  --color-ink: #0d324d;
+  --color-muted: #585d66;
+  --color-rule: #e2dfe7;
+  --color-zebra: #eeebf1;
+  --color-hover: #e9e5ee;
+  --color-control: #cbc6d3;
+  --color-link: #7f5a83;
+  --color-good: #2f6b45;
+  --color-bad: #a6383e;
+  --color-warn: #8a5a12;
+  --color-bad-bg: #f7e6e8;
+  --color-warn-bg: #f4ecdc;
+  --color-band-none: #e9e5ee;
+  --color-hl-evidence: #c9b6cd;
+  --color-hl-context: #e6dce8;
+  --color-hl-other: #dde0e5;
+  --color-hl-other-context: #eceef1;
+  --color-desk: #0a2a41;
+  --color-desk-raised: #0d324d;
+  --color-desk-line: #133b58;
+  --color-desk-line-strong: #24557a;
+  --color-desk-ink: #eceaf0;
+  --color-desk-muted: #9da2ab;
+  --color-desk-good: #7dd3a0;
+  --color-desk-bad: #f4a3a8;
+  --color-desk-warn: #e8cf8a;
+  --color-desk-link: #b9c9dd;
+  --color-row-blocked: #3d1f2c;
+  --color-row-flagged: #3a3320;
+  --color-failed-bg: #6b1f2c;
+  --color-accent: #a188a6;
+  --color-accent-ink: #020202;
+  --color-focus: #9378a0;
+}
+
+/* Fern: iron grey chrome, celadon accent, fern links, mint cream paper, tea green highlights.
+   The desk is a shade darker than iron grey (#464E47) so secondary text keeps 4.5:1; the focus ring
+   is a mid green that keeps 3:1 on both the desk and the paper. */
+[data-theme="fern"] {
+  --color-paper: #f1fffa;
+  --color-ink: #1c2620;
+  --color-muted: #4f5a52;
+  --color-rule: #d9e8e1;
+  --color-zebra: #e7f5ef;
+  --color-hover: #e1f0e9;
+  --color-control: #c3d4cb;
+  --color-link: #3e6542;
+  --color-good: #2b6b3d;
+  --color-bad: #a6383e;
+  --color-warn: #7f5410;
+  --color-bad-bg: #fbeaea;
+  --color-warn-bg: #f7f0dc;
+  --color-band-none: #e1f0e9;
+  --color-hl-evidence: #96e6b3;
+  --color-hl-context: #ccfccb;
+  --color-hl-other: #dce3dd;
+  --color-hl-other-context: #ebf0ec;
+  --color-desk: #353c36;
+  --color-desk-raised: #464e47;
+  --color-desk-line: #3e463f;
+  --color-desk-line-strong: #566058;
+  --color-desk-ink: #f1fffa;
+  --color-desk-muted: #a9b5ab;
+  --color-desk-good: #b5efc8;
+  --color-desk-bad: #f4a3a8;
+  --color-desk-warn: #e8cf8a;
+  --color-desk-link: #ccfccb;
+  --color-row-blocked: #4a2a2c;
+  --color-row-flagged: #45402a;
+  --color-accent: #96e6b3;
+  --color-accent-ink: #0f2a19;
+  --color-focus: #4f9a68;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   color-scheme: light;

@@ -7,6 +7,8 @@ export const THEMES = [
   { id: "navy-gold", label: "Navy and gold", swatches: ["#0B1F3A", "#C9A227", "#FBFAF7"] },
   { id: "stone-ember", label: "Stone and ember", swatches: ["#1C1917", "#F97316", "#FFFDF9"] },
   { id: "harbor", label: "Harbor (charcoal blue and rosy taupe)", swatches: ["#28536B", "#C2948A", "#F6F0ED"] },
+  { id: "nebula", label: "Nebula (deep space blue and mauve)", swatches: ["#0D324D", "#A188A6", "#F5F3F7"] },
+  { id: "fern", label: "Fern (iron grey and celadon)", swatches: ["#464E47", "#96E6B3", "#F1FFFA"] },
   { id: "slate-blue", label: "Slate and blue (previous)", swatches: ["#0F172A", "#F59E0B", "#FFFFFF"] },
 ] as const;
 
