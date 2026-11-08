@@ -46,6 +46,10 @@ def _offline_settings(request: pytest.FixtureRequest, tmp_path, monkeypatch) -> 
     for var, value in env.items():
         monkeypatch.setenv(var, value)
     monkeypatch.setenv("AXELROD_ENV_FILE", "")  # subprocesses skip backend/.env too
+    # Recorded runs in backend/data/replay are real data, not test input: offline tests see an empty folder.
+    replay_dir = tmp_path / "replay"
+    replay_dir.mkdir()
+    monkeypatch.setattr("backend.axelrod.store.REPLAY_DIR", replay_dir)
     settings = axconfig.load_settings(env_file=None, environ=env)
     axconfig.set_settings(settings)
     yield settings

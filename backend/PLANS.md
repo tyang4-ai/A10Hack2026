@@ -587,7 +587,7 @@ Added 2026-11-07 9:22 PM from B-fix-draft's REPORT.
 
 ## G3 fixes (from the G3 verifier, after G5)
 
-Added 2026-11-07 10:22 PM. The verifier's full report is in status.md Log (G3). Two builders run in parallel on separate files.
+Added 2026-11-07 10:17 PM. The verifier's full report is in status.md Log (G3). Two builders run in parallel on separate files.
 
 ### B-fix-cite
 **Owns.** `axelrod/verify/checks.py`, `axelrod/stages/extract.py`, `axelrod/stages/verify.py`, `tests/test_cite_fidelity.py` (new), and only additions to `tests/test_verify.py` and `tests/test_extract.py`.
@@ -764,3 +764,5 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - ROTIC results vary between runs (earlier code gave N/A in 3 of 9 tuning runs). Not yet caught: averages over non-adjacent year-ends (sent to B-fix-checks), and the repairer undoing a code-recomputed score (B-fix-repair).
 
 **2026-11-07 9:37 PM, B-fix-repair REPORT.** Threshold scores (rotic_level, liquidity) come from `checks.check_extrapolation`'s threshold_rule. A repairer score that differs is refused, and the note starts "Code refused the repairer's score". Judgment scores may only stay, move to 0, or go N/A. When a display rounds onto the bar, code's sentence says which side the unrounded value is on. Items resting on a blocked citation are never repaired. New in repair.py: `CodeScore`, `code_score`, `checked_score`, `numeric_bars`, `judgment_move_ok`, `rests_on_blocked`. `repairer.repair_prompt(..., *, code_score=None)`. Open option: add each computation's unrounded value to `conclusion_view` in stages/verify.py, so live judges see it.
+
+**2026-11-07 10:42 PM, B-fix-holes REPORT.** Code writes the brief's gap section (at most 5 sentences: register count, unscored criteria, analyst-only criteria, failed items per criterion, sources or agents that gave nothing), with counts in words, each sentence citing its HOLE ids. The model gets it as `gap_summary` and copies it. Its own gap sentences are replaced. Judges get a code-made `hole_count` entry first when 2+ holes are cited. Trim order: extra content (never the last sentence of a section or category), then gaps down to 2, then charts, then the bottom line down to 1. `summarize.word_budget(n_charts, *, reserved_words=0)`, `fit_pages(sections, max_pages=MAX_PAGES, *, items=None)`, `summarizer.report_payload(state, *, word_budget, gap_summary=None)`. A full live brief costs about $0.50 to $0.55, and judges dominate.
