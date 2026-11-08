@@ -2,12 +2,16 @@
 
 // The window system: every panel is a window on one desk. Geometry is stored as
 // fractions of the desk (0 to 1), so layouts scale when the browser is resized.
-// Three layout presets (Approve, Watch, Read) follow the run's stage. Each
+// Built-in layout presets follow the pipeline: each group of stages has one.
+// The analyst can also save the current arrangement as a named profile. Each
 // layout's geometry is saved to localStorage, so a reload restores it.
+import type { Stage } from "@contract/types";
 import { create } from "zustand";
 
 export type WinKind = "sources" | "report" | "brief" | "inspector" | "traffic" | "agents" | "vault" | "log" | "policy" | "chain" | "agent" | "page" | "item";
-export type LayoutName = "approve" | "watch" | "read";
+export type BuiltIn = "approve" | "collect" | "watch" | "review" | "read" | "audit";
+// A built-in preset, or "custom-<n>" for a profile the analyst saved.
+export type LayoutName = string;
 
 export interface Geo {
   x: number;
@@ -31,15 +35,32 @@ export interface Win extends Geo {
 
 // The three module windows can be minimized but never closed.
 export const MODULE_KINDS: WinKind[] = ["sources", "report", "brief"];
-export const LAYOUTS: { id: LayoutName; label: string }[] = [
-  { id: "approve", label: "Approve" },
-  { id: "watch", label: "Watch" },
-  { id: "read", label: "Read" },
+export const LAYOUTS: { id: BuiltIn; label: string; help: string }[] = [
+  { id: "approve", label: "Approve", help: "Plan and approve: sources, the gateway policy and the inspector" },
+  { id: "collect", label: "Collect", help: "Collect: sources being fetched, gateway traffic and the policy" },
+  { id: "watch", label: "Watch", help: "Extract and draft: traffic, agents, an agent chat, the inspector and a source page" },
+  { id: "review", label: "Review", help: "Verify and repair: the agent report, the inspector and a source page" },
+  { id: "read", label: "Read", help: "Summarize and check: the brief, its citation chain and a source page" },
+  { id: "audit", label: "Audit", help: "Audit: the gateway policy, traffic, the event log and the vault" },
 ];
-export const LAYOUT_FOR_MODULE = { sources: "approve", report: "watch", brief: "read" } as const satisfies Record<string, LayoutName>;
+
+// Each pipeline step maps to the preset that shows what that step is doing.
+// Steps that show the same windows share a preset, so the desk doesn't jump on every step.
+export const LAYOUT_FOR_STAGE: Record<Stage, BuiltIn> = {
+  plan: "approve",
+  approve: "approve",
+  collect: "collect",
+  extract: "watch",
+  draft: "watch",
+  verify: "review",
+  repair: "review",
+  summarize: "read",
+  verify_summary: "read",
+  complete: "read",
+};
 
 type Slot = Geo & { kind: WinKind; ref?: string };
-const PRESETS: Record<LayoutName, Slot[]> = {
+const PRESETS: Record<BuiltIn, Slot[]> = {
   approve: [
     { kind: "sources", x: 0, y: 0, w: 0.6, h: 1 },
     { kind: "policy", x: 0.6, y: 0, w: 0.4, h: 0.5 },
@@ -57,7 +78,30 @@ const PRESETS: Record<LayoutName, Slot[]> = {
     { kind: "chain", x: 0.49, y: 0, w: 0.51, h: 1 / 3 },
     { kind: "page", x: 0.49, y: 1 / 3, w: 0.51, h: 2 / 3 },
   ],
+  collect: [
+    { kind: "sources", x: 0, y: 0, w: 0.5, h: 1 },
+    { kind: "traffic", x: 0.5, y: 0, w: 0.5, h: 0.55 },
+    { kind: "policy", x: 0.5, y: 0.55, w: 0.5, h: 0.45 },
+  ],
+  review: [
+    { kind: "report", x: 0, y: 0, w: 0.55, h: 1 },
+    { kind: "inspector", x: 0.55, y: 0, w: 0.45, h: 0.5 },
+    { kind: "page", x: 0.55, y: 0.5, w: 0.45, h: 0.5 },
+  ],
+  audit: [
+    { kind: "policy", x: 0, y: 0, w: 0.4, h: 0.5 },
+    { kind: "log", x: 0, y: 0.5, w: 0.4, h: 0.5 },
+    { kind: "traffic", x: 0.4, y: 0, w: 0.6, h: 0.6 },
+    { kind: "vault", x: 0.4, y: 0.6, w: 0.6, h: 0.4 },
+  ],
 };
+
+export interface Custom {
+  id: string;
+  label: string;
+  // The arrangement as it was saved; Reset goes back to this.
+  wins: Win[];
+}
 
 export function winId(kind: WinKind, ref?: string): string {
   if (!ref) return kind;
@@ -105,7 +149,8 @@ interface Saved {
   layout: LayoutName;
   dirty: boolean;
   auto?: boolean;
-  layouts: Partial<Record<LayoutName, Win[]>>;
+  layouts: Record<string, Win[] | undefined>;
+  customs?: Custom[];
 }
 
 function readSaved(): Saved | null {
@@ -144,6 +189,7 @@ interface WinState {
   hydrated: boolean;
   // Auto tiling: re-arrange visible windows whenever one opens, closes, minimizes or restores.
   auto: boolean;
+  customs: Custom[];
 
   hydrate: () => void;
   open: (kind: WinKind, ref?: string, opts?: { beside?: boolean }) => void;
@@ -161,12 +207,19 @@ interface WinState {
   toggleAuto: () => void;
   tile: () => void;
   swap: (a: string, b: string) => void;
+  saveAs: (label: string) => void;
+  deleteLayout: (id: string) => void;
 }
 
-function build(name: LayoutName, current: Record<string, Win>, saved: Win[] | null): { wins: Record<string, Win>; top: number; focused: string | null } {
-  const slots: Win[] =
-    saved ??
-    PRESETS[name].map((s) => ({ ...s, id: winId(s.kind, s.ref), z: 0, min: false, max: false, slot: undefined }));
+function presetWins(name: LayoutName, customs: Custom[]): Win[] {
+  const custom = customs.find((c) => c.id === name);
+  if (custom) return custom.wins;
+  const slots = PRESETS[name as BuiltIn] ?? PRESETS.read;
+  return slots.map((s) => ({ ...s, id: winId(s.kind, s.ref), z: 0, min: false, max: false, slot: undefined }));
+}
+
+function build(name: LayoutName, current: Record<string, Win>, saved: Win[] | null, customs: Custom[]): { wins: Record<string, Win>; top: number; focused: string | null } {
+  const slots: Win[] = saved ?? presetWins(name, customs);
   const wins: Record<string, Win> = {};
   let top = 0;
   // Windows outside the layout stay open, minimized to the dock.
@@ -190,13 +243,15 @@ export const useWindows = create<WinState>((set, get) => ({
   palette: false,
   hydrated: false,
   auto: false,
+  customs: [],
 
   // Runs once on the client, after the first render, so server and client HTML match.
   hydrate: () => {
     if (get().hydrated) return;
     const saved = readSaved();
-    const layout = saved?.layout ?? "read";
-    set({ ...build(layout, {}, saved?.layouts[layout] ?? null), layout, dirty: saved?.dirty ?? false, auto: saved?.auto ?? false, hydrated: true });
+    const customs = saved?.customs ?? [];
+    const layout = saved?.layout && (customs.some((c) => c.id === saved.layout) || saved.layout in PRESETS) ? saved.layout : "read";
+    set({ ...build(layout, {}, saved?.layouts[layout] ?? null, customs), customs, layout, dirty: saved?.dirty ?? false, auto: saved?.auto ?? false, hydrated: true });
     if (get().auto) get().tile();
   },
 
@@ -283,7 +338,7 @@ export const useWindows = create<WinState>((set, get) => ({
     const cur = get().wins;
     // Saved windows pinned to an agent, page or item may belong to an older run: only keep the ones open now.
     const saved = opts?.reset ? null : (readSaved()?.layouts[name]?.filter((w) => !w.ref || !!cur[w.id]) ?? null);
-    set({ ...build(name, cur, saved), layout: name, dirty: false, suggest: null });
+    set({ ...build(name, cur, saved, get().customs), layout: name, dirty: false, suggest: null });
     if (get().auto) get().tile();
   },
 
@@ -304,6 +359,25 @@ export const useWindows = create<WinState>((set, get) => ({
     const next = { ...wins };
     vis.forEach((w, i) => (next[w.id] = { ...w, ...geos[i], slot: i }));
     set({ wins: next });
+  },
+
+  // Save the current arrangement as a named profile and switch to it.
+  saveAs: (label) => {
+    const { customs, wins } = get();
+    const n = customs.reduce((m, c) => Math.max(m, Number(c.id.slice(7)) || 0), 0) + 1;
+    const custom: Custom = { id: `custom-${n}`, label: label.trim() || `Layout ${n}`, wins: Object.values(wins) };
+    set({ customs: [...customs, custom], layout: custom.id, dirty: false, suggest: null });
+  },
+
+  deleteLayout: (id) => {
+    const { customs, layout } = get();
+    set({ customs: customs.filter((c) => c.id !== id) });
+    const saved = readSaved();
+    if (saved) {
+      delete saved.layouts[id];
+      writeSaved({ ...saved, customs: get().customs });
+    }
+    if (layout === id) get().applyLayout("read");
   },
 
   // Drag a window onto another in auto mode to swap their places.
@@ -330,9 +404,9 @@ function topVisible(wins: Record<string, Win>): string | null {
 
 // Save the current layout's geometry whenever windows change.
 useWindows.subscribe((s, prev) => {
-  if (!s.hydrated || (s.wins === prev.wins && s.layout === prev.layout && s.dirty === prev.dirty && s.auto === prev.auto)) return;
+  if (!s.hydrated || (s.wins === prev.wins && s.layout === prev.layout && s.dirty === prev.dirty && s.auto === prev.auto && s.customs === prev.customs)) return;
   const saved = readSaved();
-  writeSaved({ layout: s.layout, dirty: s.dirty, auto: s.auto, layouts: { ...saved?.layouts, [s.layout]: Object.values(s.wins) } });
+  writeSaved({ layout: s.layout, dirty: s.dirty, auto: s.auto, customs: s.customs, layouts: { ...saved?.layouts, [s.layout]: Object.values(s.wins) } });
 });
 
 // In auto mode, re-tile whenever the set of visible windows changes.

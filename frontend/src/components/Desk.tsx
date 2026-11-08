@@ -166,27 +166,85 @@ function InjectErrors() {
 
 // ---- layout control for the top bar ----
 
+const seg = (on: boolean, first: boolean) =>
+  `h-7 px-2.5 ${first ? "" : "border-l border-desk-line-strong"} ${on ? "bg-accent font-semibold text-accent-ink" : "text-desk-ink hover:bg-desk-raised"}`;
+
 export function LayoutControl() {
   const layout = useWindows((s) => s.layout);
   const suggest = useWindows((s) => s.suggest);
   const dirty = useWindows((s) => s.dirty);
   const auto = useWindows((s) => s.auto);
-  const { applyLayout, toggleAuto } = useWindows.getState();
-  const label = (id: string) => LAYOUTS.find((l) => l.id === id)?.label;
+  const customs = useWindows((s) => s.customs);
+  const { applyLayout, toggleAuto, saveAs, deleteLayout } = useWindows.getState();
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const t = setTimeout(() => setConfirmDelete(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmDelete]);
+  const label = (id: string) => LAYOUTS.find((l) => l.id === id)?.label ?? customs.find((c) => c.id === id)?.label ?? id;
+  const custom = customs.find((c) => c.id === layout);
   return (
-    <div className="flex items-center gap-2">
-      <div role="group" aria-label="Layout" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
+    <div className="flex flex-wrap items-center gap-2">
+      <div role="group" aria-label="Layout presets, one per pipeline phase" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
         {LAYOUTS.map((l, i) => (
-          <button
-            key={l.id}
-            aria-pressed={layout === l.id}
-            onClick={() => applyLayout(l.id)}
-            className={`h-7 px-2.5 ${i ? "border-l border-desk-line-strong" : ""} ${layout === l.id ? "bg-accent font-semibold text-accent-ink" : "text-desk-ink hover:bg-desk-raised"}`}
-          >
+          <button key={l.id} aria-pressed={layout === l.id} title={l.help} onClick={() => applyLayout(l.id)} className={seg(layout === l.id, i === 0)}>
             {l.label}
           </button>
         ))}
       </div>
+      {customs.length > 0 && (
+        <div role="group" aria-label="Your saved layouts" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
+          {customs.map((c, i) => (
+            <button key={c.id} aria-pressed={layout === c.id} onClick={() => applyLayout(c.id)} className={`${seg(layout === c.id, i === 0)} max-w-32 truncate`}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {naming ? (
+        <form
+          className="flex items-center gap-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveAs(name);
+            setName("");
+            setNaming(false);
+          }}
+        >
+          <label htmlFor="layout-name" className="sr-only">
+            Name for this layout
+          </label>
+          <input
+            id="layout-name"
+            autoFocus
+            value={name}
+            maxLength={24}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && setNaming(false)}
+            placeholder="Layout name"
+            className="h-7 w-32 rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 text-[12px] text-desk-ink outline-none placeholder:text-desk-muted focus:border-accent"
+          />
+          <button className="h-7 rounded-[4px] bg-accent px-2.5 text-[12px] font-semibold text-accent-ink">Save</button>
+          <button type="button" onClick={() => setNaming(false)} aria-label="Cancel saving the layout" className="h-7 px-1.5 text-desk-muted hover:text-white">
+            ✕
+          </button>
+        </form>
+      ) : (
+        <button onClick={() => setNaming(true)} title="Save the current windows as your own layout" className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white">
+          Save layout as…
+        </button>
+      )}
+      {custom && (
+        <button
+          onClick={() => (confirmDelete ? (deleteLayout(custom.id), setConfirmDelete(false)) : setConfirmDelete(true))}
+          className={`h-7 rounded-[4px] px-1.5 text-[12px] ${confirmDelete ? "bg-desk-bad font-semibold text-desk" : "text-desk-muted hover:text-desk-bad"}`}
+        >
+          {confirmDelete ? `Confirm delete ${custom.label}` : `Delete ${custom.label}`}
+        </button>
+      )}
       <button
         aria-pressed={auto}
         onClick={toggleAuto}

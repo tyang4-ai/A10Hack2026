@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { moduleFor, type Module } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { usePolling } from "@/lib/usePolling";
-import { LAYOUT_FOR_MODULE, useWindows } from "@/lib/windows";
+import { LAYOUT_FOR_STAGE, type BuiltIn, useWindows } from "@/lib/windows";
 import { Desk, Dock } from "./Desk";
 import { Palette } from "./Palette";
 import { Banner, TopBar } from "./TopBar";
@@ -30,24 +29,24 @@ export function Dashboard() {
 
   // Switching runs closes windows pinned to the old run's agents, pages and items.
   const prevRun = useRef<string | null>(null);
-  const lastModule = useRef<Module | null>(null);
+  const lastPreset = useRef<BuiltIn | null>(null);
   useEffect(() => {
     if (prevRun.current && prevRun.current !== runId) useWindows.getState().closePinned();
     prevRun.current = runId;
-    lastModule.current = null;
+    lastPreset.current = null;
   }, [runId]);
 
-  // Follow the run: when the stage moves to another module, apply that module's
-  // layout. If the analyst has moved windows since the last layout, suggest it instead.
+  // Follow the run: when the stage moves to a step with another preset, apply it.
+  // If the analyst has moved windows since the last layout, suggest it instead.
   useEffect(() => {
     if (!stage || !hydrated) return;
-    const m = moduleFor(stage);
-    if (lastModule.current === m) return;
-    lastModule.current = m;
-    const target = LAYOUT_FOR_MODULE[m];
+    const target = LAYOUT_FOR_STAGE[stage];
+    if (lastPreset.current === target) return;
+    lastPreset.current = target;
     const w = useWindows.getState();
     if (target === w.layout) w.setSuggest(null);
-    else if (w.dirty) w.setSuggest(target);
+    // A profile the analyst saved is a deliberate choice: suggest, don't override it.
+    else if (w.dirty || w.customs.some((c) => c.id === w.layout)) w.setSuggest(target);
     else w.applyLayout(target);
   }, [stage, runId, hydrated]);
 
