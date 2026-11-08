@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import io
+import json
 import os
 import sys
 import urllib.error
@@ -21,6 +23,9 @@ sys.modules["check_plan"] = check_plan  # dataclasses look their module up in sy
 _spec.loader.exec_module(check_plan)
 
 SCREEN = RUBRIC["depths"]["screen"]
+# sha256 of S-001 to S-010 as canonical JSON, taken before plan v2 added the archive sources. The demo depends
+# on these ten sources (S-006, S-009, S-010 and their order), so they must never change.
+DEMO_SOURCES_SHA256 = "768b5ab0f982c690c7770c484a4f72993f00bc2ff58709c239243b56d19fab2b"
 
 
 @pytest.fixture
@@ -99,8 +104,10 @@ def test_extract_pages_are_pdf_only_and_within_budget(plan):
     by_id = {s.source_id: s for s in sources_of(plan)}
     pdfs = {sid for sid, s in by_id.items() if check_plan.is_pdf(s)}
     assert set(plan["extract_pages"]) == pdfs
-    total = sum(len(check_plan.expand(r)) for r in plan["extract_pages"].values())
-    assert 30 <= total <= 45
+    demo, archived = check_plan.page_totals(plan)
+    assert 30 <= demo <= 45
+    assert 0 < archived <= check_plan.ARCHIVE_PAGE_MAX
+    assert (demo, archived) == (36, 30)
 
 
 def test_need_pages_sit_inside_extract_pages(plan):
@@ -116,8 +123,154 @@ def test_every_extract_page_has_an_anchor(plan):
 
 def test_fiscal_note_names_the_base_and_the_breaks(plan):
     note = plan["fiscal_note"]
-    for phrase in ("FY2026", "Nov 26, 2026", "FY2025 Annual Report", "Segments changed", "shareholder structure"):
+    for phrase in ("FY2026", "Nov 26, 2026", "FY2025 Annual Report", "Segments changed", "shareholder structure",
+                   "FY2017", "IFRS 16"):
         assert phrase in note
+
+
+# ---------------------------------------------------------------------------
+# Plan v2: the demo sources stay, archive sources from S-011
+# ---------------------------------------------------------------------------
+
+
+def _sha(obj) -> str:
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+                          .encode("utf-8")).hexdigest()
+
+
+def test_demo_sources_are_unchanged(plan):
+    assert [s["source_id"] for s in plan["sources"][:10]] == list(check_plan.DEMO_SOURCES)
+    assert _sha(plan["sources"][:10]) == DEMO_SOURCES_SHA256
+
+
+def test_demo_fetch_order_is_unchanged(plan):
+    order = [s.source_id for s in check_plan.collect_order(sources_of(plan))]
+    assert [sid for sid in order if sid in check_plan.DEMO_SOURCES] == list(check_plan.DEMO_FETCH_ORDER)
+    assert order[-3:] == ["S-006", "S-009", "S-010"]
+    archived = check_plan.archive_ids(plan)
+    assert archived and all(order.index(a) > order.index("S-005") for a in archived)
+
+
+def test_archive_sources_follow_the_rules(plan):
+    archived = [s for s in plan["sources"] if check_plan.is_archive(s)]
+    assert [s["source_id"] for s in archived] == [f"S-{i:03d}" for i in range(11, 11 + len(archived))]
+    assert [s["source_id"] for s in plan["sources"][10:]] == [s["source_id"] for s in archived]
+    for s in archived:
+        assert s["url"].startswith("https://"), s["source_id"]  # every file here has a known original URL
+        assert s["tier"] == "priority" and s["kind"] == "annual_report", s["source_id"]
+        assert s["scores"]["reliability"] == check_plan.ARCHIVE_RELIABILITY[s["kind"]], s["source_id"]
+        assert s["source_id"] in check_plan.ARCHIVE_FILES, s["source_id"]
+        assert "Aug 1, 2026" in s["rationale"], s["source_id"]
+    peers = [s["source_id"] for s in archived if s["need_ids"] == ["N-02"]]
+    assert peers and all(source(plan, p)["vault_folder"] == "08-Competitors" for p in peers)
+
+
+def test_needs_ask_for_the_longer_history(plan):
+    needs = {n["need_id"]: n for n in plan["needs"]}
+    assert "from FY2017 to FY2026" in needs["N-01"]["question"]
+    assert "since FY2017" in needs["N-03"]["question"]
+    assert "financial_filing" in needs["N-02"]["data_types"]
+
+
+def test_catches_archive_problems(plan):
+    source(plan, "S-011")["scores"]["reliability"] = 0.9
+    source(plan, "S-003")["rationale"] += " Also " + check_plan.ARCHIVE_NOTE + "."
+    found = errors(check_plan.check_structure(plan))
+    assert any(e.startswith("S-011") and "reliability must be 0.95" in e for e in found)
+    assert any(e.startswith("S-003") and "archive sources start at S-011" in e for e in found)
+
+
+def test_catches_an_archive_source_fetched_after_the_demo_beats(plan):
+    s016 = source(plan, "S-016")
+    s016["tier"], s016["rank"] = "tier_2", 2   # tier_2 after S-006, so it would be fetched before S-009
+    found = errors(check_plan.check_structure(plan))
+    assert any("must be fetched last" in e for e in found)
+
+
+def test_catches_too_many_archive_pages(plan):
+    plan["extract_pages"]["S-011"] = [[1, 61]]
+    plan.pop("need_pages")
+    found = errors(check_plan.check_structure(plan))
+    assert any("86 pages from archive sources, at most 60" in e for e in found)
+
+
+def test_s3_urls_only_for_archive_sources_under_the_archive_prefix(plan):
+    s016 = source(plan, "S-016")
+    s016["url"], s016["domain"] = "s3://some-bucket/archive/shl/" + check_plan.ARCHIVE_FILES["S-016"], "some-bucket"
+    assert check_plan.check_structure(plan) == []
+    s016["url"] = "s3://some-bucket/archive/shl/elsewhere.pdf"
+    assert any("s3 url must point at" in e for e in errors(check_plan.check_structure(plan)))
+    s003 = source(plan, "S-003")
+    s003["url"], s003["domain"] = "s3://some-bucket/archive/shl/x.pdf", "some-bucket"
+    assert any(e.startswith("S-003") and "only archive sources" in e for e in errors(check_plan.check_structure(plan)))
+
+
+def test_archive_url_that_answers_only_from_the_cache_warns(plan):
+    s016 = source(plan, "S-016")
+    s016["url"], s016["domain"] = "s3://vault-x/archive/shl/" + check_plan.ARCHIVE_FILES["S-016"], "vault-x"
+    sources = sources_of(plan)
+    dead = {source(plan, "S-011")["url"]}
+    probed: list[str] = []
+
+    def probe(url):
+        probed.append(url)
+        return check_plan.Probe(url not in dead, 404 if url in dead else 200, "HEAD", "")
+
+    issues, lines = check_plan.check_urls(sources, probe, vault_bucket="vault-x")
+    assert errors(issues) == []
+    by_where = {i.where: i for i in issues}
+    assert by_where["S-011"].level == "warn" and "document cache" in by_where["S-011"].message
+    assert "s3://vault-x/archive/shl/01-Annual-Reports/FY2024/" in by_where["S-011"].message
+    assert by_where["S-016"].level == "warn" and s016["url"] not in probed
+    assert len(lines) == len(sources)
+
+
+def test_archive_s3_url_reads_the_bucket_at_run_time():
+    assert check_plan.archive_s3_url("S-014", "b1") == (
+        "s3://b1/archive/shl/01-Annual-Reports/FY2018/FY2018_shl_annual-report.pdf")
+    assert "<VAULT_BUCKET unset>" in check_plan.archive_s3_url("S-014", None)
+    assert check_plan.archive_s3_url("S-006", "b1") is None
+
+
+def _fake_archive_pdf(path: Path, pages: int, page: int, text: str) -> None:
+    """A blank PDF with one line of text on one page, standing in for an archive file (offline)."""
+    import pymupdf
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    doc = pymupdf.open()
+    for i in range(pages):
+        p = doc.new_page()
+        if i + 1 == page:
+            p.insert_text((72, 72), text)
+    doc.save(path)
+    doc.close()
+
+
+def test_verify_pages_reads_local_archive_copies(plan, tmp_path):
+    pytest.importorskip("pymupdf")
+    archive = tmp_path / "archive"
+    _fake_archive_pdf(archive / check_plan.ARCHIVE_FILES["S-016"], 143, 143, check_plan.PAGE_ANCHORS["S-016"][143])
+    _fake_archive_pdf(archive / check_plan.ARCHIVE_FILES["S-015"], 120, 1, "nothing useful here")
+    plan["extract_pages"] = {"S-016": [[143, 143]], "S-015": [[99, 100]], "S-002": [[1, 1]]}
+
+    def no_fetch(*args):
+        raise AssertionError("must not download")
+
+    issues, lines = check_plan.verify_pages(plan, None, "UA/1", fetch=no_fetch, archive_dir=archive)
+    found = errors(issues)
+    assert not any(e.startswith("S-016") for e in found)
+    assert any(e.startswith("S-015 page 99") and "anchor not found" in e for e in found)
+    assert [(i.level, i.where) for i in issues if i.level == "warn"] == [("warn", "S-002 pages")]
+    assert any(line.startswith("  ok   S-016") for line in lines)
+
+
+def test_verify_pages_refuses_an_archive_folder_inside_the_repo(plan):
+    def no_fetch(*args):
+        raise AssertionError("must not download")
+
+    issues, _ = check_plan.verify_pages(plan, None, "UA/1", fetch=no_fetch,
+                                        archive_dir=check_plan.REPO / "backend" / "data")
+    assert errors(issues) and "inside the repo" in errors(issues)[0]
 
 
 # ---------------------------------------------------------------------------
@@ -218,9 +371,10 @@ def test_catches_an_uncovered_criterion(plan):
 
 def test_catches_a_need_without_a_source(plan):
     for s in plan["sources"]:
-        if s["source_id"] in ("S-007", "S-008"):
+        if s["need_ids"] == ["N-02"]:     # the SEC facts S-007, S-008 and the Philips reports S-015, S-016
             s["need_ids"] = ["N-01"]
             s["criteria"] = ["rotic_vs_peers"]
+    plan["need_pages"].pop("N-02")
     assert any(e.startswith("N-02") for e in errors(check_plan.check_structure(plan)))
 
 
@@ -348,5 +502,22 @@ def test_pages_hold_their_anchors_in_the_real_pdfs(plan):
     def no_fetch(*args):
         raise AssertionError("put the PDFs in AXELROD_SHL_PDFS first (check_plan.py --pages DIR downloads them)")
 
+    archived = check_plan.archive_ids(plan)
+    plan["extract_pages"] = {sid: r for sid, r in plan["extract_pages"].items() if sid not in archived}
     issues, _ = check_plan.verify_pages(plan, Path(os.environ["AXELROD_SHL_PDFS"]), "UA/1", fetch=no_fetch)
     assert errors(issues) == []
+
+
+@pytest.mark.skipif(not os.environ.get(check_plan.ARCHIVE_ENV),
+                    reason=f"set {check_plan.ARCHIVE_ENV} to the local summer 2026 archive (read only)")
+def test_pages_hold_their_anchors_in_the_local_archive(plan):
+    """Every source with a local archive copy, archive sources included, checked in place with no download."""
+    def no_fetch(*args):
+        raise AssertionError("must not download")
+
+    plan["extract_pages"] = {sid: r for sid, r in plan["extract_pages"].items() if sid in check_plan.ARCHIVE_FILES}
+    assert check_plan.archive_ids(plan) <= set(plan["extract_pages"])
+    issues, lines = check_plan.verify_pages(plan, None, "UA/1", fetch=no_fetch,
+                                            archive_dir=Path(os.environ[check_plan.ARCHIVE_ENV]))
+    assert errors(issues) == [] and [i for i in issues if i.level == "warn"] == []
+    assert len(lines) == len(plan["extract_pages"])

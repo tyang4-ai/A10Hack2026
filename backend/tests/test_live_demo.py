@@ -342,7 +342,13 @@ def test_s006_stays_late_in_the_shl_plan():
     for s in sources:
         s.approval = "approved" if s.tier == "priority" else "auto_approved"
     order = [s.source_id for s in collect.collect_order(sources)]
-    assert order.index("S-006") == 7 and order[-2:] == ["S-009", "S-010"]
+    by_id = {s.source_id: s for s in sources}
+    pos = order.index("S-006")
+    # Plan v2 adds priority archive sources (S-011 and up), so S-006 is no longer 8th. The real requirement:
+    # every priority source is fetched before S-006, and S-009 then S-010 come after it.
+    assert all(by_id[sid].tier == "priority" for sid in order[:pos])
+    assert not any(by_id[sid].tier == "priority" for sid in order[pos + 1:])
+    assert order.index("S-009") > pos and order.index("S-010") > order.index("S-009")
 
 
 async def test_every_request_is_announced_and_paced(settings, canned):

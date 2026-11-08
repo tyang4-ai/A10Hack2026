@@ -5,10 +5,17 @@ Usage (from the repo root):
   PY backend/scripts/check_plan.py --offline     everything except the network
   PY backend/scripts/check_plan.py --pages DIR   also download the PDFs into DIR (outside the repo, never
                                                  committed) and check that every extract page holds its anchor
+  PY backend/scripts/check_plan.py --archive DIR check pages against Gordon's local summer 2026 archive instead
+                                                 of a download (read only, nothing is copied). Default: the
+                                                 AXELROD_SHL_ARCHIVE environment variable
 
 The URL checks are a dev preflight, not agent traffic: no agent runs and nothing is stored, so they use stdlib
 urllib (HEAD, then a 1 KB ranged GET) instead of the gateway, which needs a run and has no HEAD. The planted
 test page only warns until the orchestrator pushes the backend branch. Exit code 1 means at least one error.
+
+Archive sources (S-011 and up, rationale "collected before the event (summer 2026 archive)") were collected
+before the event and are served from the S3 document cache. A live URL of theirs that no longer answers, or an
+s3:// URL, only warns: the run gets the bytes from the cache.
 
 With TEST_PAGE_URL set (env or backend/.env), runs fetch the planted page from Axelrod's own API instead of
 raw GitHub, so this script checks that URL instead: its shape offline, and online that it answers with the
@@ -18,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -46,8 +54,38 @@ SERVED_PATH = "/test-pages/injection.html"     # where api.py serves the page, u
 SIMULATED_HEADER = "X-Axelrod-Simulated"
 LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 REVOKE_TARGET = "S-006"           # the demo revokes this tier_2 article mid-collect
-PAGE_BUDGET = (30, 45)            # extract pages in total: they drive the live-model cost of a full run
+PAGE_BUDGET = (30, 45)            # extract pages of the demo sources S-001 to S-010 (live-model cost of a run)
 TIER_ORDER = {"priority": 0, "tier_2": 1, "tier_3": 2}
+
+# The ten demo sources stay exactly as they are. The demo script depends on this fetch order among them, with
+# S-006 (revoked), S-009 (blocked link-follow) and S-010 (flagged test page) fetched last.
+DEMO_SOURCES = tuple(f"S-{i:03d}" for i in range(1, 11))
+DEMO_FETCH_ORDER = ("S-001", "S-002", "S-007", "S-008", "S-003", "S-004", "S-005", "S-006", "S-009", "S-010")
+DEMO_LAST = ("S-006", "S-009", "S-010")
+
+# Archive sources: primary documents from Gordon's summer 2026 archive, served from the S3 document cache.
+ARCHIVE_NOTE = "collected before the event (summer 2026 archive)"
+FIRST_ARCHIVE_ID = 11
+ARCHIVE_PAGE_MAX = 60             # extract pages from archive sources: about 60 at most, for cost per run
+ARCHIVE_RELIABILITY = {"annual_report": 0.95, "sec_filing": 0.95, "xbrl_facts": 0.95, "company_ir": 0.9}
+ARCHIVE_PREFIX = "archive/shl/"   # S3 key prefix the archive importer uses under VAULT_BUCKET
+ARCHIVE_ENV = "AXELROD_SHL_ARCHIVE"
+
+# Relative path in the archive of each plan PDF that has a local copy. Archive sources must have one (it is
+# also the s3:// fallback key). S-001 and S-003 to S-005 are live sources whose bytes are in the archive too,
+# so --archive can check their pages without a download. S-002 (Nov 5, 2026) postdates the archive.
+ARCHIVE_FILES: dict[str, str] = {
+    "S-001": "01-Annual-Reports/FY2025/FY2025_shl_annual-report.pdf",
+    "S-003": "01-Annual-Reports/FY2023/FY2023_shl_annual-report.pdf",
+    "S-004": "01-Annual-Reports/FY2021/FY2021_shl_annual-report.pdf",
+    "S-005": "01-Annual-Reports/FY2019/FY2019_shl_annual-report.pdf",
+    "S-011": "01-Annual-Reports/FY2024/FY2024_shl_annual-report.pdf",
+    "S-012": "01-Annual-Reports/FY2022/FY2022_shl_annual-report.pdf",
+    "S-013": "01-Annual-Reports/FY2020/FY2020_shl_annual-report.pdf",
+    "S-014": "01-Annual-Reports/FY2018/FY2018_shl_annual-report.pdf",
+    "S-015": "08-Competitors/Philips/FY2025_philips_annual-report.pdf",
+    "S-016": "08-Competitors/Philips/FY2023_philips_annual-report.pdf",
+}
 REQUIRED_KEYS = {"frozen", "company", "ticker", "aliases", "depth", "as_of", "fiscal_note", "needs", "sources",
                  "extract_pages"}
 OPTIONAL_KEYS = {"need_pages"}
@@ -108,6 +146,49 @@ PAGE_ANCHORS: dict[str, dict[int, str]] = {
         64: "B.3 Consolidated statements of financial position",
         95: "Amortization of intangible assets acquired in business combinations",
     },
+    # Archive sources, checked against the local archive copies (--archive).
+    "S-011": {
+        52: "B.4 Consolidated statements of cash flows",
+        64: "Effective tax rate 22.4% 20.9%",
+        73: "multicurrency revolving credit facility of up to €2.5 billion",
+        75: "Net debt (including pensions)/EBITDA 3.3 3.7",
+        95: "Note 29 Segment information",
+    },
+    "S-012": {
+        53: "B.4 Consolidated statements of cash flows",
+        64: "Effective tax rate 26.6% 27.4%",
+        72: "Note 15 Financial debt",
+        74: "Net debt (including pensions)/EBITDA 3.0 3.5",
+        93: "Note 29 Segment information",
+    },
+    "S-013": {
+        59: "B.4 Consolidated statements of cash flows",
+        69: "Effective tax rate 27.2 % 27.7 %",
+        74: "Note 16 Financial debt",
+        76: "Net debt (including pensions) / EBITDA 0.9 1.4",
+        92: "Note 29 Segment information",
+    },
+    "S-014": {
+        60: "B.1 Consolidated statements of income",
+        62: "B.3 Consolidated statements of financial position",
+        63: "B.4 Consolidated statements of cash flows",
+        73: "Effective tax rate 28.6 % 29.4 %",
+        74: "combined statutory German tax rate of 29.6 %",
+        80: "Note 16 Debt",
+        81: "Net debt ( including pensions ) / EBITDA 1.5 3.0",
+        96: "Note 29 Segment information",
+        97: "Amortization of intangible assets acquired in business combinations",
+    },
+    "S-015": {
+        92: "Consolidated statements of income Philips Group",
+        93: "Consolidated balance sheets Philips Group",
+        99: "Reconciliation from net income to Adjusted EBITA in millions of EUR 2025",
+        100: "Reconciliation from net income to Adjusted EBITA in millions of EUR 2023",
+        111: "Effective income tax rate 23.6 389.5 17.0",
+    },
+    "S-016": {
+        143: "Total liabilities and group equity 30,688 29,406",
+    },
 }
 
 
@@ -157,6 +238,33 @@ def collect_order(sources: list[m.Source]) -> list[m.Source]:
     return sorted(sources, key=lambda s: (TIER_ORDER.get(s.tier, 9), s.rank, s.source_id))
 
 
+def is_archive(source: m.Source | dict[str, Any]) -> bool:
+    """An archive source says so in its rationale: collected before the event, served from the document cache."""
+    rationale = source["rationale"] if isinstance(source, dict) else source.rationale
+    return ARCHIVE_NOTE in rationale
+
+
+def archive_ids(plan: dict[str, Any]) -> set[str]:
+    return {s["source_id"] for s in plan.get("sources", []) if is_archive(s)}
+
+
+def page_totals(plan: dict[str, Any]) -> tuple[int, int]:
+    """(extract pages of the other sources, extract pages of archive sources)."""
+    archived = archive_ids(plan)
+    extract = plan.get("extract_pages") or {}
+    demo = sum(len(expand(r)) for sid, r in extract.items() if sid not in archived)
+    return demo, sum(len(expand(r)) for sid, r in extract.items() if sid in archived)
+
+
+def archive_s3_url(source_id: str, bucket: str | None) -> str | None:
+    """Where the archive importer stores this file: s3://<VAULT_BUCKET>/archive/shl/<relative path>.
+    The bucket comes from settings at run time, never from this file."""
+    rel = ARCHIVE_FILES.get(source_id)
+    if rel is None:
+        return None
+    return f"s3://{bucket or '<VAULT_BUCKET unset>'}/{ARCHIVE_PREFIX}{rel}"
+
+
 def norm_text(s: str) -> str:
     """NFKC, control characters and soft hyphens dropped, whitespace runs collapsed (older SHL PDFs carry all three)."""
     s = unicodedata.normalize("NFKC", s)
@@ -184,6 +292,8 @@ def check_structure(plan: dict[str, Any]) -> list[Issue]:
     issues += check_ids(needs, sources)
     issues += check_source_fields(needs, sources)
     issues += check_tiers_and_ranks(sources)
+    issues += check_demo_order(sources)
+    issues += check_archive_sources(sources)
     issues += check_coverage(plan.get("depth", "screen"), needs, sources)
     issues += check_pages(plan, needs, sources)
     issues += check_test_page_source(sources)
@@ -266,7 +376,9 @@ def check_one_source(s: m.Source, need_criteria: dict[str, set[str]]) -> list[Is
     where = s.source_id
     parts = urlsplit(s.url)
     issues: list[Issue] = []
-    if parts.scheme != "https":
+    if parts.scheme == "s3" and not is_archive(s):
+        issues.append(err(where, "only archive sources may have an s3:// url (cache-only archive copies)"))
+    elif parts.scheme not in ("https", "s3"):
         issues.append(err(where, "url must be https"))
     if parts.hostname != s.domain:
         issues.append(err(where, f"domain {s.domain!r} does not match the url host {parts.hostname!r}"))
@@ -317,6 +429,43 @@ def check_revoke_target(sources: list[m.Source]) -> list[Issue]:
         issues.append(err(REVOKE_TARGET, "a priority source is fetched after it"))
     if pos < len(order) - 3:
         issues.append(warn(REVOKE_TARGET, f"fetched at position {pos + 1} of {len(order)}, not near the end"))
+    return issues
+
+
+def check_demo_order(sources: list[m.Source]) -> list[Issue]:
+    """Sources added after S-010 must not reorder the demo: S-001 to S-010 keep their fetch order among
+    themselves, and S-006, S-009 and S-010 stay the last three fetched."""
+    order = [s.source_id for s in collect_order(sources)]
+    demo = [sid for sid in order if sid in DEMO_SOURCES]
+    issues: list[Issue] = []
+    if demo != list(DEMO_FETCH_ORDER):
+        issues.append(err("fetch order", f"S-001 to S-010 must be fetched as {list(DEMO_FETCH_ORDER)}, got {demo}"))
+    if order[-len(DEMO_LAST):] != list(DEMO_LAST):
+        issues.append(err("fetch order", f"{', '.join(DEMO_LAST)} must be fetched last, got {order[-3:]}"))
+    return issues
+
+
+def check_archive_sources(sources: list[m.Source]) -> list[Issue]:
+    """Archive sources come after the demo sources, say when they were collected, carry the reliability of their
+    kind and have a known archive file (also the s3:// fallback key)."""
+    issues: list[Issue] = []
+    for s in sources:
+        if not is_archive(s):
+            continue
+        where = s.source_id
+        num = int(s.source_id.split("-")[1])
+        if num < FIRST_ARCHIVE_ID:
+            issues.append(err(where, f"archive sources start at S-{FIRST_ARCHIVE_ID:03d}: S-001 to S-010 stay as they are"))
+        want = ARCHIVE_RELIABILITY.get(s.kind)
+        if want is None:
+            issues.append(err(where, f"kind {s.kind} is not a primary document kind for the archive"))
+        elif s.scores.reliability != want:
+            issues.append(err(where, f"reliability must be {want} for an archived {s.kind}, not {s.scores.reliability}"))
+        rel = ARCHIVE_FILES.get(s.source_id)
+        if rel is None:
+            issues.append(err(where, "no ARCHIVE_FILES entry: the archive file this source was collected as"))
+        elif urlsplit(s.url).scheme == "s3" and urlsplit(s.url).path != f"/{ARCHIVE_PREFIX}{rel}":
+            issues.append(err(where, f"s3 url must point at /{ARCHIVE_PREFIX}{rel}"))
     return issues
 
 
@@ -373,10 +522,12 @@ def check_pages(plan: dict[str, Any], needs: list[m.DataNeed], sources: list[m.S
             issues.append(err(f"extract_pages.{s.source_id}", "PDF source without extract pages"))
     if issues:
         return issues
-    total = sum(len(expand(r)) for r in extract.values())
+    demo, archived = page_totals(plan)
     low, high = PAGE_BUDGET
-    if not low <= total <= high:
-        issues.append(err("extract_pages", f"{total} pages in total, the budget is {low} to {high}"))
+    if not low <= demo <= high:
+        issues.append(err("extract_pages", f"{demo} pages outside the archive sources, the budget is {low} to {high}"))
+    if archived > ARCHIVE_PAGE_MAX:
+        issues.append(err("extract_pages", f"{archived} pages from archive sources, at most {ARCHIVE_PAGE_MAX}"))
     issues += check_need_pages(plan.get("need_pages"), extract, needs, by_id)
     issues += check_anchor_table(extract)
     return issues
@@ -555,14 +706,21 @@ def request_once(url: str, method: str, user_agent: str, timeout: float, opener:
 
 
 def check_urls(sources: list[m.Source], probe: Callable[[str], Probe],
-               test_page_url: str | None = None) -> tuple[list[Issue], list[str]]:
+               test_page_url: str | None = None, vault_bucket: str | None = None) -> tuple[list[Issue], list[str]]:
     """Every source URL must answer. The GitHub test page only warns, since it answers only after the push.
 
     With test_page_url (TEST_PAGE_URL) set, the test page is probed there instead, and a failure is an error.
+    An archive source whose URL does not answer live (or is an s3:// URL, never probed) only warns, because the
+    run serves its archived copy from the document cache.
     """
     issues: list[Issue] = []
     lines: list[str] = []
     for s in sources:
+        if urlsplit(s.url).scheme == "s3":
+            lines.append(f"  skip {s.source_id} s3 url, answers only from the document cache {s.url}")
+            issues.append(warn(s.source_id, "s3:// archive copy: answers only from the document cache "
+                                            "(CACHE_DOCUMENTS=on)"))
+            continue
         served = bool(test_page_url) and s.url == TEST_PAGE_URL
         url = test_page_url if served else s.url
         result = probe(url)
@@ -576,6 +734,10 @@ def check_urls(sources: list[m.Source], probe: Callable[[str], Probe],
         elif s.url == TEST_PAGE_URL:
             issues.append(warn(s.source_id, f"test page does not answer yet ({result.detail}). "
                                             "Expected until the backend branch is pushed"))
+        elif is_archive(s):
+            issues.append(warn(s.source_id, f"url does not answer live ({result.detail}). Archive source: the run "
+                                            "serves the copy collected before the event from the document cache "
+                                            f"(CACHE_DOCUMENTS=on), stored as {archive_s3_url(s.source_id, vault_bucket)}"))
         else:
             issues.append(err(s.source_id, f"url does not answer: {result.detail}"))
     return issues, lines
@@ -592,24 +754,48 @@ def download(url: str, dest: Path, user_agent: str, timeout: float = 120.0) -> N
         dest.write_bytes(resp.read())
 
 
-def verify_pages(plan: dict[str, Any], pdf_dir: Path, user_agent: str,
-                 fetch: Callable[[str, Path, str], None] = download) -> tuple[list[Issue], list[str]]:
-    """Open each PDF (downloaded into pdf_dir as <source_id>.pdf when missing) and find every page's anchor."""
-    pdf_dir = pdf_dir.resolve()
-    if pdf_dir.is_relative_to(REPO):
-        return [err("--pages", f"{pdf_dir} is inside the repo. PDFs must never land in the repo")], []
-    pdf_dir.mkdir(parents=True, exist_ok=True)
+def verify_pages(plan: dict[str, Any], pdf_dir: Path | None, user_agent: str,
+                 fetch: Callable[[str, Path, str], None] = download,
+                 archive_dir: Path | None = None) -> tuple[list[Issue], list[str]]:
+    """Open each PDF and find every page's anchor.
+
+    A source with a local archive copy (ARCHIVE_FILES under archive_dir) is opened in place, read only, never
+    copied. Any other PDF is downloaded into pdf_dir as <source_id>.pdf when missing. With neither, the source
+    is skipped with a warning.
+    """
+    for flag, folder in (("--pages", pdf_dir), ("--archive", archive_dir)):
+        if folder is not None and folder.resolve().is_relative_to(REPO):
+            return [err(flag, f"{folder.resolve()} is inside the repo. PDFs must never land in the repo")], []
+    if pdf_dir is not None:
+        pdf_dir = pdf_dir.resolve()
+        pdf_dir.mkdir(parents=True, exist_ok=True)
     urls = {s["source_id"]: s["url"] for s in plan["sources"]}
     issues: list[Issue] = []
     lines: list[str] = []
     for sid, ranges in plan["extract_pages"].items():
-        path = pdf_dir / f"{sid}.pdf"
-        if not path.exists():
-            fetch(urls[sid], path, user_agent)
+        path = local_copy(sid, archive_dir)
+        if path is None and pdf_dir is not None:
+            path = pdf_dir / f"{sid}.pdf"
+            if not path.exists():
+                fetch(urls[sid], path, user_agent)
+        if path is None:
+            issues.append(warn(f"{sid} pages", "not checked: no local archive copy, and no --pages folder to "
+                                               "download into"))
+            lines.append(f"  skip {sid}: no local copy")
+            continue
         found, line = check_pdf_pages(sid, path, expand(ranges))
         issues += found
         lines.append(line)
     return issues, lines
+
+
+def local_copy(source_id: str, archive_dir: Path | None) -> Path | None:
+    """The archive's own file for this source, when the archive folder is given and holds it."""
+    rel = ARCHIVE_FILES.get(source_id)
+    if archive_dir is None or rel is None:
+        return None
+    path = archive_dir / rel
+    return path if path.is_file() else None
 
 
 def check_pdf_pages(sid: str, path: Path, pages: list[int]) -> tuple[list[Issue], str]:
@@ -628,6 +814,13 @@ def check_pdf_pages(sid: str, path: Path, pages: list[int]) -> tuple[list[Issue]
     return issues, f"  {'ok  ' if not bad else 'FAIL'} {sid}: {len(pages) - bad}/{len(pages)} pages hold their anchor ({count} pages in {path.name})"
 
 
+def fetch_order_line(plan: dict[str, Any]) -> str:
+    """The order collect will fetch in, archive sources marked, so the demo order is visible at a glance."""
+    sources = [m.Source.model_validate(s) for s in plan["sources"]]
+    order = [f"{s.source_id}{'*' if is_archive(s) else ''}" for s in collect_order(sources)]
+    return f"fetch order (* archive, collected before the event): {' '.join(order)}"
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -639,10 +832,11 @@ def print_issues(issues: list[Issue]) -> None:
 
 
 def summary(plan: dict[str, Any]) -> str:
-    total = sum(len(expand(r)) for r in (plan.get("extract_pages") or {}).values())
+    demo, archived = page_totals(plan)
     tiers = {t: sum(1 for s in plan.get("sources", []) if s.get("tier") == t) for t in TIER_ORDER}
-    return (f"{len(plan.get('needs', []))} needs, {len(plan.get('sources', []))} sources {tiers}, "
-            f"{total} extract pages")
+    return (f"{len(plan.get('needs', []))} needs, {len(plan.get('sources', []))} sources {tiers} "
+            f"({len(archive_ids(plan))} from the archive), {demo + archived} extract pages "
+            f"({demo} + {archived} from the archive)")
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -651,6 +845,9 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--offline", action="store_true", help="skip every network request")
     parser.add_argument("--pages", type=Path, metavar="DIR",
                         help="folder outside the repo for the PDFs, to check every extract page against its anchor")
+    parser.add_argument("--archive", type=Path, metavar="DIR", default=os.environ.get(ARCHIVE_ENV) or None,
+                        help=f"the local summer 2026 archive (read only), to check pages of the PDFs it holds "
+                             f"without a download (default: ${ARCHIVE_ENV})")
     parser.add_argument("--timeout", type=float, default=20.0, help="seconds per URL request")
     return parser.parse_args(argv)
 
@@ -661,6 +858,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     plan = load_plan(args.plan)
     print(f"check_plan: {args.plan.name}: {summary(plan)}")
+    try:
+        print(fetch_order_line(plan))
+    except ValidationError:
+        pass  # check_structure reports the invalid source
     from backend.axelrod.config import get_settings
 
     settings = get_settings()
@@ -674,7 +875,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.offline:
         sources = [m.Source.model_validate(s) for s in plan["sources"]]
         print("urls:")
-        url_issues, lines = check_urls(sources, lambda u: probe_url(u, user_agent, args.timeout), served)
+        url_issues, lines = check_urls(sources, lambda u: probe_url(u, user_agent, args.timeout), served,
+                                       settings.vault_bucket)
         if served:
             page_issues, line = check_served_page(served, user_agent, args.timeout)
             url_issues += page_issues
@@ -682,9 +884,10 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(lines))
         print_issues(url_issues)
         issues += url_issues
-    if args.pages:
-        print(f"pages against the PDFs in {args.pages}:")
-        page_issues, lines = verify_pages(plan, args.pages, user_agent)
+    if args.pages or args.archive:
+        where = " and ".join(str(p) for p in (args.archive, args.pages) if p)
+        print(f"pages against the PDFs in {where}:")
+        page_issues, lines = verify_pages(plan, args.pages, user_agent, archive_dir=args.archive)
         print("\n".join(lines))
         print_issues(page_issues)
         issues += page_issues
