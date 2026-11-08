@@ -1,0 +1,142 @@
+{
+  "documents": [
+    {
+      "doc_id": "DOC-001",
+      "source_id": "S-002",
+      "title": "Form 10-K, FY2025 (PDF)",
+      "url": "https://www.sec.gov/Archives/edgar/data/9999999/000999999925000041/nwi-20250930.pdf",
+      "content_type": "pdf",
+      "paginated": true,
+      "pages": 3,
+      "sha256": "fcc142be4cc01f7aa14b22f1d2a095ffb389f128cacdb9ce4c4ff93cb098a948",
+      "bytes": 1869,
+      "fetched_at": "2026-11-08T00:30:16.000Z",
+      "vault_paths": {
+        "raw": "runs/run_20261108_fx0001/northwind-instruments/01-Annual-Reports/FY2025_northwind_10-K.pdf",
+        "text": "runs/run_20261108_fx0001/northwind-instruments/01-Annual-Reports/FY2025_northwind_10-K.md",
+        "meta": "runs/run_20261108_fx0001/northwind-instruments/01-Annual-Reports/FY2025_northwind_10-K.pdf.meta.json"
+      },
+      "quarantined": false,
+      "scan": {
+        "scanner": "none",
+        "verdict": "skipped",
+        "detail": "Primary filing, not scanned"
+      }
+    },
+    {
+      "doc_id": "DOC-002",
+      "source_id": "S-001",
+      "title": "SEC XBRL company facts",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0009999999.json",
+      "content_type": "json",
+      "paginated": false,
+      "pages": 1,
+      "sha256": "ad7ec11eb7f7e0d27a327634d4555f67a035d2071c4824ba9a05e9a6723c27dc",
+      "bytes": 7282,
+      "fetched_at": "2026-11-08T00:30:15.000Z",
+      "vault_paths": {
+        "raw": "runs/run_20261108_fx0001/northwind-instruments/01-Annual-Reports/FY2021-FY2025_northwind_xbrl-companyfacts.json",
+        "text": "runs/run_20261108_fx0001/northwind-instruments/01-Annual-Reports/FY2021-FY2025_northwind_xbrl-companyfacts.md",
+        "meta": "runs/run_20261108_fx0001/northwind-instruments/01-Annual-Reports/FY2021-FY2025_northwind_xbrl-companyfacts.json.meta.json"
+      },
+      "quarantined": false,
+      "scan": {
+        "scanner": "none",
+        "verdict": "skipped",
+        "detail": "Primary filing, not scanned"
+      }
+    },
+    {
+      "doc_id": "DOC-003",
+      "source_id": "S-005",
+      "title": "Lab instruments market outlook 2025",
+      "url": "https://market-reports.example/lab-analytical-instruments-2025",
+      "content_type": "html",
+      "paginated": false,
+      "pages": 1,
+      "sha256": "d0abffbeefeb2d8510f91a96ab2c5189a1bc7a1929888cc96fd671610325d212",
+      "bytes": 337,
+      "fetched_at": "2026-11-08T00:30:17.500Z",
+      "vault_paths": {
+        "raw": "runs/run_20261108_fx0001/northwind-instruments/10-Demand-Evidence/2025_lab-instruments-market-outlook.html",
+        "text": "runs/run_20261108_fx0001/northwind-instruments/10-Demand-Evidence/2025_lab-instruments-market-outlook.md",
+        "meta": "runs/run_20261108_fx0001/northwind-instruments/10-Demand-Evidence/2025_lab-instruments-market-outlook.html.meta.json"
+      },
+      "quarantined": false,
+      "scan": {
+        "scanner": "bedrock_guardrails",
+        "verdict": "clean",
+        "detail": "No prompt attack detected"
+      }
+    },
+    {
+      "doc_id": "DOC-004",
+      "source_id": "S-006",
+      "title": "Northwind wins multi-year consumables contract",
+      "url": "https://labbusinessweekly.example/2025/10/northwind-consumables-contract",
+      "content_type": "html",
+      "paginated": false,
+      "pages": 1,
+      "sha256": "044be30fcaa89a4c66c9630827c0503b1bfda00ba4f87e218b741bc35b79a9dd",
+      "bytes": 390,
+      "fetched_at": "2026-11-08T00:30:18.500Z",
+      "vault_paths": {
+        "raw": "runs/run_20261108_fx0001/northwind-instruments/04-News-Coverage/2025-10-14_labbusinessweekly_consumables-contract.html",
+        "text": "runs/run_20261108_fx0001/northwind-instruments/04-News-Coverage/2025-10-14_labbusinessweekly_consumables-contract.md",
+        "meta": "runs/run_20261108_fx0001/northwind-instruments/04-News-Coverage/2025-10-14_labbusinessweekly_consumables-contract.html.meta.json"
+      },
+      "quarantined": false,
+      "scan": {
+        "scanner": "bedrock_guardrails",
+        "verdict": "clean",
+        "detail": "No prompt attack detected"
+      }
+    },
+    {
+      "doc_id": "DOC-005",
+      "source_id": "S-009",
+      "title": "r/labrats thread on service delays",
+      "url": "https://forum.example/r/labrats/comments/abc123/northwind_service_delays",
+      "content_type": "html",
+      "paginated": false,
+      "pages": 1,
+      "sha256": "87f7bf6d161a255fd6ec48dc3c233e1b7ba8c7b5432816bd69589468323508eb",
+      "bytes": 342,
+      "fetched_at": "2026-11-08T00:30:21.000Z",
+      "vault_paths": {
+        "raw": "runs/run_20261108_fx0001/northwind-instruments/10-Demand-Evidence/forum_labrats_service-delays.html",
+        "text": "runs/run_20261108_fx0001/northwind-instruments/10-Demand-Evidence/forum_labrats_service-delays.md",
+        "meta": "runs/run_20261108_fx0001/northwind-instruments/10-Demand-Evidence/forum_labrats_service-delays.html.meta.json"
+      },
+      "quarantined": true,
+      "scan": {
+        "scanner": "bedrock_guardrails",
+        "verdict": "flagged",
+        "detail": "PROMPT_ATTACK detected. Page quarantined: no agent will read it."
+      }
+    },
+    {
+      "doc_id": "DOC-006",
+      "source_id": "S-008",
+      "title": "Federal Register tariff notice",
+      "url": "https://federal-register.example/2025-18842",
+      "content_type": "html",
+      "paginated": false,
+      "pages": 1,
+      "sha256": "2c75e8467daa6fa42a27a9df57699625e23753c51a31d13f7e736b2aa9aad82b",
+      "bytes": 156,
+      "fetched_at": "2026-11-08T00:30:20.000Z",
+      "vault_paths": {
+        "raw": "runs/run_20261108_fx0001/northwind-instruments/05-Regulatory-and-Legal/2025_federal-register_tariff-notice.html",
+        "text": "runs/run_20261108_fx0001/northwind-instruments/05-Regulatory-and-Legal/2025_federal-register_tariff-notice.md",
+        "meta": "runs/run_20261108_fx0001/northwind-instruments/05-Regulatory-and-Legal/2025_federal-register_tariff-notice.html.meta.json"
+      },
+      "quarantined": false,
+      "scan": {
+        "scanner": "bedrock_guardrails",
+        "verdict": "clean",
+        "detail": "No prompt attack detected"
+      }
+    }
+  ]
+}

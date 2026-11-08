@@ -1,23 +1,28 @@
 # Axelrod
 
-A harness for AI-written financial market reports: every number traces to an exact quote in an approved source, and every conclusion and forecast is checked before a person sees it. Built for the SCU ACM AWS x A10 Hack 2026 (Agent Harness prompt).
+A self-verifying research harness for screening public companies. Built for the SCU ACM AWS x A10 Hack 2026 (A10 Agent Harness and AWS tracks).
 
-- [docs/DESIGN.md](docs/DESIGN.md): pipeline, source tiers, checks, evaluation
-- [docs/API.md](docs/API.md): dashboard ↔ backend contract
+Start with [CLAUDE.md](CLAUDE.md), then:
+- [docs/CONTRACT.md](docs/CONTRACT.md): the API contract (source of truth: `contract/models.py`)
+- [docs/FRONTEND_TLDR.md](docs/FRONTEND_TLDR.md) and [docs/BACKEND.md](docs/BACKEND.md)
+- [docs/PLAN.md](docs/PLAN.md): timeline and demo script
 
 ## Layout
-| Folder | What |
-|---|---|
-| `frontend/` | Web dashboard (Next.js 16 + React 19 + Tailwind 4 + TypeScript) |
-| `backend/` | Gateway, pipeline and checks (AWS) |
+| Folder | Owner | What |
+|---|---|---|
+| `contract/` | Gordon proposes, both agree | Pydantic models, generated `types.ts`, BOFFIN rubric |
+| `mock/` | Gordon | Mock API with fixtures |
+| `backend/` | Gordon | Gateway, pipeline and checks (AWS) |
+| `frontend/` | Tong | Web dashboard (Next.js 16 + React 19 + Tailwind 4 + TypeScript) |
 
-## Run the dashboard
+## Run the dashboard against the mock
+```bash
+pip install -r mock/requirements.txt
+uvicorn mock.mock_server:app --reload --port 8000
+```
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Without `NEXT_PUBLIC_API_URL` set, the dashboard runs against a built-in mock backend that plays through a full run. To use the real backend:
-```bash
-NEXT_PUBLIC_API_URL=https://<api-id>.execute-api.<region>.amazonaws.com/prod npm run dev
-```
+The dashboard calls `NEXT_PUBLIC_API_BASE`, which defaults to `http://localhost:8000/api/v1` (the mock). For the real backend, set it to the API Gateway invoke URL plus `/api/v1`.
