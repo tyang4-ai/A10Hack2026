@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { allSentences, useRunStore, type Selection } from "@/lib/store";
 import type { Win, WinKind } from "@/lib/windows";
 import { AgentInspector, StopAgentButton } from "./AgentInspector";
+import { AgentRerunDialog } from "./AgentRerunDialog";
 import { BriefModule } from "./BriefModule";
 import { ChainTree, Inspector, InspectorBody } from "./Inspector";
 import { PolicyWindow } from "./PolicyWindow";
@@ -230,13 +231,29 @@ function FollowAgentStop() {
   const id = useFollowAgent();
   return id ? <AgentStop id={id} /> : null;
 }
+// Stop while the agent works; once it has finished, failed or been stopped, rerun it with new
+// instructions. Neither shows after the whole run was stopped (the kill switch blocks everything).
 function AgentStop({ id }: { id: string }) {
   const runId = useRunStore((s) => s.runId);
-  const can = useRunStore((s) => {
+  const state = useRunStore((s) => {
     const a = s.agents[id];
+    if (!a || s.run?.status === "stopped") return null;
     const live = s.run?.status === "running" || s.run?.status === "awaiting_approval";
-    return !!a && live && (a.status === "working" || a.status === "queued");
+    if (a.status === "working" || a.status === "queued") return live ? "stop" : null;
+    return "rerun";
   });
-  if (!can || !runId) return null;
-  return <StopAgentButton key={id} runId={runId} agentId={id} compact />;
+  const [rerun, setRerun] = useState(false);
+  if (!state || !runId) return null;
+  if (state === "stop") return <StopAgentButton key={id} runId={runId} agentId={id} compact />;
+  return (
+    <>
+      <button
+        onClick={() => setRerun(true)}
+        className="h-6 rounded-[4px] border border-accent px-2.5 text-[12px] font-semibold text-accent hover:bg-accent hover:text-accent-ink"
+      >
+        Rerun agent
+      </button>
+      {rerun && <AgentRerunDialog agentId={id} onClose={() => setRerun(false)} />}
+    </>
+  );
 }

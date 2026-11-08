@@ -67,10 +67,28 @@ Copied items keep their ids, so citations still resolve. The new run gets its ow
 
 Errors: 400 for `complete` or a step the parent never reached, 409 if the parent is still running and you'd rather not fork a live run (the UI allows it for finished steps, but either is fine).
 
-## 4. Question: is STOP resumable?
+## 4. Rerun one agent with new instructions
+
+From an agent's window, once it has finished, failed or been stopped, the analyst can rerun it with instructions ("take revenue from the income statement, not the press release"). Unlike rerun-from-a-step (section 3), this stays in the same run: it is a targeted correction, and item versions keep the audit trail.
+
+| Method and path | Body | Returns |
+|---|---|---|
+| `POST /runs/{run_id}/agents/{agent_id}/rerun` | `{"instructions": "...", "recheck": true}` | the new `Agent` (201) |
+
+Expected behaviour:
+
+- The harness spawns a new agent with the same role and targets plus the instructions, for example `extractor-03.2`, and emits `agent.spawned`. Two new optional fields on `Agent`: `parent_agent_id: str | None` and `instructions: str | None`.
+- It goes through the gateway under the current policy. An instruction that asks for an unapproved source is blocked like any other request.
+- Its outputs replace the parent's as new versions of the same item ids (`item.updated`), so citations keep resolving. The previous version stays in `verification.attempts` or a version list.
+- With `recheck: true`, everything that cites a changed item (conclusions, scores, final report sentences) is re-verified and its certainty recomputed, with the usual `item.verified` and `summary.verified` events. The run goes back to `running` for that and completes again.
+- With `recheck: false`, only the agent's own outputs change. Dependents keep their current verification until something else re-checks them.
+
+Errors: 404 unknown agent, 409 if the agent is still working (stop it first) or the run is stopped.
+
+## 5. Question: is STOP resumable?
 
 You said the kill switch is "so we can demo and retune". Do you want `POST /runs/{run_id}/resume` (status back to `running`, kill switch off, policy version bump), or is it stop and start a new run? The UI currently treats a stopped run as final.
 
-## 5. Note on the frontend stack
+## 6. Note on the frontend stack
 
 The dashboard is Next.js 16, not Vite. It imports `../contract/types.ts` directly (no copy step) and reads the base URL from `NEXT_PUBLIC_API_BASE` (default `http://localhost:8000/api/v1`). The "moving the scaffold onto the contract" section in `FRONTEND_TLDR.md` is already done.

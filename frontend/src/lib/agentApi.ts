@@ -33,7 +33,17 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 
 const a = (run: string, agent: string) => `/runs/${encodeURIComponent(run)}/agents/${encodeURIComponent(agent)}`;
 
+// Rerun one agent with new instructions, in the same run. The harness spawns a new agent
+// (linked by parent_agent_id), its outputs replace the old ones as new item versions, and with
+// recheck on, everything that cites them is re-checked.
+export interface AgentRerunRequest {
+  instructions: string;
+  recheck: boolean;
+}
+export type RerunAgent = Agent & { parent_agent_id?: string | null; instructions?: string | null };
+
 export const agentApi = {
+  rerun: (run: string, agent: string, req: AgentRerunRequest) => call<RerunAgent>("POST", `${a(run, agent)}/rerun`, req),
   messages: (run: string, agent: string) => call<{ messages: AgentMessage[] }>("GET", `${a(run, agent)}/messages`),
   send: (run: string, agent: string, text: string) => call<AgentMessage>("POST", `${a(run, agent)}/messages`, { text }),
   stop: (run: string, agent: string, reason: string) => call<Agent>("POST", `${a(run, agent)}/stop`, { reason }),
