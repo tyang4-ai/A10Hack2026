@@ -5,14 +5,12 @@ import type { Criterion, Source, SourceDecision, SourceKind, Tier } from "@contr
 import rubric from "@contract/boffin_rubric.json";
 import { api, ApiError } from "@/lib/api";
 import { human } from "@/lib/format";
-import { useRunStore } from "@/lib/store";
+import { draftDecision, useRunStore, type Decision } from "@/lib/store";
 import { btn, btnDanger, btnPrimary, btnSm, Chip, SourceChip } from "./ui";
 
 const SCREEN = (rubric as { depths: { screen: Criterion[] } }).depths.screen;
 const TIER_LABEL: Record<Tier, string> = { priority: "Priority", tier_2: "Tier 2", tier_3: "Tier 3" };
 const KINDS: SourceKind[] = ["annual_report", "sec_filing", "xbrl_facts", "company_ir", "company_site", "product_page", "news", "gov", "market_report", "forum", "code_repo", "data_api", "other"];
-
-type Decision = "approved" | "rejected" | null;
 
 export function SourcesModule() {
   const run = useRunStore((s) => s.run)!;
@@ -27,7 +25,9 @@ export function SourcesModule() {
   const sources = useMemo(() => Object.values(sourcesMap).sort((a, b) => a.tier.localeCompare(b.tier) || a.rank - b.rank), [sourcesMap]);
 
   // Draft approval: a decision per source and the priority order, editable until committed.
-  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  // The decisions live in the store so the Gateway policy window can preview them.
+  const decisions = useRunStore((s) => s.drafts);
+  const setDrafts = useRunStore((s) => s.setDrafts);
   const [order, setOrder] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,12 +38,7 @@ export function SourcesModule() {
     setOrder((o) => [...o.filter((id) => prio.includes(id)), ...prio.filter((id) => !o.includes(id))]);
   }, [sources]);
 
-  const decisionOf = (s: Source): Decision => {
-    if (!awaiting) return s.approval === "rejected" ? "rejected" : s.approval === "pending" ? null : "approved";
-    if (decisions[s.source_id] !== undefined) return decisions[s.source_id];
-    if (s.tier !== "priority" || s.proposed_by === "user") return "approved";
-    return null;
-  };
+  const decisionOf = (s: Source): Decision => draftDecision(s, decisions, awaiting);
 
   const priority = order.map((id) => sourcesMap[id]).filter(Boolean);
   const lower = sources.filter((s) => s.tier !== "priority");
@@ -143,7 +138,7 @@ export function SourcesModule() {
               <span className="text-muted">{undecided.length ? `${undecided.length} still need a decision` : "All decided"}</span>
               <button
                 className={btnSm}
-                onClick={() => setDecisions((d) => ({ ...d, ...Object.fromEntries(undecided.map((s) => [s.source_id, "approved" as const])) }))}
+                onClick={() => setDrafts(Object.fromEntries(undecided.map((s) => [s.source_id, "approved" as const])))}
                 disabled={!undecided.length}
               >
                 Approve the rest
@@ -169,7 +164,7 @@ export function SourcesModule() {
                 awaiting={awaiting}
                 selected={selected?.type === "source" && selected.id === s.source_id}
                 onSelect={() => select({ type: "source", id: s.source_id })}
-                onDecide={(d) => setDecisions((x) => ({ ...x, [s.source_id]: d }))}
+                onDecide={(d) => setDrafts({ [s.source_id]: d })}
                 onMove={(d) => move(s.source_id, i + d)}
               />
             </li>
@@ -195,7 +190,7 @@ export function SourcesModule() {
                     awaiting={awaiting}
                     selected={selected?.type === "source" && selected.id === s.source_id}
                     onSelect={() => select({ type: "source", id: s.source_id })}
-                    onDecide={(d) => setDecisions((x) => ({ ...x, [s.source_id]: d }))}
+                    onDecide={(d) => setDrafts({ [s.source_id]: d })}
                   />
                 </li>
               ))}

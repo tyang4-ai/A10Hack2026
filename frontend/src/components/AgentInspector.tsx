@@ -17,7 +17,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 // One agent: what it is doing, its traffic, a chat with it, and a stop for just this agent.
-export function AgentInspector({ id }: { id: string }) {
+export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolean }) {
   const agent = useRunStore((s) => s.agents[id]);
   const runId = useRunStore((s) => s.runId)!;
   const runStatus = useRunStore((s) => s.run?.status);
@@ -84,7 +84,12 @@ export function AgentInspector({ id }: { id: string }) {
 
       <Chat runId={runId} agentId={id} thread={thread} unsupported={unsupported} onUnsupported={setUnsupported} runStopped={runStatus === "stopped"} />
 
-      {(agent.status === "working" || agent.status === "queued") && runLive && <StopAgent runId={runId} agentId={id} />}
+      {!hideStop && (agent.status === "working" || agent.status === "queued") && runLive && (
+        <Section title="Stop only this agent">
+          <p className="mb-2 text-desk-muted">The gateway denies this agent's next request. The rest of the run keeps going.</p>
+          <StopAgentButton runId={runId} agentId={id} />
+        </Section>
+      )}
     </>
   );
 }
@@ -195,7 +200,8 @@ function Chat({
   );
 }
 
-function StopAgent({ runId, agentId }: { runId: string; agentId: string }) {
+// Two clicks: the first asks to confirm, the second stops. Also used in the agent chat window's title bar.
+export function StopAgentButton({ runId, agentId, compact }: { runId: string; agentId: string; compact?: boolean }) {
   const [state, setState] = useState<"idle" | "confirm" | "busy" | "unsupported">("idle");
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
@@ -203,43 +209,42 @@ function StopAgent({ runId, agentId }: { runId: string; agentId: string }) {
     const t = setTimeout(() => setState("idle"), 4000);
     return () => clearTimeout(t);
   }, [state]);
+  if (state === "unsupported")
+    return (
+      <span role="status" className="text-desk-warn" title="Proposed in frontend/CONTRACT_REQUESTS.md">
+        {compact ? "Stop not supported yet" : "This backend can't stop a single agent yet. It's proposed in frontend/CONTRACT_REQUESTS.md."}
+      </span>
+    );
   return (
-    <Section title="Stop only this agent">
-      <p className="mb-2 text-desk-muted">The gateway denies this agent's next request. The rest of the run keeps going.</p>
-      {state === "unsupported" ? (
-        <div role="status" className="rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">
-          This backend can't stop a single agent yet. It's proposed in frontend/CONTRACT_REQUESTS.md.
-        </div>
-      ) : (
-        <button
-          disabled={state === "busy"}
-          onClick={async () => {
-            if (state === "idle") return setState("confirm");
-            setState("busy");
-            setErr(null);
-            try {
-              const a = await agentApi.stop(runId, agentId, "Stopped by the analyst from the inspector");
-              useRunStore.setState((s) => ({ agents: { ...s.agents, [a.agent_id]: a } }));
+    <span className="inline-flex items-center gap-2">
+      <button
+        disabled={state === "busy"}
+        onClick={async () => {
+          if (state === "idle") return setState("confirm");
+          setState("busy");
+          setErr(null);
+          try {
+            const a = await agentApi.stop(runId, agentId, "Stopped by the analyst from the dashboard");
+            useRunStore.setState((s) => ({ agents: { ...s.agents, [a.agent_id]: a } }));
+            setState("idle");
+          } catch (e) {
+            if (e instanceof NotSupported) {
+              setState("unsupported");
+            } else {
+              setErr(e instanceof Error ? e.message : String(e));
               setState("idle");
-            } catch (e) {
-              if (e instanceof NotSupported) {
-                setState("unsupported");
-              } else {
-                setErr(e instanceof Error ? e.message : String(e));
-                setState("idle");
-              }
             }
-          }}
-          className={`h-7 rounded-[4px] border border-desk-bad px-3 text-[12px] font-semibold transition-colors ${state === "confirm" ? "bg-desk-bad text-desk" : "text-desk-bad hover:bg-desk-bad hover:text-desk"}`}
-        >
-          {state === "confirm" ? `Confirm stop ${agentId}` : `Stop ${agentId}`}
-        </button>
-      )}
+          }
+        }}
+        className={`h-6 rounded-[4px] border border-desk-bad px-2.5 text-[12px] font-semibold transition-colors ${state === "confirm" ? "bg-desk-bad text-desk" : "text-desk-bad hover:bg-desk-bad hover:text-desk"}`}
+      >
+        {state === "confirm" ? (compact ? "Confirm stop" : `Confirm stop ${agentId}`) : compact ? "Stop agent" : `Stop ${agentId}`}
+      </button>
       {err && (
-        <div role="alert" className="mt-1 text-desk-bad">
+        <span role="alert" className="text-desk-bad">
           {err}
-        </div>
+        </span>
       )}
-    </Section>
+    </span>
   );
 }

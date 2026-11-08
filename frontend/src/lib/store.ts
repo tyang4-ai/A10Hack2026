@@ -22,7 +22,17 @@ import {
 } from "@contract/types";
 import { agentMessageFromEvent, type AgentMessage } from "./agentApi";
 import { api } from "./api";
-import { moduleFor, type Module } from "./format";
+
+// A draft approval decision for one source, editable until the analyst commits.
+export type Decision = "approved" | "rejected" | null;
+
+// What the analyst has decided so far. Tier 2 and 3 and user-added sources default to approved.
+export function draftDecision(s: Source, drafts: Record<string, Decision>, awaiting: boolean): Decision {
+  if (!awaiting) return s.approval === "rejected" ? "rejected" : s.approval === "pending" ? null : "approved";
+  if (drafts[s.source_id] !== undefined) return drafts[s.source_id];
+  if (s.tier !== "priority" || s.proposed_by === "user") return "approved";
+  return null;
+}
 
 export type Selection = { type: "source" | "item" | "sentence" | "hole" | "agent"; id: string } | null;
 
@@ -49,12 +59,13 @@ interface State {
   loading: boolean;
   error: string | null;
   selected: Selection;
-  module: Module;
+  // Draft approval decisions, shared by the Sources and Gateway policy windows.
+  drafts: Record<string, Decision>;
 
   loadRuns: () => Promise<void>;
   openRun: (id: string | null) => Promise<void>;
   select: (s: Selection) => void;
-  setModule: (m: Module) => void;
+  setDrafts: (patch: Record<string, Decision>) => void;
   apply: (events: Event[]) => void;
   refreshReport: () => Promise<void>;
   refreshSummary: () => Promise<void>;
@@ -83,6 +94,7 @@ const empty = {
   seqs: { run: 0, plan: 0, report: 0, summary: 0, agents: 0, policy: 0 },
   error: null,
   selected: null,
+  drafts: {},
 } satisfies Partial<State>;
 
 // Insert or replace a sentence in the brief, creating its section if needed.
@@ -125,7 +137,6 @@ export const useRunStore = create<State>((set, get) => ({
   runs: [],
   runId: null,
   loading: false,
-  module: "sources",
   ...empty,
 
   loadRuns: async () => {
@@ -167,7 +178,6 @@ export const useRunStore = create<State>((set, get) => ({
           agents: agents?.as_of_seq ?? 0,
           policy: policy?.as_of_seq ?? 0,
         },
-        module: moduleFor(run.stage),
         loading: false,
       });
     } catch (e) {
@@ -176,7 +186,7 @@ export const useRunStore = create<State>((set, get) => ({
   },
 
   select: (selected) => set({ selected }),
-  setModule: (module) => set({ module }),
+  setDrafts: (patch) => set((s) => ({ drafts: { ...s.drafts, ...patch } })),
 
   refreshRun: async () => {
     const id = get().runId;

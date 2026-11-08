@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
+import { LayoutControl } from "./Desk";
 import { RunSwitcher, ThemeSwitcher } from "./Switchers";
 
 const STATUS = {
@@ -135,6 +136,7 @@ export function TopBar() {
             </span>
           </div>
         )}
+        <LayoutControl />
         <div className="ml-auto flex flex-wrap items-center gap-5">
           {run && c && (
             <dl className="flex items-center gap-4 text-desk-muted">

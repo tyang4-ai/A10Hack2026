@@ -1,30 +1,52 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Certainty, CheckResult, Citation, DiffSegment, DocumentPage, Item } from "@contract/types";
+import { useMemo, useState } from "react";
+import type { Certainty, CheckResult, DiffSegment, Item } from "@contract/types";
 import { api } from "@/lib/api";
 import { CERTAINTY_HELP, formatValue, human } from "@/lib/format";
-import { allSentences, useRunStore } from "@/lib/store";
+import { allSentences, useRunStore, type Selection } from "@/lib/store";
+import { useWindows } from "@/lib/windows";
 import { AgentInspector } from "./AgentInspector";
 import { itemText } from "./report";
-import { btn, CertaintyPill, KindBadge, Label, SourceChip, StatusText } from "./ui";
+import { CertaintyPill, KindBadge, Label, SourceChip, StatusText } from "./ui";
 
+// The inspector follows the store's selection. Item windows pin it to one thing.
 export function Inspector() {
   const selected = useRunStore((s) => s.selected);
+  return <InspectorBody sel={selected} />;
+}
+
+export function InspectorBody({ sel }: { sel: Selection }) {
   return (
-    <aside aria-label="Inspector" className="flex h-full flex-col bg-desk text-[12px] text-desk-ink">
-      <div className="flex flex-none items-center justify-between border-b border-desk-line px-3.5 py-2.5">
-        <span className="text-[13px] font-semibold text-white">Inspector</span>
-        <span className="font-mono text-desk-muted">{selected ? selected.id : ""}</span>
+    <div className="text-[12px] text-desk-ink">
+      {!sel && <p className="p-3.5 text-[13px] text-desk-muted">Select a source, a report item, a brief sentence or an agent to see its evidence, checks and certainty, or to talk to it.</p>}
+      {sel?.type === "item" && <ItemInspector id={sel.id} />}
+      {sel?.type === "source" && <SourceInspector id={sel.id} />}
+      {sel?.type === "sentence" && <SentenceInspector id={sel.id} />}
+      {sel?.type === "agent" && <AgentInspector id={sel.id} />}
+      {sel?.type === "hole" && <HoleInspector id={sel.id} />}
+    </div>
+  );
+}
+
+function HoleInspector({ id }: { id: string }) {
+  const h = useRunStore((s) => s.report?.holes.find((x) => x.hole_id === id));
+  if (!h) return <p className="p-3.5 text-desk-muted italic">{id} (missing)</p>;
+  return (
+    <>
+      <div className="border-b border-desk-line px-3.5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-white">{h.hole_id}</span>
+          <span className="text-desk-muted">declared gap{h.criterion ? `, ${human(h.criterion)}` : ""}</span>
+        </div>
+        <div className="mt-2 font-serif text-[16px] text-white">{h.reason}</div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {!selected && <p className="p-3.5 text-[13px] text-desk-muted">Select a source, a report item, a brief sentence or an agent to see its evidence, checks and certainty, or to talk to it.</p>}
-        {selected?.type === "item" && <ItemInspector id={selected.id} />}
-        {selected?.type === "source" && <SourceInspector id={selected.id} />}
-        {selected?.type === "sentence" && <SentenceInspector id={selected.id} />}
-        {selected?.type === "agent" && <AgentInspector id={selected.id} />}
-      </div>
-    </aside>
+      {h.item_id && (
+        <Block title="Item">
+          <Ref id={h.item_id} />
+        </Block>
+      )}
+    </>
   );
 }
 
@@ -113,7 +135,7 @@ function Checks({ checks }: { checks: CheckResult[] }) {
   );
 }
 
-function citesOf(it: Item): string[] {
+export function citesOf(it: Item): string[] {
   if (it.kind === "data") return [it.source_id];
   if (it.kind === "conclusion") return it.data_ids;
   if (it.kind === "extrapolation") return it.conclusion_ids;
@@ -125,7 +147,7 @@ function ItemInspector({ id }: { id: string }) {
   const summary = useRunStore((s) => s.summary);
   const runId = useRunStore((s) => s.runId)!;
   const it = items[id];
-  const [doc, setDoc] = useState<Citation | null>(null);
+  const openWin = useWindows((s) => s.open);
   const citedBy = useMemo(() => {
     const fromItems = Object.values(items)
       .filter((x) => citesOf(x).some((r) => r.split(":")[0] === id))
@@ -175,7 +197,7 @@ function ItemInspector({ id }: { id: string }) {
               </div>
               <div className="border-l-2 border-desk-muted px-2 py-1 font-serif text-[14px] text-white">“{c.quote}”</div>
               {c.locator.type === "text" && (
-                <button onClick={() => setDoc(c)} className="mt-1 text-desk-link hover:underline">
+                <button onClick={() => openWin("page", `${c.doc_id}|${c.locator.type === "text" ? c.locator.page : 1}|${it.id}`)} className="mt-1 text-desk-link hover:underline">
                   Open the source page
                 </button>
               )}
@@ -238,7 +260,6 @@ function ItemInspector({ id }: { id: string }) {
       )}
 
       <CommentBox targetType="item" targetId={it.id} runId={runId} />
-      {doc && <DocViewer runId={runId} citation={doc} itemId={it.id} onClose={() => setDoc(null)} />}
     </>
   );
 }
@@ -283,7 +304,7 @@ function SentenceInspector({ id }: { id: string }) {
 }
 
 // Walks brief sentence → conclusions/scores → data items → source quote.
-function ChainTree({ refs, items, depth }: { refs: string[]; items: Record<string, Item>; depth: number }) {
+export function ChainTree({ refs, items, depth }: { refs: string[]; items: Record<string, Item>; depth: number }) {
   const select = useRunStore((s) => s.select);
   return (
     <ul className={depth ? "ml-3 border-l border-desk-line-strong pl-2.5" : ""}>
@@ -408,84 +429,5 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
         {err && <div className="text-desk-bad">{err}</div>}
       </form>
     </Block>
-  );
-}
-
-// The stored page text with cited spans highlighted. unit_context spans are lighter.
-function DocViewer({ runId, citation, itemId, onClose }: { runId: string; citation: Citation; itemId: string; onClose: () => void }) {
-  const loc = citation.locator.type === "text" ? citation.locator : null;
-  const [page, setPage] = useState(loc?.page ?? 1);
-  const [data, setData] = useState<DocumentPage | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const mark = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    setData(null);
-    api.page(runId, citation.doc_id, page).then(setData, (e) => setErr(String(e)));
-  }, [runId, citation.doc_id, page]);
-  useEffect(() => {
-    mark.current?.scrollIntoView({ block: "center" });
-  }, [data]);
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
-
-  const segments = useMemo(() => {
-    if (!data) return [];
-    const hs = [...data.highlights].sort((a, b) => a.char_start - b.char_start || (a.role === "evidence" ? -1 : 1));
-    const out: { text: string; h: (typeof hs)[number] | null }[] = [];
-    let at = 0;
-    for (const h of hs) {
-      if (h.char_start < at) continue;
-      if (h.char_start > at) out.push({ text: data.text.slice(at, h.char_start), h: null });
-      out.push({ text: data.text.slice(h.char_start, h.char_end), h });
-      at = h.char_end;
-    }
-    out.push({ text: data.text.slice(at), h: null });
-    return out;
-  }, [data]);
-
-  return (
-    <div role="dialog" aria-label={`${citation.doc_id} page ${page}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6" onClick={onClose}>
-      <div className="flex max-h-full w-full max-w-3xl flex-col rounded-[6px] bg-paper text-ink" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-rule px-4 py-2 text-[13px]">
-          <span className="font-mono font-semibold">{citation.doc_id}</span>
-          <span>
-            page {page}
-            {data ? ` of ${data.pages}` : ""} · {data?.content_type}
-          </span>
-          <button className={btn} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            ◂
-          </button>
-          <button className={btn} disabled={!data || page >= data.pages} onClick={() => setPage((p) => p + 1)}>
-            ▸
-          </button>
-          <span className="ml-auto text-muted">The exact text the checker matched against</span>
-          <button className={btn} onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto px-6 py-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap">
-          {err && <span className="text-bad">{err}</span>}
-          {!data && !err && <span className="text-muted">Loading…</span>}
-          {segments.map((s, i) => {
-            if (!s.h) return <span key={i}>{s.text}</span>;
-            const mine = s.h.item_id === itemId;
-            const ctx = s.h.role !== "evidence";
-            const cls = mine ? (ctx ? "bg-hl-context" : "bg-hl-evidence outline-2 outline-ink") : ctx ? "bg-hl-other-context" : "bg-hl-other";
-            return (
-              <mark key={i} ref={mine && !ctx ? (el) => { mark.current = el; } : undefined} title={`${s.h.item_id} · ${s.h.role} · ${s.h.status}`} className={`${cls} text-ink`}>
-                {s.text}
-              </mark>
-            );
-          })}
-        </div>
-        <div className="border-t border-rule px-4 py-1.5 text-[11px] text-muted">
-          <mark className="bg-hl-evidence px-1">{itemId} evidence</mark> <mark className="bg-hl-context px-1">unit or period context</mark>{" "}
-          <mark className="bg-hl-other px-1">other cited items</mark>. Press Esc to close.
-        </div>
-      </div>
-    </div>
   );
 }
