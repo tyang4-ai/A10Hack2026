@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { api } from "@/lib/api";
 import { useRunStore } from "@/lib/store";
-import { LAYOUTS, useWindows, type Win } from "@/lib/windows";
+import { LAYOUTS, useWindows, type Geo, type Win } from "@/lib/windows";
 import { Window } from "./Window";
 import { usePopover } from "./Switchers";
 import { KIND_META, KIND_ORDER, winTitle } from "./WindowContent";
@@ -65,23 +65,38 @@ export function Desk() {
   );
 }
 
+// One overlay for every drop target. It fades in, morphs between the small fill square
+// and the full outline (grows in, shrinks back out), and fades out when there's nothing
+// to drop on, so nothing pops.
 function SnapPreview() {
   const snap = useWindows((s) => s.snap);
   const hint = useWindows((s) => s.snapHint);
-  if (hint && !snap)
-    return (
-      <div
-        aria-hidden
-        style={{ left: `${hint.x * 100}%`, top: `${hint.y * 100}%`, width: `${hint.w * 100}%`, height: `${hint.h * 100}%` }}
-        className="pointer-events-none absolute z-[100000] rounded-[4px] border border-dashed border-accent bg-accent/10 print:hidden"
-      />
-    );
-  if (!snap) return null;
+  const target = snap ?? hint;
+  const key = target ? `${target.x},${target.y},${target.w},${target.h},${snap ? 1 : 0}` : "";
+  const [shown, setShown] = useState<{ g: Geo; solid: boolean } | null>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (target) {
+      setShown({ g: target, solid: !!snap });
+      // Mount first at opacity 0, then fade in on the next frame.
+      const f = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(f);
+    }
+    setVisible(false);
+    const t = setTimeout(() => setShown(null), 160);
+    return () => clearTimeout(t);
+    // key captures target and snap; the objects themselves change identity on every move.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (!shown) return null;
+  const { g, solid } = shown;
   return (
     <div
       aria-hidden
-      style={{ left: `${snap.x * 100}%`, top: `${snap.y * 100}%`, width: `${snap.w * 100}%`, height: `${snap.h * 100}%` }}
-      className="pointer-events-none absolute z-[100000] border border-accent bg-accent/15 transition-[left,top,width,height] duration-100 print:hidden"
+      style={{ left: `${g.x * 100}%`, top: `${g.y * 100}%`, width: `${g.w * 100}%`, height: `${g.h * 100}%` }}
+      className={`pointer-events-none absolute z-[100000] transition-[left,top,width,height,opacity,transform,background-color] duration-150 ease-out print:hidden ${
+        visible ? "scale-100 opacity-100" : "scale-[0.96] opacity-0"
+      } ${solid ? "rounded-[2px] border border-accent bg-accent/15" : "rounded-[4px] border border-dashed border-accent bg-accent/10"}`}
     />
   );
 }
