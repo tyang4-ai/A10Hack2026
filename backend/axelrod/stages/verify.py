@@ -11,17 +11,23 @@ its direction is read, and the text, and answer two questions: is the text suppo
 follow from it under the rubric (B-fix-score). A judge that finds the direction wrong votes against, under
 the same check name (support). Repair stays weaken-only (stages/repair.py): a direction failure can move a
 judgment score toward 0 or N/A, never flip its sign, and a threshold score stays code's.
+
+Malformed verdicts (B-faults): a judge answer with no verdict, or one that is neither SUPPORTED nor UNSUPPORTED,
+is flagged by that judge and rerun once as a new gateway request (JudgeRunner). A second malformed answer is an
+abstention, never support, and the check's detail says so. DEMO_FAULTS=judge plants one per run (simulated).
 """
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from .. import faults
 from ..agents import judge
 from ..agents.base import AgentOutputError, AgentRunner
 from ..contract import RUBRIC, m
-from ..gateway import Blocked
+from ..gateway import Blocked, InvokeResult, ToolSpec
 from ..ids import now_iso
 from ..runtime import StopRequested
 from ..verify import checks
@@ -143,9 +149,46 @@ def next_judge_k(state: RunState, item_id: str) -> int:
     return max(ks, default=0) + 1
 
 
-async def _one_judge(ctx: RunContext, item_id: str, k: int, prompt: str) -> judge.JudgeVerdict | None:
-    """One isolated vote. None when the judge could not answer (blocked or invalid twice)."""
-    runner = AgentRunner(ctx, "verifier", f"Judge {item_id} (vote {k})", [item_id], "small",
+class JudgeRunner(AgentRunner):
+    """A judge's runner: code reads each answer's verdict before it is validated.
+
+    A missing or unknown verdict is flagged at warn level by that judge, and ask()'s one retry reruns the call
+    as a new gateway request. A second malformed answer makes ask() give up, and the vote is an abstention,
+    never support. With DEMO_FAULTS=judge the run's first judge call of the verify stage has its verdict
+    removed here, after the real (paid) model call returned: a simulated fault, said so in the log and the
+    transcript. Everything else is the same code a real malformed answer goes through."""
+
+    malformed = 0
+
+    async def _invoke(self, system: str, prompt: str, spec: ToolSpec, max_tokens: int) -> InvokeResult:
+        res = await super()._invoke(system, prompt, spec, max_tokens)
+        planted = faults.claim_judge_fault(self.ctx)
+        if planted:
+            self._line("planted_fault", fault="judge", real_tool_input=res.tool_input,
+                       note="verdict removed after the real model call returned (simulated, planted fault)")
+            res = replace(res, tool_input=faults.malformed(res.tool_input))
+        if judge.malformed_verdict(res.tool_input):
+            self.malformed += 1
+            self._log(malformed_text(self.agent_id, res.tool_input, planted, self.malformed), level="warn")
+        return res
+
+
+def malformed_text(agent_id: str, tool_input: object, planted: bool, n: int) -> str:
+    """The judge's warn line for a malformed verdict: the planted one says simulated, a second one abstains."""
+    if planted:
+        return faults.judge_fault_log(agent_id)
+    got = tool_input.get("verdict") if isinstance(tool_input, dict) else None
+    shown = "no verdict" if got is None else f"verdict {str(got)[:40]!r}"
+    if n == 1:
+        return f"Judge {agent_id} returned a malformed verdict ({shown}). Rerunning it."
+    return f"Judge {agent_id} returned a malformed verdict again ({shown}). Its vote counts as an abstention."
+
+
+async def _one_judge(ctx: RunContext, item_id: str, k: int, prompt: str,
+                     abstained: list[str] | None = None) -> judge.JudgeVerdict | None:
+    """One isolated vote. None when the judge could not answer (blocked or invalid twice). A judge whose
+    verdict was malformed on both tries is added to `abstained`, so the check's detail can say so."""
+    runner = JudgeRunner(ctx, "verifier", f"Judge {item_id} (vote {k})", [item_id], "small",
                          agent_id=f"verifier-{item_id}-{k}")
     try:
         with runner:
@@ -153,6 +196,8 @@ async def _one_judge(ctx: RunContext, item_id: str, k: int, prompt: str) -> judg
     except StopRequested:
         raise
     except (Blocked, AgentOutputError):
+        if runner.malformed >= 2 and abstained is not None:
+            abstained.append(runner.agent_id)
         return None
     return out  # type: ignore[return-value]
 
@@ -175,9 +220,30 @@ def dissent_of(item: m.Item, v: judge.JudgeVerdict) -> str:
     return reason[:300]
 
 
-def tally(item: m.Item, votes: list[judge.JudgeVerdict | None], model_id: str | None) -> m.CheckResult:
+def abstain_note(abstained: list[str] | tuple[str, ...]) -> str:
+    """The detail's line for judges whose verdict was malformed on both tries."""
+    if not abstained:
+        return ""
+    who = ", ".join(sorted(abstained))
+    return (f" {who} abstained (malformed verdict twice): an abstention never counts as support."
+            if len(abstained) == 1 else
+            f" {who} abstained (malformed verdicts twice): an abstention never counts as support.")
+
+
+def tally(item: m.Item, votes: list[judge.JudgeVerdict | None], model_id: str | None,
+          abstained: list[str] | tuple[str, ...] = ()) -> m.CheckResult:
     """Two of three pass it. A missing vote never counts as support, and can make the check blocked. For a score,
-    a judge that found the direction wrong votes against (B-fix-score), and its reason leads the detail."""
+    a judge that found the direction wrong votes against (B-fix-score), and its reason leads the detail. A judge
+    that abstained (malformed verdict twice) is a missing vote, and the detail names it."""
+    check = _tally(item, votes, model_id)
+    note = abstain_note(abstained)
+    if not note:
+        return check
+    detail = check.detail if check.detail.endswith(".") else check.detail + "."
+    return check.model_copy(update={"detail": detail + note})
+
+
+def _tally(item: m.Item, votes: list[judge.JudgeVerdict | None], model_id: str | None) -> m.CheckResult:
     text = claim_text(item)
     answered = [v for v in votes if v is not None]
     no = [v for v in answered if against(item, v)]
@@ -213,8 +279,9 @@ async def judge_claim(ctx: RunContext, item: m.Item) -> m.CheckResult:
     rubric = rubric_view(item.criterion) if item.kind == "extrapolation" else None
     prompt = judge.judge_prompt(judge_claim_view(ctx.state, item), evidence_view(ctx.state, item), rubric)
     k0 = next_judge_k(ctx.state, item.id)
-    votes = await asyncio.gather(*(_one_judge(ctx, item.id, k0 + j, prompt) for j in range(JUDGES)))
-    return tally(item, list(votes), ctx.settings.model_small)
+    abstained: list[str] = []
+    votes = await asyncio.gather(*(_one_judge(ctx, item.id, k0 + j, prompt, abstained) for j in range(JUDGES)))
+    return tally(item, list(votes), ctx.settings.model_small, abstained)
 
 
 # ---------------------------------------------------------------------------

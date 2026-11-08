@@ -39,6 +39,7 @@ ENV_VARS: dict[str, str] = {
     "public_ui_url": "PUBLIC_UI_URL",
     "stage_pacing": "STAGE_PACING",
     "protected_runs": "PROTECTED_RUNS",
+    "demo_faults": "DEMO_FAULTS",
     "test_page_url": "TEST_PAGE_URL",
     "cache_documents": "CACHE_DOCUMENTS",
     "cache_models": "CACHE_MODELS",
@@ -66,6 +67,7 @@ class Settings(BaseModel):
     public_ui_url: str | None = None                         # PUBLIC_UI_URL (CLI prints run links)
     stage_pacing: float = 0.0                                # STAGE_PACING (seconds of pause at the start of each stage)
     protected_runs: list[str] = []                           # PROTECTED_RUNS comma-separated run ids DELETE refuses
+    demo_faults: str = ""                                     # DEMO_FAULTS: planted faults (simulated), from fetch,judge
     test_page_url: str | None = None                         # TEST_PAGE_URL (planted page S-010, served by our own API)
     cache_documents: bool = False                            # CACHE_DOCUMENTS on/off: serve fetch bodies from the S3 cache
     cache_models: Literal["off", "record", "replay"] = "off"  # CACHE_MODELS: record or replay model answers

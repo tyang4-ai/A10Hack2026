@@ -76,7 +76,7 @@ def test_every_need_has_a_source(plan):
 def test_s006_is_the_tier2_article_fetched_late(plan):
     s006 = source(plan, "S-006")
     assert (s006["tier"], s006["kind"], s006["vault_folder"]) == ("tier_2", "news", "04-News-Coverage")
-    order = [s.source_id for s in check_plan.collect_order(sources_of(plan))]
+    order = [s.source_id for s in check_plan.collect_order(sources_of(plan)) if not check_plan.is_planted_fault(s)]
     priority = [s["source_id"] for s in plan["sources"] if s["tier"] == "priority"]
     assert order.index("S-006") > max(order.index(p) for p in priority)
     assert order.index("S-006") >= len(order) - 3
@@ -85,7 +85,7 @@ def test_s006_is_the_tier2_article_fetched_late(plan):
 def test_tiers_and_kinds(plan):
     tiers = {s["source_id"]: s["tier"] for s in plan["sources"]}
     assert [sid for sid, t in tiers.items() if t == "tier_2"] == ["S-006"]
-    tier3 = [s for s in plan["sources"] if s["tier"] == "tier_3"]
+    tier3 = [s for s in plan["sources"] if s["tier"] == "tier_3" and not check_plan.is_planted_fault(s)]
     assert len(tier3) == 2 and tier3[-1]["url"] == check_plan.TEST_PAGE_URL
     kinds = {s["kind"] for s in plan["sources"] if s["tier"] == "priority"}
     assert kinds <= {"annual_report", "company_ir", "xbrl_facts"}
@@ -146,7 +146,7 @@ def test_demo_sources_are_unchanged(plan):
 def test_demo_fetch_order_is_unchanged(plan):
     order = [s.source_id for s in check_plan.collect_order(sources_of(plan))]
     assert [sid for sid in order if sid in check_plan.DEMO_SOURCES] == list(check_plan.DEMO_FETCH_ORDER)
-    assert order[-3:] == ["S-006", "S-009", "S-010"]
+    assert order[-4:] == ["S-006", "S-009", "S-010", "S-017"]          # S-017: the planted fault, last
     archived = check_plan.archive_ids(plan)
     assert archived and all(order.index(a) > order.index("S-005") for a in archived)
 
@@ -154,7 +154,8 @@ def test_demo_fetch_order_is_unchanged(plan):
 def test_archive_sources_follow_the_rules(plan):
     archived = [s for s in plan["sources"] if check_plan.is_archive(s)]
     assert [s["source_id"] for s in archived] == [f"S-{i:03d}" for i in range(11, 11 + len(archived))]
-    assert [s["source_id"] for s in plan["sources"][10:]] == [s["source_id"] for s in archived]
+    assert [s["source_id"] for s in plan["sources"][10:] if not check_plan.is_planted_fault(s)] == [
+        s["source_id"] for s in archived]
     for s in archived:
         assert s["url"].startswith("https://"), s["source_id"]  # every file here has a known original URL
         assert s["tier"] == "priority" and s["kind"] == "annual_report", s["source_id"]

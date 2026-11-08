@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
+from .. import faults
 from ..config import BACKEND_DIR
 from ..contract import m
 
@@ -32,6 +33,9 @@ TEST_PAGE_FILE = "/data/test_pages/injection.html"     # how plan.json's URL for
 SERVED_RATIONALE = (" Served by Axelrod's own API at {url} (TEST_PAGE_URL), because the GitHub repo stays private "
                     "until submission. Still simulated: the API marks the page with X-Axelrod-Simulated: true.")
 SERVED_NOTE = "{sid} is the planted test page (simulated), served by Axelrod's own API at {url}, not GitHub."
+FAULT_NOTE = ("DEMO_FAULTS=fetch: {sid} is a planted broken download (simulated) that always answers HTTP 503, "
+              "so the fetcher's retry and a failed source can be shown.")
+FAULT_SERVED = " Served by Axelrod's own API at {url} (next to TEST_PAGE_URL), which answers 503 on purpose."
 
 
 class PlanUnavailable(RuntimeError):
@@ -117,11 +121,14 @@ async def run(ctx: RunContext) -> None:
         note = f"Company typed as '{typed}', read as {state.run.company} (typo-tolerant match to the frozen plan)."
         state.run.notes = f"{state.run.notes.strip()} | {note}" if (state.run.notes or "").strip() else note
     needs = [m.DataNeed.model_validate(n) for n in plan.get("needs", [])]
-    sources = [_fresh_source(s) for s in plan.get("sources", [])]
+    sources = planted_faults(ctx, [_fresh_source(s) for s in plan.get("sources", [])])
     _apply_plan_fields(ctx, plan, needs, sources)
     served = serve_test_page(sources, ctx.settings.test_page_url)
     if served:
         _append_note(state.run, served)
+    fault = serve_fault_page(sources, ctx.settings.test_page_url)
+    if fault:
+        _append_note(state.run, fault)
     await _write_plan_files(ctx, plan, needs, sources)
 
     for need in needs:
@@ -184,6 +191,33 @@ def serve_test_page(sources: list[m.Source], url: str | None) -> str | None:
                 "rationale": source.rationale + SERVED_RATIONALE.format(url=url)})
             return SERVED_NOTE.format(sid=source.source_id, url=url)
     return "TEST_PAGE_URL is set, but the plan has no planted test page, so no source URL was changed."
+
+
+def planted_faults(ctx: RunContext, sources: list[m.Source]) -> list[m.Source]:
+    """The planted broken download (S-017) is in the plan only when DEMO_FAULTS has fetch. Off, it is left out
+    entirely, so a normal run never sees it."""
+    if faults.enabled(ctx.settings, "fetch"):
+        return sources
+    return [s for s in sources if not faults.is_broken_download(s)]
+
+
+def serve_fault_page(sources: list[m.Source], url: str | None) -> str | None:
+    """The Run.notes line for the planted broken download, or None when the plan has none.
+
+    With TEST_PAGE_URL set, its URL becomes <base>/test-pages/broken.pdf on our own API (the same host as the
+    injection page, so serve_test_page has already checked the URL). Unset keeps plan.json's URL."""
+    url = (url or "").strip()
+    for i, source in enumerate(sources):
+        if not faults.is_broken_download(source):
+            continue
+        note = FAULT_NOTE.format(sid=source.source_id)
+        if url:
+            fault_url = faults.served_url(url)
+            sources[i] = source.model_copy(update={
+                "url": fault_url, "domain": (urlsplit(fault_url).hostname or source.domain).lower(),
+                "rationale": source.rationale + FAULT_SERVED.format(url=fault_url)})
+        return note
+    return None
 
 
 def _append_note(run: m.Run, note: str) -> None:
