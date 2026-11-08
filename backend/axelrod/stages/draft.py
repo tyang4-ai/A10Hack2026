@@ -12,6 +12,11 @@ criteria. Code then turns the drafts into contract items:
   display (fill_displays): the drafter was already shown code's values once, and does arithmetic badly.
 - Each metric group also gets code's inputs_by_year index and every row its expr_value, so the drafter
   computes from the years it has instead of refusing (B-fix-draft, after the R0 rehearsal).
+- One claim per conclusion, at most two sentences and three numbers (B-fix-yield, after G5b, where one wrong
+  number in a long paragraph took a whole criterion's support with it). Code counts both and sends a long
+  claim back to be split in the same single revision, with computed rates that differ from a rate printed in
+  the evidence. The pre-check also names a criterion with no score, and for a display that does not match
+  code's value, the negative-reported id whose sign would explain it. Keys in a score's text become C ids.
 - Chart points are computed by code from their refs. A model never draws a chart.
 - Every in-scope criterion gets exactly one extrapolation. A criterion the drafter skipped, or one about the
   analyst rather than the company (research_stage), comes out N/A with a reason, which finalize declares
@@ -29,7 +34,7 @@ from ..agents.base import AgentOutputError, AgentRunner
 from ..contract import RUBRIC, m
 from ..gateway import Blocked
 from ..runtime import StopRequested
-from ..verify import checks, compute
+from ..verify import checks, compute, text as vtext
 from ..verify.numbers import SCALES, half_up, period_key, scan_numbers, to_base
 from .finalize import PASSING, in_scope, label
 
@@ -56,6 +61,53 @@ _NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
 _LITERAL = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
 SMALL_CONSTANT = 100      # whole numbers up to this may appear in an expr (averages, year counts, percent)
 MAX_PROBLEMS = 30         # pre-check findings sent back to a drafter
+MAX_SENTENCES = 2         # one claim per conclusion (B-fix-yield): at most two sentences ...
+MAX_NUMBERS = 3           # ... and three numbers, fiscal-year labels and dates aside
+MAX_ADVICE = 20           # one-claim and printed-rate notes sent back to a drafter
+
+
+# ---------------------------------------------------------------------------
+# Sentences and numbers in a drafted text (shared with stages/repair.py)
+# ---------------------------------------------------------------------------
+
+# A stop, closing quotes or brackets, then a space and what starts a sentence. Words before a stop that do not
+# end a sentence: abbreviations and month names ("approx. 5", "Sep. 30"), and single letters ("U.S.").
+_STOP = re.compile(r"[.!?][\"”’)\]]*(?=\s+[A-Z€$£\"“(\d])")
+_WORD_BEFORE = re.compile(r"(?<![\w.])([A-Za-z][A-Za-z.]*)$")
+_ABBREV = {"approx", "ca", "e.g", "i.e", "vs", "no", "nos", "inc", "co", "corp", "ltd", "plc", "st", "mr", "ms",
+           "dr", "fig", "figs", "cf", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov",
+           "dec", "est", "incl", "excl", "resp", "mn", "bn", "pp"}
+
+
+def sentence_spans(text: str) -> list[tuple[int, int]]:
+    """(start, end) of each sentence in a drafted text, leading spaces left out. Repair removes whole sentences,
+    so a boundary is only taken where it surely is one."""
+    out: list[tuple[int, int]] = []
+    start = 0
+    for mm in _STOP.finditer(text):
+        word = _WORD_BEFORE.search(text, start, mm.start())
+        w = word.group(1).lower() if word else ""
+        if w in _ABBREV or len(w) == 1 or re.fullmatch(r"(?:[a-z]\.)+[a-z]", w):
+            continue
+        out.append((start, mm.end()))
+        start = mm.end()
+    out.append((start, len(text)))
+    spans = []
+    for s, e in out:
+        s += len(text[s:e]) - len(text[s:e].lstrip())
+        if s < e:
+            spans.append((s, e))
+    return spans
+
+
+def sentences(text: str) -> list[str]:
+    return [text[s:e] for s, e in sentence_spans(text)]
+
+
+def claim_size(text: str) -> tuple[int, int]:
+    """(sentences, numbers) in a claim's text. Numbers are what numbers_traced checks: fiscal-year labels, years,
+    dates and ids are not counted."""
+    return len(sentence_spans(text)), len(scan_numbers(vtext.normalize(text)))
 
 
 # ---------------------------------------------------------------------------
@@ -300,6 +352,110 @@ def _exact(r: m.CheckResult, rule_input: str | None, items: dict) -> dict:
     return {} if x is None else {"exact_value": plain(x.quantize(Decimal("1e-8")))}
 
 
+def _shown(value: Decimal, display: str) -> str:
+    from .repair import redisplay      # repair imports this module, so import late
+
+    return redisplay(value, display) or plain(value)
+
+
+def sign_hints(dc: drafter.DraftConclusion, verified: dict[str, m.DataItem], cited: list[str]) -> list[str]:
+    """For a computation whose display does not match code's value and that reads a data id reported as a
+    negative number: what it gives with that id taken as positive. In G5b the drafter's displays had the right
+    sign in mind while its exprs added SHL's negative tax expense and capex back (C-001, C-008)."""
+    env = {i: checks.base_value(verified[i]) for i in cited if verified[i].value is not None}
+    out: list[str] = []
+    for comp in dc.computations:
+        if typed_amounts(comp.expr):
+            continue
+        try:
+            val = compute.safe_eval(comp.expr, env)
+        except compute.ComputeError:
+            continue
+        meant = _display_value(comp.display)
+        if meant is not None and not checks.display_of(val, comp.display)[0]:
+            best: tuple[Decimal, str, Decimal] | None = None
+            for did in dict.fromkeys(compute.ids_in(comp.expr)):
+                if did not in env or env[did] >= 0:
+                    continue
+                try:
+                    alt = compute.safe_eval(comp.expr, {**env, did: -env[did]})
+                except compute.ComputeError:
+                    continue
+                gap = abs(alt - meant)
+                if gap < abs(val - meant) and (best is None or gap < best[0]):
+                    best = (gap, did, alt)
+            if best is not None:
+                _, did, alt = best
+                out.append(f"{comp.name} reads {did}, which is reported as a negative number (expr_value "
+                           f"{plain(env[did])}). Code gets {_shown(val, comp.display)} where your display says "
+                           f"{comp.display}. With {did} taken as positive it would give {_shown(alt, comp.display)}. "
+                           f"Check its sign: adding a negative-reported amount deducts it, subtracting it adds it back.")
+        env[comp.name] = val
+    return out[:6]
+
+
+def _display_value(display: str) -> Decimal | None:
+    """What a display says in expr units: "24.2%" is 0.242, "€1,234.5 million" is 1234500000."""
+    toks = scan_numbers(vtext.normalize(display), include_labels=True)
+    if not toks:
+        return None
+    return toks[0].value / 100 if toks[0].pct else toks[0].value
+
+
+def printed_conflict(comp: drafter.DraftComputation | m.Computation, verified: dict[str, m.DataItem],
+                     shown: set[str]) -> str | None:
+    """A computed percentage that differs by a rounding step from a percentage printed in the evidence quote of
+    an item the computation reads. G5b C-003: Varian growth computed as 5.6% from rounded revenue, while the
+    revenue row prints 5.5%, so all three judges rejected the claim."""
+    toks = scan_numbers(vtext.normalize(comp.display), include_labels=True)
+    if not toks or not toks[0].pct:
+        return None
+    t = toks[0]
+    near = Decimal("1.5") * Decimal(10) ** -t.places
+    for did in dict.fromkeys(compute.ids_in(comp.expr)):
+        d = verified.get(did)
+        if d is None or did not in shown:
+            continue
+        for cit in d.citations:
+            if cit.role != "evidence" or not cit.quote:
+                continue
+            for p in scan_numbers(vtext.normalize(cit.quote)):
+                if p.pct and p.number != t.number and abs(p.number - t.number) <= near:
+                    return (f"{did}'s source line prints {p.raw} next to these figures, and your computed display "
+                            f"is {comp.display}.")
+    return None
+
+
+def advice(out: drafter.DraftOutput, verified: dict[str, m.DataItem], shown: set[str]) -> list[dict]:
+    """Code's notes on a draft that are not check failures, sent back with the revision in their own block:
+    conclusions over the one-claim size, and computed rates the source prints differently."""
+    notes: list[dict] = []
+    for dc in out.conclusions:
+        key = dc.key.strip()
+        n_sent, n_num = claim_size(dc.text)
+        if n_sent > MAX_SENTENCES or n_num > MAX_NUMBERS:
+            notes.append({"conclusion": key, "sentences": n_sent, "numbers": n_num,
+                          "problem": f"{n_sent} sentence(s) and {n_num} number(s). One claim is at most "
+                                     f"{MAX_SENTENCES} sentences and {MAX_NUMBERS} numbers.",
+                          "fix": "Split it into small conclusions under new keys, and add the new keys to the "
+                                 "scores that cite it."})
+        for comp in dc.computations:
+            found = printed_conflict(comp, verified, shown)
+            if found:
+                notes.append({"conclusion": key, "computation": comp.name, "problem": found,
+                              "fix": "Leave the computed rate out of the text, or state only the reported figures."})
+    return notes
+
+
+def missing_scores(group: list[str], out: drafter.DraftOutput) -> list[dict]:
+    """Criteria the draft gave no score. In G5b the ROTIC drafter's first answer had none, its revision sent only
+    rotic_level, and rotic_vs_peers came out N/A for that alone."""
+    have = {s.criterion for s in out.scores}
+    return [{"score": c, "check": "score_missing",
+             "problem": f"No score for {c}. Send one: -1, 0 or 1 under the rubric, or null with na_reason."}
+            for c in group if c not in have and c not in ANALYST_ONLY]
+
+
 def precheck(state: RunState, group: list[str], out: drafter.DraftOutput, verified: dict[str, m.DataItem],
              shown: set[str]) -> list[dict]:
     """Code's own checks on a draft before it is final, the same ones the verify stage runs: every computation
@@ -340,7 +496,10 @@ def precheck(state: RunState, group: list[str], out: drafter.DraftOutput, verifi
         tids[key] = tid
         for r in checks.check_conclusion(items[tid], items, sources, rubric=RUBRIC):
             if r.result == "fail" and r.check != "citations_resolve":
-                found.append({"conclusion": key, "check": r.check, "problem": r.detail, **_where(r, dc.text)})
+                hints = sign_hints(dc, verified, cited) if r.check == "computation" else []
+                found.append({"conclusion": key, "check": r.check, "problem": r.detail, **_where(r, dc.text),
+                              **({"sign_check": hints} if hints else {})})
+    found += missing_scores(group, out)
     names = {tid: key for key, tid in tids.items()}
     for ds in out.scores:
         if ds.criterion not in group or ds.score is None or ds.criterion in ANALYST_ONLY:
@@ -376,8 +535,9 @@ async def _draft_group(ctx: RunContext, group: list[str], rows: list[dict],
         with runner:
             out = await runner.ask(drafter.SYSTEM, prompt, drafter.DraftOutput, max_tokens=drafter.MAX_TOKENS)
             problems = precheck(ctx.state, group, out, verified or {}, shown) if verified is not None else []
-            if problems:
-                out = await _revise(ctx, runner, group, prompt, out, problems, verified or {}, shown)
+            notes = advice(out, verified or {}, shown) if verified is not None else []
+            if problems or notes:
+                out = await _revise(ctx, runner, group, prompt, out, problems, verified or {}, shown, notes)
     except StopRequested:
         raise
     except Blocked as e:
@@ -409,16 +569,27 @@ def merge_revision(old: drafter.DraftOutput, new: drafter.DraftOutput) -> drafte
 
 
 async def _revise(ctx: RunContext, runner: AgentRunner, group: list[str], prompt: str, out: drafter.DraftOutput,
-                  problems: list[dict], verified: dict[str, m.DataItem], shown: set[str]) -> drafter.DraftOutput:
-    """One revision round. A revision that is blocked or invalid leaves the first draft in place."""
+                  problems: list[dict], verified: dict[str, m.DataItem], shown: set[str],
+                  notes: list[dict] | None = None) -> drafter.DraftOutput:
+    """One revision round, for check problems, advice notes (claims to split, printed rates) or both. A revision
+    that is blocked or invalid leaves the first draft in place."""
     aid = runner.agent_id
-    ctx.emit("agent.log", m.AgentLogData(text=f"Code pre-check found {len(problems)} problem(s) in the draft, sent "
-                                              f"back once: " + "; ".join(p["problem"][:160] for p in problems[:6])),
-             message=f"{aid}: code pre-check found {len(problems)} problem(s), drafter revises once",
-             agent_id=aid, level="warn")
+    notes = notes or []
+    if problems:
+        ctx.emit("agent.log", m.AgentLogData(text=f"Code pre-check found {len(problems)} problem(s) in the draft, "
+                                                  f"sent back once: "
+                                                  + "; ".join(p["problem"][:160] for p in problems[:6])),
+                 message=f"{aid}: code pre-check found {len(problems)} problem(s), drafter revises once",
+                 agent_id=aid, level="warn")
+    if notes:
+        ctx.emit("agent.log", m.AgentLogData(text=f"Code advice on {len(notes)} part(s) of the draft (claims to split "
+                                                  f"into small conclusions, printed rates), sent back once: "
+                                                  + "; ".join(f"{n['conclusion']}: {n['problem'][:120]}"
+                                                              for n in notes[:6])),
+                 message=f"{aid}: code advice on {len(notes)} part(s), drafter revises once", agent_id=aid)
     try:
         new = await runner.ask(drafter.SYSTEM, drafter.revise_prompt(prompt, out.model_dump(mode="json"),
-                                                                     problems[:MAX_PROBLEMS]),
+                                                                     problems[:MAX_PROBLEMS], notes[:MAX_ADVICE]),
                                drafter.DraftOutput, max_tokens=drafter.MAX_TOKENS)
     except (Blocked, AgentOutputError) as e:
         ctx.emit("agent.log", m.AgentLogData(text=f"Revision not used ({type(e).__name__}), first draft kept"),
@@ -432,9 +603,11 @@ async def _revise(ctx: RunContext, runner: AgentRunner, group: list[str], prompt
                                                   + "; ".join(filled)),
                  message=f"{aid}: code filled {len(filled)} display(s) in the revision", agent_id=aid)
     left = precheck(ctx.state, group, new, verified, shown)
+    still = (f", {len(advice(new, verified, shown))} of {len(notes)} advice note(s) left" if notes else "")
     ctx.emit("agent.log", m.AgentLogData(text=f"Revised draft: {len(left)} pre-check problem(s) left of "
-                                              f"{len(problems)}. The verify stage checks everything again."),
-             message=f"{aid}: revised draft, {len(left)} of {len(problems)} pre-check problem(s) left", agent_id=aid)
+                                              f"{len(problems)}{still}. The verify stage checks everything again."),
+             message=f"{aid}: revised draft, {len(left)} of {len(problems)} pre-check problem(s) left{still}",
+             agent_id=aid)
     return new
 
 
@@ -454,6 +627,10 @@ def fill_displays(out: drafter.DraftOutput, verified: dict[str, m.DataItem], sho
         cited = _cited(dc, verified, shown)
         env = {i: checks.base_value(verified[i]) for i in cited if verified[i].value is not None}
         text, comps = dc.text, []
+        # A display two computations share can't be swapped in the text: code can't tell whose mention is whose
+        # (G5b C-001: FY2025 and FY2026 ROTIC were both written 10.7%). Those stay for the checks to catch.
+        shared = {d for d in (c.display for c in dc.computations)
+                  if sum(c.display == d for c in dc.computations) > 1}
         for comp in dc.computations:
             new_display = None
             if not typed_amounts(comp.expr):
@@ -462,7 +639,7 @@ def fill_displays(out: drafter.DraftOutput, verified: dict[str, m.DataItem], sho
                 except compute.ComputeError:
                     val = None
                 if (val is not None and (key, comp.name, comp.expr, comp.display) not in skip
-                        and not checks.display_of(val, comp.display)[0]):
+                        and comp.display not in shared and not checks.display_of(val, comp.display)[0]):
                     new_display = redisplay(val, comp.display)
             if new_display is None:
                 comps.append(comp)
@@ -572,6 +749,9 @@ class Builder:
         c = m.Conclusion(id=cid, category=RUBRIC["criteria"][crit[0]]["category"], criteria=crit, text=dc.text.strip(),
                          data_ids=data_ids, computations=self._computations(gi, key, dc, data_ids),
                          agent_id=self.agent_ids.get(gi), verification=m.Verification(status="pending"))
+        c, fixed = fix_currencies(c, self.verified)
+        for note in fixed:
+            self.note(gi, f"{key}: {note}")
         self.keys.setdefault((gi, key), cid)
         self.conclusions[cid] = c
         return c
@@ -650,9 +830,19 @@ class Builder:
         if lowered and gi is not None:
             self.note(gi, lowered)
         na = (ds.na_reason or "").strip() or None
+        text = self.key_ids(gi, ds.text.strip()) if gi is not None else ds.text.strip()
         return m.Extrapolation(**base, score=ds.score, na_reason=na if ds.score is None else None,
-                               text=ds.text.strip() or f"{crit['label']} is not scored.", conclusion_ids=cids,
+                               text=text or f"{crit['label']} is not scored.", conclusion_ids=cids,
                                confidence=confidence)
+
+    def key_ids(self, gi: int, text: str) -> str:
+        """The drafter's conclusion keys in a score's text ("(c2)") become the conclusions' ids, so readers and
+        judges can follow them, and repair can drop the sentence that rests on a conclusion that failed."""
+        keys = {k: cid for (g, k), cid in self.keys.items() if g == gi and _KEY.fullmatch(k)}
+        if not keys:
+            return text
+        alt = "|".join(re.escape(k) for k in sorted(keys, key=len, reverse=True))
+        return re.sub(rf"(?<![\w-])({alt})(?![\w-])", lambda mm: keys[mm.group(1)], text)
 
     # -- charts --------------------------------------------------------------------------
 
@@ -704,6 +894,7 @@ class Builder:
 
 _ID = re.compile(r"\b[A-Z]{1,4}-\d{1,4}\b")
 _WORD = re.compile(r"\b[A-Za-z_]\w*\b")
+_KEY = re.compile(r"[a-z]{1,3}\d{1,3}")     # drafter keys code swaps for ids in score texts: c1, c12, cn3
 
 
 def inputs_of(c: m.Conclusion, name: str) -> list[str]:
@@ -725,6 +916,51 @@ def inputs_of(c: m.Conclusion, name: str) -> list[str]:
 
 def _count(n: int) -> str:
     return _NUMBER_WORDS.get(n, str(n))
+
+
+_CURRENCY_UNITS = {"EUR", "USD", "GBP", "CHF", "JPY"}
+_CUR_MARK = re.compile(r"€|\$|£|¥|\b(?:EUR|USD|GBP|CHF|JPY)\b")
+
+
+def display_currency(c: m.Conclusion, comp: m.Computation, verified: dict[str, m.DataItem]) -> tuple[str, str] | None:
+    """(shown, expected) when a display names one currency and every amount it reads is in another. Seen live
+    (B-fix-yield run 1): GE HealthCare's NOPAT and TICAP shown in € although every input was a USD row, and the
+    judges rejected the claim for it."""
+    toks = scan_numbers(vtext.normalize(comp.display), include_labels=True)
+    if not toks or toks[0].pct or not toks[0].currency:
+        return None
+    units = {verified[i].value.unit for i in inputs_of(c, comp.name)
+             if i in verified and verified[i].value is not None and verified[i].value.unit in _CURRENCY_UNITS}
+    if len(units) != 1 or toks[0].currency in units:
+        return None
+    return toks[0].currency, units.pop()
+
+
+def recurrency(display: str, cur: str) -> str:
+    """The display with its currency marker swapped: "€2,441.1 million" in USD is "USD 2,441.1 million"."""
+    mm = _CUR_MARK.search(display)
+    if mm is None:
+        return display
+    mark = cur if mm.group(0).isalpha() else ("€" if cur == "EUR" else f"{cur} ")
+    return re.sub(r"\s{2,}", " ", display[:mm.start()] + mark + display[mm.end():]).strip()
+
+
+def fix_currencies(c: m.Conclusion, verified: dict[str, m.DataItem]) -> tuple[m.Conclusion, list[str]]:
+    """Code writes each computed amount in the currency of the rows it reads, in the display and in the text.
+    Only the marker changes, never the number, so every check sees the same value."""
+    text, comps, notes = c.text, [], []
+    for comp in c.computations:
+        found = display_currency(c, comp, verified)
+        if found is None:
+            comps.append(comp)
+            continue
+        new = recurrency(comp.display, found[1])
+        text = text.replace(comp.display, new)
+        notes.append(f"{comp.name} display {comp.display} rewritten as {new} (its inputs are {found[1]} rows)")
+        comps.append(comp.model_copy(update={"display": new}))
+    if not notes:
+        return c, []
+    return c.model_copy(update={"text": text, "computations": comps}), notes
 
 
 async def _no_draft() -> None:

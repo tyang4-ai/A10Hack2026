@@ -3,7 +3,9 @@
 The drafter sees verified data items (id, statement, value, unit, scale, period, source tier, and the
 expr_value code computes for the id, so it never has to guess a sign or a scale) and the rubric entries
 of the criteria it drafts. For a multi-year metric it computes every year the data allows and scores on
-those: a short series lowers the confidence (code lowers it too), it is not a reason to refuse. It cites
+those: a short series lowers the confidence (code lowers it too), it is not a reason to refuse. Each
+conclusion makes one small claim (at most two sentences and three numbers), so a criterion rests on several
+conclusions and one wrong number costs only its own claim (B-fix-yield, after G5b). It cites
 data ids that already exist, and labels its own
 conclusions with throwaway keys ("c1") so scores and charts can point at them. Code then assigns the
 C, E and G ids, evaluates every computation, builds the chart points from the refs and drops any ref
@@ -28,16 +30,21 @@ MAX_TOKENS = 12000   # a ROTIC series over nine years and two peers is a long an
 SYSTEM = """You are the drafter in a research harness that screens a public company under the BOFFIN business-quality framework. You write conclusions, one score per criterion and chart specs from verified data items only. Code checks every number you write, and three independent verifiers check every claim against the data you cite.
 
 Rules for conclusions:
+- One claim per conclusion: its text has at most two sentences and at most three numbers (fiscal-year labels, dates and counts spelled out in words do not count). Write several small conclusions instead of one long one, one for each figure or comparison that matters, typically two to six per criterion, at most eight. Each conclusion has its own data_ids and its own computations and is checked on its own, so one wrong number costs only that claim, not the whole criterion. The limit is on the text only: a conclusion may hold as many computations as it needs. An expr can only name data ids and computations of its own conclusion, so a conclusion whose result builds on other results (a coverage ratio of two totals, a mean of yearly values) repeats every computation it needs in itself. Never type a number another conclusion computed: code drops a computation that types one.
 - Cite data items by their id (D-###) in data_ids. Cite only ids from <data>. Never invent an id.
 - Every number in a conclusion's text must be either a cited item's value exactly as listed in its value field (you may restate it with a scale word, for example "€1.2 billion" for 1,150 EUR million, rounded half up) or the display of one of the conclusion's own computations. Other numbers that appear inside a statement do not count. Spell out small counts in words ("three years", "two peers"). Fiscal-year labels such as FY2025 are fine.
-- Any sum, difference, ratio, share, growth rate or percentage you want to state must be declared as a computation, and the text must use its display. A number you worked out in your head and did not declare fails the check, even when it is right. Never write formulas in the text (no "NOPAT = EBIT x (1 - tax rate)", no "/ 2"): the constants in them are numbers too and fail the check. Describe the method in words ("EBIT less tax at the year's effective rate") and keep the arithmetic in expr. Keep each conclusion short: the key inputs, the method in words and the results. Do not restate every input value, since the computations already show which ids they read.
+- Any sum, difference, ratio, share, growth rate or percentage you want to state must be declared as a computation, and the text must use its display. A number you worked out in your head and did not declare fails the check, even when it is right. Never write formulas in the text (no "NOPAT = EBIT x (1 - tax rate)", no "/ 2"): the constants in them are numbers too and fail the check. Describe the method in words ("EBIT less tax at the year's effective rate") and keep the arithmetic in expr. State the result and at most two key inputs. Do not restate every input value, since the computations already show which ids they read.
+- A growth rate or ratio you compute from rounded figures can differ in the last digit from the rate the source prints next to them, and the verifiers read the printed one. When code tells you a printed rate differs from your display, leave the computed rate out of the text.
 - Say only what the cited data states or what your computations show. No judgment words the data does not state ("conservative", "strong", "leading"). Keep the source's hedges and qualifiers.
 - A computation has a snake_case name, an expr and a display. expr uses only + - * / parentheses, plain numbers, data ids and the names of earlier computations in the same conclusion. In an expr a data id stands for its expr_value from <data>, exactly: the number times its scale (1,150 EUR million is 1150000000), a percentage as a fraction (21% is 0.21), and the sign as reported. Never multiply a data id by its scale again. Check the sign of expr_value before you use it: expenses, taxes and deductions are often reported as negative numbers, and the same line can carry different signs in different sources. display is how the result appears in the text, rounded half up: a fraction shown as a percentage ("24.2%"), an amount with its scale word ("€1,234.5 million"), or a plain ratio ("2.5"). Pick enough decimals that a result that is not zero does not show as 0.0. Use the display string in the text exactly.
 - Never type a number from <data> into an expr: use its id. The only plain numbers allowed in an expr are small whole constants (2 to average two values, 5 for five years, 100). Code drops a computation that types any other number, including a rate you assume, so every input traces to a source.
 - Write each amount in its own row's currency ("USD 2,763 million" for a USD row, "€3,154 million" for a EUR row). A ratio such as ROTIC has no currency, so companies that report in different currencies can be compared on it.
 - A conclusion's text may use only its own data and its own computations, never another conclusion's results. Compare results across conclusions in a score's text instead: a score may use the displays of every conclusion it cites.
-- Write at most three conclusions per criterion. Each claim costs three independent checks, so put related figures in one conclusion.
-- key is your own short label for a conclusion (c1, c2, ...). It is not an id. Scores and charts point to conclusions by key.
+- key is your own short label for a conclusion (c1, c2, ...). It is not an id. Scores and charts point to conclusions by key. In a score's text, name the conclusion a sentence rests on by its key in brackets, for example (c2): code replaces the key with the conclusion's id.
+
+Small claims (made-up ids and numbers):
+- Wrong: one conclusion "Revenue rose from €1,710 million in FY2021 to €2,412 million in FY2025, up 41.1%. Segment A grew 7.5% and segment B fell 1.6%. Management expects growth of 4.0% next year." Four sentences and six numbers: one doubtful number fails all of it.
+- Right: c1 "Revenue rose from €1,710 million in FY2021 to €2,412 million in FY2025, an increase of 41.1%." (with the growth computation), c2 "Segment A revenue grew 7.5% in FY2025." (with its own computation), c3 "Segment B revenue fell 1.6% in FY2025.", c4 "Management expects growth of 4.0% next year." The score cites c1 to c4.
 
 Worked example (made-up ids and numbers). Data: D-041 maturities due FY2026, value "600", expr_value 600000000. D-042 maturities due FY2027, value "200", expr_value 200000000. D-043 income tax expenses, value "(90)", expr_value -90000000. D-044 income before income taxes, value "450", expr_value 450000000.
 - Wrong: text "Maturities of €600 million and €200 million total €800 million, and the tax rate was 20%." with no computations. "€800 million" and "20%" trace to nothing, so the conclusion fails.
@@ -47,13 +54,14 @@ Rules for metrics over several years (a criterion whose label or hint asks for y
 - <inputs_by_year>, when present, is code's index of the data ids that hold each NOPAT and TICAP line item, one line per company and fiscal year (a balance belongs to the year it closes). Use it to see which years can be computed and to pair the right year-end balances, and read each row's statement in <data> before you use it. Its reported_negative list names the ids whose expr_value is negative: mind their sign in every expr (NOPAT adds acquired-intangible amortization back, so a negative amortization id is subtracted).
 - Compute the metric for every fiscal year where its inputs exist in <data>, one declared computation per year, with the definitions in <metrics> (ROTIC = NOPAT / average TICAP, the average of the TICAP at the start and at the end of the fiscal year). The start of fiscal year N is the end of fiscal year N-1, so only average two year-end balances that are one year apart.
 - When a component of a definition has no data item (for example no non-interest-bearing current liabilities, or no normalized tax rate), compute the closest proxy from the components you have and say in the text what was left out or replaced (for example the year's effective tax rate in place of a normalized rate). When the start-of-year balance is missing, the year-end TICAP may stand in for the average, and the text says so. Before you call an input missing, look for it in <data> under other names (for example amortization from purchase price allocation (PPA) adjustments is acquired-intangible amortization). Use the same method for every year and every company you compare. Where the method has to differ (a component one company reports and another does not), say so in the text, and never write that the methods are the same when they are not.
-- Keep one company's whole series in one conclusion (every yearly computation and the summary), so the summary can use the yearly computations by name.
-- Then declare one summary computation over the yearly values (their mean, or the one year's value when only one year can be computed), and point rule_input at it. Score against the rubric bar on that summary, whatever it shows. Say in the text which fiscal years were used and how many, in words.
+- An expr can only name computations of its own conclusion, so the conclusion that holds a series summary holds every yearly computation of that company's series too. Its text still makes one small claim: the summary, the fiscal years it covers (how many, in words) and the method in words, for example "ROTIC averaged 10.4% over three fiscal years, FY2024 to FY2026, as NOPAT over average TICAP. It uses the year's effective tax rate in place of a normalized rate." To state a single year's value, write another small conclusion for that year with its own computations repeated.
+- Then declare one summary computation over the yearly values (their mean, or the one year's value when only one year can be computed), and point rule_input at it. Score against the rubric bar on that summary, whatever it shows.
 - Never return a null score only because the series is shorter than the years the criterion asks for. Fewer years means low confidence, not N/A: code lowers the confidence and the certainty for a short series. Return null only when not even one fiscal year of the metric can be computed from <data>.
 - For a criterion that compares the company with peers (ROTIC vs peers): compute the metric for the company and for each peer for the latest fiscal year they have in common (or the closest years, saying that the fiscal year ends differ), each from its own data ids and the same way for all, as declared computations. Then compare those computed values in the score's text, and cite the company's and the peers' conclusions in its conclusion_keys.
 
-Rules for scores (one per criterion in <criteria>):
+Rules for scores (one per criterion in <criteria>, always, even when you write no conclusion for it):
 - score is -1, 0 or 1 under the rubric anchors, or null with na_reason when not even a proxy computed from the data can support a score. Do not guess.
+- A score rests on its conclusions together, so cite every conclusion it uses in conclusion_keys. A conclusion that fails verification is dropped and the score stands on the ones that pass, so do not let a score hang on a single long claim.
 - A threshold criterion with a numeric bar needs rule_input "<conclusion key>:<computation name>": the computation code compares with the bar. Code recomputes the score from it.
 - confidence is data coverage, not a feeling: high when the data covers what the criterion asks, medium when parts are missing, low when much is missing (for example fewer than the ten years a 10-year criterion asks for, or a proxy that leaves out a component).
 - The text says the score and why, using only numbers that trace to the cited conclusions' data or computations, the rubric bars, or the scale (-1, 0, +1).
@@ -128,16 +136,39 @@ REVISE = ("Code checked your previous draft (in <previous_draft>) the same way t
           "problems listed in <code_check>, one JSON object per line. Call draft_report again to fix every problem "
           "(declare a computation for each derived number and use its display in the text, use the value code "
           "computed wherever a display was wrong, cite data ids instead of typed numbers, take formulas out of the "
-          "text). Where a text, a comparison or a score rested on a wrong value, rewrite it so it fits the value "
-          "code computed. Send only what you change: each changed conclusion in full under its old key, each "
-          "changed score, each changed chart under its old title. Everything you leave out stays as it was. To "
-          "drop a conclusion, send its key with an empty text. Add no new claims.")
+          "text, send a score for every criterion). Where a text, a comparison or a score rested on a wrong value, "
+          "rewrite it so it fits the value code computed. Send only what you change: each changed conclusion in "
+          "full under its old key, each changed score, each changed chart under its old title. Everything you "
+          "leave out stays as it was. To drop a conclusion, send its key with an empty text. Add no new claims.")
+
+REVISE_ADVICE = ("<code_advice> lists, one JSON object per line, conclusions that make more than one claim and "
+                 "computed rates that differ from a rate the source prints. Split each long conclusion into small "
+                 "ones: send its first claim under the old key and every other claim under a new key, each with the "
+                 "data_ids and the whole chain of computations its numbers need (repeat a computation in every "
+                 "conclusion that uses it, since an expr can only name computations of its own conclusion, and a "
+                 "typed number is dropped). Keep a score's rule_input pointing at a conclusion that holds the whole "
+                 "chain. Send each score that cites the old key with the new keys added. Leave a computed rate the "
+                 "source prints differently out of the text. Splitting adds no new claim: every part was already in "
+                 "the old text.")
 
 
-def revise_prompt(prompt: str, previous: dict, problems: list[dict]) -> str:
-    """The original prompt, the drafter's previous draft and code's pre-check findings, for one revision."""
-    return (f"{prompt}\n\n<previous_draft>\n{json.dumps(previous, ensure_ascii=False)}\n</previous_draft>\n\n"
-            f"<code_check>\n{_lines(problems)}\n</code_check>\n\n{REVISE}")
+REVISE_ADVICE_ONLY = ("Code checked your previous draft (in <previous_draft>) and found no check problems, but "
+                      "some conclusions need to be smaller. Call draft_report again. Send only what you change: each "
+                      "changed conclusion in full under its old key, each new conclusion under a new key, each "
+                      "changed score. Everything you leave out stays as it was.")
+
+
+def revise_prompt(prompt: str, previous: dict, problems: list[dict], advice: list[dict] | None = None) -> str:
+    """The original prompt, the drafter's previous draft and code's pre-check findings, for one revision.
+    advice: code's one-claim and printed-rate notes, kept apart from the check findings."""
+    parts = [prompt, f"<previous_draft>\n{json.dumps(previous, ensure_ascii=False)}\n</previous_draft>"]
+    if problems:
+        parts.append(f"<code_check>\n{_lines(problems)}\n</code_check>")
+    if advice:
+        parts.append(f"<code_advice>\n{_lines(advice)}\n</code_advice>")
+    head = REVISE if problems else REVISE_ADVICE_ONLY
+    parts.append(head + (f" {REVISE_ADVICE}" if advice else ""))
+    return "\n\n".join(parts)
 
 
 def draft_prompt(company: dict, criteria: list[dict], rows: list[dict], metrics: dict | None = None,

@@ -1,8 +1,16 @@
 """Stage repair: weaken failed items toward the evidence, at most two attempts, then holes and finalize_report.
 
-Actions: recompute (code redoes a computation or a threshold score), downgrade (drop refs that failed, or a
-repairer rewrite toward the evidence), delete (drop a claim) and not_determinable (a score becomes N/A).
-Code makes every repair it can by itself, and the repairer agent only rewrites wording.
+Actions: recompute (code redoes a computation or a threshold score), downgrade (drop refs that failed, remove
+a sentence, or a repairer rewrite toward the evidence), delete (drop a claim) and not_determinable (a score
+becomes N/A). Code makes every repair it can by itself, and the repairer agent only rewrites wording.
+
+Repair by removal (B-fix-yield, after G5b): when a conclusion fails numbers_traced or the judges name an
+unsupported span, code's first repair removes the sentences holding that number or span, plus the
+computations and citations no longer used (a computation shown in a rejected sentence, and anything computed
+from it, is not kept either). Only when that leaves nothing does the repairer agent get the claim, within
+the same two attempts. A score some of whose conclusions failed stands on the ones that passed: its score
+stays (a threshold score still has to match code on its rule input, which must itself have passed), and its
+text loses the sentences resting on what was dropped.
 
 Models can only weaken claims. Code refuses a model repair that strengthens one: a stronger judgment score,
 a higher data coverage, a new citation or an unchanged text. Code itself is not bound that way for threshold
@@ -38,8 +46,8 @@ from ..gateway import Blocked
 from ..ids import now_iso
 from ..runtime import StopRequested
 from ..verify import checks, compute, text as vtext
-from ..verify.numbers import WORD_FACTOR, half_up, scan_numbers
-from .draft import point_value
+from ..verify.numbers import WORD_FACTOR, NumToken, half_up, period_mentions, scan_numbers, to_base
+from .draft import point_value, sentence_spans
 from .finalize import PASSING, CertaintyBook, emit_verified, finalize_report, label
 from .verify import claim_text, claim_view, evidence_view, rubric_view, run_checks
 
@@ -126,10 +134,15 @@ def replace_number(text: str, old: str, new: str) -> str:
 
 
 def recompute_conclusion(c: m.Conclusion, items: dict) -> Proposal | None:
-    """Redo every computation by code. A wrong display is rewritten in the text as well."""
+    """Redo every computation by code. A wrong display is rewritten in the text as well, unless another
+    computation shares that display: then code can't tell whose mention is whose (G5b C-001 wrote both FY2025
+    and FY2026 ROTIC as 10.7%, and swapping one turned the other into a wrong number), so the sentences holding
+    it are removed instead."""
     env = {i: checks.base_value(items[i]) for i in c.data_ids
            if i in items and items[i].kind == "data" and items[i].value is not None}
     text, comps, changes = c.text, [], []
+    new_of = _new_displays(c, dict(env))
+    ambiguous: list[str] = []
     for comp in c.computations:
         try:
             val = compute.safe_eval(comp.expr, env)
@@ -143,7 +156,10 @@ def recompute_conclusion(c: m.Conclusion, items: dict) -> Proposal | None:
             if display is None:
                 changes.append(f"dropped {comp.name} (its sign changed)")
                 continue
-            text = replace_number(text, comp.display, display)
+            if len(new_of.get(comp.display, set())) > 1:
+                ambiguous.append(comp.display)
+            else:
+                text = replace_number(text, comp.display, display)
             changes.append(f"{comp.name} display {comp.display} corrected to {display}")
         result = float(val)
         if abs(Decimal(repr(result)) - Decimal(repr(comp.result))) > abs(val) * Decimal("1e-9") + Decimal("1e-12"):
@@ -151,8 +167,255 @@ def recompute_conclusion(c: m.Conclusion, items: dict) -> Proposal | None:
         comps.append(m.Computation(name=comp.name, expr=comp.expr, result=result, display=display))
     if not changes:
         return None
+    if ambiguous:
+        kept, removed = drop_sentences(text, lambda s: any(_holds_display(s, d) for d in ambiguous))
+        if kept and removed:
+            text = kept
+            changes.append(f"removed the sentence(s) holding {_and(list(dict.fromkeys(ambiguous)))}, which more "
+                           f"than one computation displayed")
     new = c.model_copy(update={"text": text, "computations": comps})
     return Proposal("recompute", "Recomputed by code: " + "; ".join(changes) + ".", new)
+
+
+def _new_displays(c: m.Conclusion, env: dict[str, Decimal]) -> dict[str, set[str]]:
+    """Old display -> the displays code gives the computations that wrote it. More than one means the text's
+    mentions of that display can't be told apart."""
+    out: dict[str, set[str]] = {}
+    for comp in c.computations:
+        try:
+            val = compute.safe_eval(comp.expr, env)
+        except compute.ComputeError:
+            out.setdefault(comp.display, set()).add("")
+            continue
+        env[comp.name] = val
+        same = checks.display_of(val, comp.display)[0]
+        out.setdefault(comp.display, set()).add(comp.display if same else redisplay(val, comp.display) or "")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Repair by removal (code): drop the sentence that holds an unsupported number or span
+# ---------------------------------------------------------------------------
+
+REMOVED_NOTE = "Code removed the unsupported sentence"
+_QUOTED = re.compile(r"[\"“‘']([^\"”’']{3,}?)[\"”’']")
+_CONTENT = re.compile(r"[a-z]{4,}")
+_STOPWORDS = set("this that with from were was have has been their than which while into over under also only "
+                 "about after before fiscal year years million billion compared total".split())
+
+
+def _toks(s: str) -> list[NumToken]:
+    return scan_numbers(vtext.normalize(s))
+
+
+def _key(t: NumToken) -> tuple:
+    return abs(t.number), t.places, t.pct, t.word
+
+
+def _display_key(display: str) -> tuple | None:
+    toks = scan_numbers(vtext.normalize(display), include_labels=True)
+    return _key(toks[0]) if toks else None
+
+
+def _holds_display(sentence: str, display: str) -> bool:
+    k = _display_key(display)
+    return k is not None and any(_key(t) == k for t in _toks(sentence))
+
+
+def drop_sentences(text: str, bad) -> tuple[str, list[str]]:
+    """The text without the sentences for which bad(sentence) is true, and the removed sentences."""
+    spans = sentence_spans(text)
+    kept = [text[s:e].strip() for s, e in spans if not bad(text[s:e])]
+    removed = [text[s:e].strip() for s, e in spans if bad(text[s:e])]
+    return " ".join(kept), removed
+
+
+def _number_span(span: str) -> NumToken | None:
+    """A span that is one number and nothing else ("5.6%", "€2,445 million")."""
+    toks = scan_numbers(vtext.normalize(span), include_labels=True)
+    if len(toks) == 1 and toks[0].raw.strip() == vtext.normalize(span).strip():
+        return toks[0]
+    return None
+
+
+def detail_spans(detail: str, text: str) -> list[str]:
+    """Spans a judge named in its reason when it listed none: quoted phrases and numbers that are in the claim
+    text ("Varian growth is 5.5%, not 5.6% as stated" names 5.6%). Bare small counts are not spans."""
+    dissent = detail.split("said supported.", 1)[-1]
+    out = [q for q in _QUOTED.findall(dissent) if q in text and (" " in q.strip() or re.search(r"\d", q))]
+    in_text = {_key(t) for t in _toks(text)}
+    for t in _toks(dissent):
+        small = t.places == 0 and not t.pct and t.word is None and t.currency is None and abs(t.number) < 10
+        if _key(t) in in_text and not small:
+            out.append(t.raw)
+    return list(dict.fromkeys(out))
+
+
+def failing_spans(v: m.Verification, text: str) -> tuple[list[str], list[str]]:
+    """(judged, untraced): spans the judges named (or quoted in their reason), and the numbers numbers_traced
+    could not trace."""
+    judged: list[str] = []
+    untraced: list[str] = []
+    for r in v.checks:
+        if r.result != "fail":
+            continue
+        if r.check == "numbers_traced":
+            untraced += [s for s in r.unsupported_spans if s]
+        elif r.check == "support":
+            spans = [s for s in r.unsupported_spans if s and s in text]
+            judged += spans or detail_spans(r.detail, text)
+    return list(dict.fromkeys(judged)), list(dict.fromkeys(untraced))
+
+
+def _span_hits(text: str, spans: list[tuple[int, int]], span: str) -> set[int]:
+    """Indices of the sentences a span touches. A number span matches whole numbers only ("5.6%" is not in
+    "15.6%")."""
+    num = _number_span(span)
+    if num is not None:
+        return {i for i, (s, e) in enumerate(spans) if any(_key(t) == _key(num) for t in _toks(text[s:e]))}
+    pre = r"(?<![\w.,])" if span[:1].isalnum() else ""
+    post = r"(?!\w)" if span[-1:].isalnum() else ""
+    hits: set[int] = set()
+    for mm in re.finditer(pre + re.escape(span) + post, text):
+        hits |= {i for i, (s, e) in enumerate(spans) if s < mm.end() and mm.start() < e}
+    return hits
+
+
+def _deps(comp: m.Computation, names: set[str]) -> set[str]:
+    return set(re.findall(r"\b[A-Za-z_]\w*\b", _ID.sub(" ", comp.expr))) & names
+
+
+def _protected(cid: str, items: dict) -> set[str]:
+    """Computations of a conclusion that a score's rule input or a chart point names."""
+    out: set[str] = set()
+    for it in items.values():
+        if it.kind == "extrapolation":
+            refs = [it.rule.input or ""]
+        elif it.kind == "chart":
+            refs = [p.ref for s in it.series for p in s.points]
+        else:
+            continue
+        out |= {r.partition(":")[2] for r in refs if r.partition(":")[0] == cid and r.partition(":")[2]}
+    return out
+
+
+def _shows_value(t: NumToken, v: m.Value) -> bool:
+    """t shows v at t's precision and scale, sign aside (a link for pruning citations, not a check)."""
+    if (v.unit == "%") != t.pct:
+        return False
+    n = Decimal(repr(v.number)) if isinstance(v.number, float) else Decimal(v.number)
+    x = abs(to_base(n, v.scale)) / WORD_FACTOR[t.word] if t.word and not t.pct else abs(n)
+    return Decimal(half_up(x, t.places)) == abs(t.number)
+
+
+def _content(s: str) -> set[str]:
+    return {w for w in _CONTENT.findall(s.lower()) if w not in _STOPWORDS}
+
+
+def _linked(d: m.DataItem, sents: list[str]) -> set[int]:
+    """Sentences a data item backs: those showing its value, else those sharing the most content words with its
+    statement. Empty when nothing links it, and then it is kept."""
+    if d.value is not None:
+        hit = {i for i, s in enumerate(sents) if any(_shows_value(t, d.value) for t in _toks(s))}
+        if hit:
+            return hit
+    words = _content(d.statement)
+    overlap = [len(words & _content(s)) for s in sents]
+    best = max(overlap, default=0)
+    return {i for i, n in enumerate(overlap) if n == best} if best else set()
+
+
+def _clip(s: str, n: int = 160) -> str:
+    return s if len(s) <= n else s[: n - 3] + "..."
+
+
+def remove_unsupported(c: m.Conclusion, items: dict) -> Proposal | None:
+    """Code's first repair for a wording failure (B-fix-yield): remove the sentences that hold a number
+    numbers_traced could not trace or a span the judges named, then the computations and citations no longer
+    used. A computation shown in a sentence the judges rejected is not trusted either, nor is anything computed
+    from it, so the sentences showing those go too. Only weakens: nothing is added or reworded. None when it
+    does not apply (no span found, or nothing would be left of the text), and the repairer agent gets it."""
+    judged, untraced = failing_spans(c.verification, c.text)
+    if not judged and not untraced:
+        return None
+    spans = sentence_spans(c.text)
+    if len(spans) < 2:
+        return None
+    sents = [c.text[s:e] for s, e in spans]
+    judged_idx: set[int] = set()
+    for span in judged:
+        judged_idx |= _span_hits(c.text, spans, span)
+    bad = set(judged_idx)
+    for span in untraced:
+        bad |= _span_hits(c.text, spans, span)
+    if not bad:
+        return None
+    names = {x.name for x in c.computations}
+    shown_in = {x.name: {i for i, s in enumerate(sents) if _holds_display(s, x.display)} for x in c.computations}
+    tainted = {n for n, idx in shown_in.items() if idx & judged_idx}
+    for x in c.computations:                                      # in order, so taint flows to later ones
+        if _deps(x, names) & tainted:
+            tainted.add(x.name)
+    for n in tainted:
+        bad |= shown_in[n]
+    if len(bad) >= len(sents):
+        return None
+    left = [i for i in range(len(sents)) if i not in bad]
+    protected = _protected(c.id, items)
+    keep = {x.name for x in c.computations if x.name not in tainted
+            and (shown_in[x.name] & set(left) or not shown_in[x.name] or x.name in protected)}
+    for x in reversed(c.computations):                            # what a kept computation reads stays
+        if x.name in keep:
+            keep |= _deps(x, names)
+    comps = [x for x in c.computations if x.name in keep]
+    read = {i for x in comps for i in compute.ids_in(x.expr)}
+    data_ids = []
+    for did in c.data_ids:
+        d = items.get(did)
+        linked = _linked(d, sents) if d is not None and d.kind == "data" else set()
+        if did in read or not linked or linked & set(left):
+            data_ids.append(did)
+    removed = [sents[i].strip() for i in sorted(bad)]
+    note = f"{REMOVED_NOTE}: " + " / ".join(f'"{_clip(s)}"' for s in removed) + "."
+    dropped = [x.name for x in c.computations if x.name not in keep] + [i for i in c.data_ids if i not in data_ids]
+    if dropped:
+        note += f" Dropped {_and(dropped)}, no longer used."
+    if not data_ids:
+        return Proposal("delete", note + " Nothing citable is left, so the claim is dropped.")
+    text = " ".join(sents[i].strip() for i in left)
+    return Proposal("downgrade", note, c.model_copy(update={"text": text, "computations": comps,
+                                                            "data_ids": data_ids}))
+
+
+_CID = re.compile(r"\bC-\d{3,4}\b")
+
+
+def narrow_score_text(e: m.Extrapolation, items: dict, dropped: set[str] = frozenset()) -> tuple[str, list[str]] | None:
+    """A score's text without the sentences that name a conclusion it no longer cites or hold a number that no
+    longer traces. (text, removed sentences), or None when nothing would be left. The score itself is untouched."""
+    text, removed = drop_sentences(e.text, lambda s: bool(set(_CID.findall(s)) & dropped))
+    for _ in range(2):
+        if not text:
+            return None
+        found = checks.check_extrapolation(e.model_copy(update={"text": text}), items, RUBRIC)
+        r = next((x for x in found if x.check == "numbers_traced"), None)
+        if r is None or r.result != "fail" or not r.unsupported_spans:
+            break
+        spans = list(r.unsupported_spans)
+        text, more = drop_sentences(text, lambda s: any(_holds_raw(s, x) for x in spans))
+        if not more:
+            break
+        removed += more
+    return (text, removed) if text else None
+
+
+def _holds_raw(sentence: str, span: str) -> bool:
+    num = _number_span(span)
+    return any(_key(t) == _key(num) for t in _toks(sentence)) if num is not None else span in sentence
+
+
+def _plain_score_text(e: m.Extrapolation, score: int | None) -> str:
+    return f"{label(e.criterion)} scores {_signed(score)} under the framework."
 
 
 # ---------------------------------------------------------------------------
@@ -315,6 +578,43 @@ def recompute_threshold(e: m.Extrapolation, items: dict) -> Proposal:
                                  f"{_signed(e.score)} became {_signed(cs.score)}.", new)
 
 
+def rest_on_passing(e: m.Extrapolation, items: dict, good: list[str], bad: list[str]) -> Proposal:
+    """A score some of whose conclusions failed stands on the ones that passed (B-fix-yield). The score itself
+    stays the drafter's (a threshold score is still code's, checked again on its rule input), so it never moves
+    away from 0. Its text loses the sentences that rest on a dropped conclusion or hold a number that no longer
+    traces. With nothing left, code's own sentence (threshold) or a plain one (judgment) is checked instead."""
+    new = e.model_copy(update={"conclusion_ids": good})
+    note = f"Dropped {_and(bad)}, which did not pass. The score now rests on {_and(good)}."
+    if e.score is None:
+        return Proposal("downgrade", f"Dropped {_and(bad)}, which did not pass.", new)
+    narrowed = narrow_score_text(new, items, set(bad))
+    if narrowed is not None:
+        text, removed = narrowed
+        if removed:
+            note += f" {REMOVED_NOTE}: " + " / ".join(f'"{_clip(s)}"' for s in removed) + "."
+        return Proposal("downgrade", note, new.model_copy(update={"text": text}))
+    cs = code_score(new, items)
+    text = cs.text if cs is not None else _plain_score_text(e, e.score)
+    return Proposal("downgrade", note + " No sentence of the old text still traces, so code's own sentence is "
+                                        "checked instead.", new.model_copy(update={"text": text}))
+
+
+def narrow_score(e: m.Extrapolation, items: dict) -> Proposal | None:
+    """A score whose text holds a number that does not trace: remove the sentence holding it. For a numeric
+    threshold score with nothing left, code's own sentence. None sends a judgment score to the repairer."""
+    narrowed = narrow_score_text(e, items)
+    if narrowed is not None and narrowed[1]:
+        text, removed = narrowed
+        note = f"{REMOVED_NOTE}: " + " / ".join(f'"{_clip(s)}"' for s in removed) + "."
+        return Proposal("downgrade", note, e.model_copy(update={"text": text}))
+    cs = code_score(e, items)
+    if cs is not None and cs.score == e.score and cs.text != e.text:
+        return Proposal("recompute", "No sentence of the text traces without the untraced number, so code's own "
+                                     "sentence for the score is checked instead.",
+                        e.model_copy(update={"text": cs.text}))
+    return None
+
+
 def repair_extrapolation_by_code(e: m.Extrapolation, items: dict) -> Proposal | None:
     failing = _failing(e.verification)
     if "threshold_rule" in failing:
@@ -333,8 +633,11 @@ def repair_extrapolation_by_code(e: m.Extrapolation, items: dict) -> Proposal | 
             if e.score is not None and e.rule.input and e.rule.input.split(":")[0] in bad:
                 return not_determinable(e, items, f"The threshold input {e.rule.input} did not pass verification.",
                                         f"Code: the rule input's conclusion failed, so the score is not determinable.")
-            new = e.model_copy(update={"conclusion_ids": good})
-            return Proposal("downgrade", f"Dropped {_and(bad)}, which did not pass.", new)
+            return rest_on_passing(e, items, good, bad)
+    if "numbers_traced" in failing and e.score is not None:
+        p = narrow_score(e, items)
+        if p is not None:
+            return p
     if e.score is None:
         plain = f"{label(e.criterion)} is not scored."
         if e.text != plain:
@@ -380,12 +683,79 @@ def rebuild_chart(g: m.Chart, items: dict) -> Proposal:
 # ---------------------------------------------------------------------------
 
 
-def _apply_conclusion(c: m.Conclusion, out: repairer.RepairOutput) -> Proposal:
+def _same_number(t: NumToken, o: NumToken) -> bool:
+    """t restates o at t's own precision and scale word ("€1.2 billion" restates "€1,150 million")."""
+    if t.pct != o.pct:
+        return False
+    x = abs(o.value) / WORD_FACTOR[t.word] if t.word else abs(o.value)
+    return Decimal(half_up(x, t.places)) == abs(t.number)
+
+
+def added_numbers(old: str, new: str, c: m.Conclusion | None = None, items: dict | None = None) -> list[str]:
+    """Numbers and years in a repaired text that nothing vouches for: not in the old text, not a display of the
+    claim's own computations, not a cited value, and (years) not in a cited item's period or statement. A
+    "corrected" number from outside is a new claim (G5b: the repairer turned 5.6% into 5.5% and 2029 into 2031
+    and back), so it is refused. Putting the claim's own checked display in place of a wrong number is not."""
+    olds = _toks(old)
+    shown = [t for x in (c.computations if c else []) for t in scan_numbers(vtext.normalize(x.display),
+                                                                             include_labels=True)[:1]]
+    cited = [items[i] for i in (c.data_ids if c else []) if items and i in items and items[i].kind == "data"]
+    values = [d.value for d in cited if d.value is not None]
+    out = [t.raw for t in _toks(new) if not any(_same_number(t, o) for o in olds + shown)
+           and not any(_shows_value(t, v) for v in values)]
+    years = {y for y, _, _ in period_mentions(old)}
+    for d in cited:
+        years |= {y for y, _, _ in period_mentions(f"{d.statement} {d.value.period if d.value else ''}")}
+    out += [str(y) for y, _, _ in period_mentions(new) if y not in years]
+    return list(dict.fromkeys(out))
+
+
+def retarget_number(c: m.Conclusion) -> Proposal | None:
+    """Code's fix for a text that states a number its own computation does not give (seen live in B-fix-yield
+    run 2: "a ROTIC of 13.3%" where rotic_fy24 computes 9.3%, the drafter's revision having changed one and not
+    the other). Only when exactly one number is untraced and exactly one final computation (none reads it) has a
+    display of the same kind missing from the text: then that display is the claim's own number, and code puts
+    it in. Anything less certain is left to removal or the repairer."""
+    if "numbers_traced" not in _failing(c.verification):
+        return None
+    _, untraced = failing_spans(c.verification, c.text)
+    if len(untraced) != 1:
+        return None
+    bad = _number_span(untraced[0])
+    names = {x.name for x in c.computations}
+    used = set().union(*(_deps(x, names) for x in c.computations)) if c.computations else set()
+    cands = []
+    for x in c.computations:
+        toks = scan_numbers(vtext.normalize(x.display), include_labels=True)
+        if (x.name in used or not toks or bad is None or toks[0].pct != bad.pct or toks[0].word != bad.word
+                or _holds_display(c.text, x.display)):
+            continue
+        cands.append(x)
+    hits = [t for t in _toks(c.text) if bad is not None and _key(t) == _key(bad)]
+    if len(cands) != 1 or len(hits) != 1:
+        return None
+    x = cands[0]
+    norm = vtext.normalize(c.text)
+    if norm != c.text:
+        return None                                  # offsets would not map back to the original text
+    t = hits[0]
+    text = c.text[:t.start] + x.display + c.text[t.end:]
+    return Proposal("recompute", f"Recomputed by code: the text stated {t.raw}, which no computation or cited value "
+                                 f"gives, where its own computation {x.name} gives {x.display}. Code put "
+                                 f"{x.display} in its place.", c.model_copy(update={"text": text}))
+
+
+def _apply_conclusion(c: m.Conclusion, out: repairer.RepairOutput, items: dict | None = None) -> Proposal:
     if out.action != "downgrade":
         return Proposal("delete", f"Repairer: {out.note.strip()}")
     text = out.text.strip()
     if not text or text == c.text:
         return Proposal("delete", "The repairer gave no weaker text. The claim is dropped.")
+    added = added_numbers(c.text, text, c, items)
+    if added:
+        return Proposal("delete", f"Code refused the repair: it states {_and(added)}, which the claim did not, and "
+                                  f"repair may only remove or soften. The claim is dropped. "
+                                  f"Repairer: {out.note.strip()}")
     keep = [i for i in dict.fromkeys(out.keep_ids) if i in c.data_ids] or list(c.data_ids)
     dropped = [i for i in c.data_ids if i not in keep]
     new = c.model_copy(update={"text": text, "data_ids": keep,
@@ -493,7 +863,7 @@ async def agent_repair(ctx: RunContext, item: m.Item) -> Proposal:
     except AgentOutputError:
         return Proposal(giving_up, "The repair agent's output failed validation twice.")
     if item.kind == "conclusion":
-        return _apply_conclusion(item, out)  # type: ignore[arg-type]
+        return _apply_conclusion(item, out, state.items)  # type: ignore[arg-type]
     return _apply_extrapolation(item, out, state.items)  # type: ignore[arg-type]
 
 
@@ -512,6 +882,9 @@ async def propose(ctx: RunContext, item: m.Item) -> Proposal:
             p = recompute_conclusion(item, items)
             if p is not None:
                 return p
+        p = retarget_number(item) or remove_unsupported(item, items)
+        if p is not None:
+            return p
         return await agent_repair(ctx, item)
     if item.kind == "extrapolation":
         p = repair_extrapolation_by_code(item, items)

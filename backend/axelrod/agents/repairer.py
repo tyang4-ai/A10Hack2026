@@ -4,9 +4,10 @@ The repairer sees the claim, the checks that failed (with the unsupported spans)
 the attempt history. It may only weaken: remove or soften the unsupported parts, keep a subset of the
 cited ids, move a judgment score toward 0 or to N/A, lower the data coverage. For a numeric-threshold score
 it also sees <code_score>, the score code recomputed from the rubric bar, and must keep it. Code enforces
-all of that (stages/repair.py): a stronger score, a score that differs from code's, a new citation or an
-unchanged text is refused, and every repair is checked again by code and by fresh judges. Code-only
-repairs (recompute, dropping failed refs) never reach this agent.
+all of that (stages/repair.py): a stronger score, a score that differs from code's, a new citation, a number
+or year the claim did not state, or an unchanged text is refused, and every repair is checked again by code
+and by fresh judges. Code-only repairs (recompute, dropping failed refs, removing the sentence that holds an
+unsupported number or span) never reach this agent: it gets a claim only when code could not weaken it.
 
 With FAKE_MODELS=1 the repairer answers from fake_repair, which deletes the unsupported spans (simulated).
 """
@@ -26,7 +27,8 @@ MAX_TOKENS = 1500
 SYSTEM = """You repair one claim in a research harness after it failed verification. You may only weaken the claim toward its evidence. Never add a fact, a number or a citation that is not already there.
 
 What you may do:
-- downgrade: rewrite the text without the unsupported parts, or soften them to what the evidence states. You may keep only some of the cited ids (keep_ids). For a score you may move it toward 0 (a +1 or -1 may become 0) and lower the confidence, never raise either.
+- downgrade: rewrite the text without the unsupported parts, or soften them to what the evidence states. Prefer removing a whole unsupported sentence or clause to rewording it. You may keep only some of the cited ids (keep_ids). For a score you may move it toward 0 (a +1 or -1 may become 0) and lower the confidence, never raise either.
+- Never replace a number, a year or a name with a different one, even one you see in the evidence. A corrected number is a new claim: remove the part that holds the wrong one instead. Code refuses a repaired conclusion that states a number or a year the claim did not.
 - delete (conclusions): no honest weaker version of the claim is left.
 - not_determinable (scores): the evidence cannot support any score. Give na_reason.
 
