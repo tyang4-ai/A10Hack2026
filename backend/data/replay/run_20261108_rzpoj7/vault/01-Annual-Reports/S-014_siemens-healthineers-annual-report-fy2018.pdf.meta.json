@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-011",
+  "source_id": "S-014",
+  "title": "Siemens Healthineers Annual Report FY2018",
+  "url": "https://corporate.webassets.siemens-healthineers.com/1800000005904947/1be9e3c7fc7c/1800000005904947-ef806566e5ee-Annual-Report-2018.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 122,
+  "sha256": "f9a2a674572acc41ff02fef3442a2ed56d5ce3c12c5a2f9ee8a47554c953e99e",
+  "bytes": 1560206,
+  "fetched_at": "2026-11-08T09:26:17.669Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-014_siemens-healthineers-annual-report-fy2018.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-014_siemens-healthineers-annual-report-fy2018.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0012",
+    "url": "https://corporate.webassets.siemens-healthineers.com/1800000005904947/1be9e3c7fc7c/1800000005904947-ef806566e5ee-Annual-Report-2018.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/1800000005904947/1be9e3c7fc7c/1800000005904947-ef806566e5ee-Annual-Report-2018.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

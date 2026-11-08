@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-005",
+  "source_id": "S-003",
+  "title": "Siemens Healthineers Annual Report FY2023",
+  "url": "https://corporate.webassets.siemens-healthineers.com/f548fca6fac5ebe0/8bda062e9d1e/siemens-healthineers-ir-annual-report-2023.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 139,
+  "sha256": "dba33cab8efca77cb5c9795949fe443679d598dd5189ea6701097095051955ee",
+  "bytes": 2993059,
+  "fetched_at": "2026-11-08T09:26:12.039Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-003_siemens-healthineers-annual-report-fy2023.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-003_siemens-healthineers-annual-report-fy2023.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0006",
+    "url": "https://corporate.webassets.siemens-healthineers.com/f548fca6fac5ebe0/8bda062e9d1e/siemens-healthineers-ir-annual-report-2023.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/f548fca6fac5ebe0/8bda062e9d1e/siemens-healthineers-ir-annual-report-2023.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

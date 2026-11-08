@@ -5,10 +5,27 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, origin/main 69b40fc merged at 1:24 AM). Gordon's 1 AM change: the integrator runs next to us and shares EC2 (it owns `axelrod-web` on port 3000 and the `$default` route, we own the `axelrod` service on 8000 and its env). No scripted rehearsal, no READY FOR INTEGRATION. Cutoff: R2 done and the `DEMO RUN:` line posted by 3:15 AM.
-- **R2 running** on EC2 from 1:26 AM: run_20261108_rzpoj7 (every source approved, budget $10). Nobody else starts runs on EC2 until this line says "R2 done".
+- **R2 done** at 1:29 AM: run_20261108_rzpoj7. EC2 is free for runs again.
+- **Env change at 1:33 AM** (restarts the `axelrod` service only, no deploy): demo values `DEMO_PACING=0.8`, `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`.
 - **Deployed at 1:25 AM:** 4f10702 to EC2, `axelrod` service on port 8000 only. Then env for R2: `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`. `axelrod-web`, port 3000 and the `$default` route are not touched.
-- Next: note the deploy here, deploy, R2 on EC2 (`CACHE_MODELS=record`, `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`), marked "R2 running" here so nobody else starts runs on EC2. Compare it with demo-ok-1, pick, and make the first line `DEMO RUN: <run id> (picked <time>)` with the demo env under it.
-- Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
+- **R2 against demo-ok-1** (same API, same counting, `r2_compare.py` in the scratchpad):
+
+| | demo-ok-1 run_20261108_pin2ve | **R2 run_20261108_rzpoj7** |
+|---|---|---|
+| Code, corpus | v1, 10 sources, live fetches | v2, 16 sources (plan v2 plus the archive), `cache_mode` documents: 16 of 16 fetches from the cache |
+| Items | 374 (348 data, 15 conclusions, 6 scores, 5 charts) | 647 (592 data, 41 conclusions, 6 scores, 8 charts) |
+| Pass or fixed | 345 + 18 of 374 = **97.1%** | 570 + 55 of 647 = **96.6%** |
+| Failed (declared holes) | 11 (13 holes) | 22 (24 holes): 19 data, C-018 and C-019 (tier 3 only), C-026 (judges: year labels reversed) |
+| Scores | rotic_level -1, rotic_vs_peers 0, liquidity -1. secular_growth and leverage failed. Research stage N/A | rotic_level -1, **rotic_vs_peers -1** (below GE HealthCare 24.6% and Philips 16.8%, text and sign agree), secular_growth +1, leverage -1, liquidity -1. Research stage N/A |
+| Coverage | 3 of 6 | **5 of 6** |
+| Rollup | -0.6 | -0.6 |
+| Mean certainty, report / brief | 93 / 75 | 94 / 74 |
+| Brief | 2.8 pages, 24 sentences | 2.5 pages, 18 sentences (3 fixed, none failed) |
+| Cost, time | $1.96, 3.9 min, 197 model calls | $2.84, 3.4 min, 291 model calls (all recorded to `cache/models/`) |
+| Bobby's calls | none (before v2) | plan proceed, extract rework (3 extractors), repair proceed, brief proceed |
+
+  **Picked R2**: the same pass rate on 1.7 times the items, 5 of 6 criteria scored instead of 3, every score's sign agrees with its text, and it shows Bobby, the cache and the archive. demo-ok-1 stays as the backup (tag and replay kept). Exported to `backend/data/replay/run_20261108_rzpoj7` (47.6 MB, text only), tagged `demo-ok-2`.
+  **For the pitch (docs/PLAN.md 1:20 to 2:35):** in R2 the judges rejected no score. All five scorable criteria are scored, and the gaps are 19 data items, two tier-3-only conclusions and C-026 (judges: year labels reversed). So "The judges rejected two scores" should become something like "the judges threw out a conclusion that reversed its years, so it shows as a gap". ROTIC still scores -1 with certainty flagged (54, four of ten years computable).
 
 ## v2 plans
 
@@ -141,3 +158,5 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:24 AM: Gordon's 1 AM change of plan received. origin/main 69b40fc merged. G6b cut, B-rehearse cut (already committed). No READY FOR INTEGRATION: the DEMO RUN line instead.
 - Sun 1:24 AM: B-fix-due done and committed (S-014 maturity fails 8 to 0, S-012 7 to 1, one old false pass now fails). Offline suite 924 passed. Deploy and R2 noted here first.
 - Sun 1:26 AM: deployed 4f10702 (env for R2 set). R2 started: run_20261108_rzpoj7.
+- Sun 1:29 AM: R2 done: run_20261108_rzpoj7, 647 items, 96.6% pass or fixed, 5 of 6 scored, $2.84, 3.4 min.
+- Sun 1:32 AM: picked R2 over demo-ok-1 (table in Now). Exported as a replay, tagged demo-ok-2.

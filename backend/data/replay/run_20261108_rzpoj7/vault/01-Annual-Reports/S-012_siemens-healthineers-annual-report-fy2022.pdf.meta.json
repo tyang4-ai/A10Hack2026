@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-009",
+  "source_id": "S-012",
+  "title": "Siemens Healthineers Annual Report FY2022",
+  "url": "https://corporate.webassets.siemens-healthineers.com/df8210151cd8d47a/08fb7cbfa175/siemens-healthineers-ir-annual-report-2022.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 132,
+  "sha256": "10fb17ac0e34d04292b915e4b164049bb53242a80477dba26686f5bea4da057f",
+  "bytes": 3569873,
+  "fetched_at": "2026-11-08T09:26:15.654Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-012_siemens-healthineers-annual-report-fy2022.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-012_siemens-healthineers-annual-report-fy2022.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0010",
+    "url": "https://corporate.webassets.siemens-healthineers.com/df8210151cd8d47a/08fb7cbfa175/siemens-healthineers-ir-annual-report-2022.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/df8210151cd8d47a/08fb7cbfa175/siemens-healthineers-ir-annual-report-2022.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}

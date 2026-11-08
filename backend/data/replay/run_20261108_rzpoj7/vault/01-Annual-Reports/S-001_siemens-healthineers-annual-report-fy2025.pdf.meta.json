@@ -1,0 +1,32 @@
+{
+  "doc_id": "DOC-001",
+  "source_id": "S-001",
+  "title": "Siemens Healthineers Annual Report FY2025",
+  "url": "https://corporate.webassets.siemens-healthineers.com/a364b935102e7df5/d7fdacda458e/siemens-healthineers-ir-annual-report-2025.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 230,
+  "sha256": "100e91f05170e532b2cc91eb346c2d75e9f9b337600f8dc2626ef8bb6e330a0f",
+  "bytes": 3939164,
+  "fetched_at": "2026-11-08T09:26:09.700Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-001_siemens-healthineers-annual-report-fy2025.pdf",
+    "text": "runs/run_20261108_rzpoj7/siemens-healthineers/01-Annual-Reports/S-001_siemens-healthineers-annual-report-fy2025.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "origin": "archive",
+  "collected_at": "2026-08-01T00:00:00.000Z",
+  "fetch": {
+    "request_id": "REQ-0002",
+    "url": "https://corporate.webassets.siemens-healthineers.com/a364b935102e7df5/d7fdacda458e/siemens-healthineers-ir-annual-report-2025.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/a364b935102e7df5/d7fdacda458e/siemens-healthineers-ir-annual-report-2025.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf",
+    "cache": "hit"
+  }
+}
