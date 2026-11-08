@@ -121,6 +121,8 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
   );
 
   const height = Math.max(3, rows - 9);
+  // Columns drop out from the right as the terminal narrows; the run, status and stage stay longest.
+  const show = { stage: cols >= 66, items: cols >= 78, blocked: cols >= 90, cost: cols >= 100, ago: cols >= 112 };
   const { start, rows: shown } = windowOf(list, sel, height);
 
   return (
@@ -160,15 +162,15 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
                   {r.ticker ? <Text color="gray"> {r.ticker}</Text> : null}
                 </Text>
               )}
-              <Text inverse={at === sel}>
+              <Text inverse={at === sel} wrap="truncate-end">
                 {at === sel ? "▸ " : "  "}
                 {pad(r.run_id, 22)} {pad(r.mode === "live" ? "" : MODE_LABEL, 10)}
-                <Text color={color}>{pad(word, 26)}</Text>
-                {pad(STAGE_LABEL[r.stage], 12)}
-                {pad(`${r.counts.items_pass + r.counts.items_fixed} of ${r.counts.items_total}`, 10)}
-                <Text color={r.counts.gateway_blocked ? "red" : undefined}>{pad(`${r.counts.gateway_blocked} blocked`, 11)}</Text>
-                {pad(usd(r.usage.cost_usd), 9)}
-                <Text color="gray">{ago(r.updated_at)}</Text>
+                <Text color={color}>{pad(cols < 100 && r.status === "awaiting_approval" ? "Needs approval" : word, cols < 100 ? 16 : 26)}</Text>
+                {show.stage && pad(STAGE_LABEL[r.stage], 12)}
+                {show.items && pad(`${r.counts.items_pass + r.counts.items_fixed} of ${r.counts.items_total}`, 10)}
+                {show.blocked && <Text color={r.counts.gateway_blocked ? "red" : undefined}>{pad(`${r.counts.gateway_blocked} blocked`, 11)}</Text>}
+                {show.cost && pad(usd(r.usage.cost_usd), 9)}
+                {show.ago && <Text color="gray">{ago(r.updated_at)}</Text>}
               </Text>
             </Box>
           );
@@ -252,7 +254,8 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
     { isActive: !captured },
   );
 
-  const bodyH = Math.max(5, rows - 8);
+  // The header stacks onto two lines below 110 columns, so the body gets one line less there.
+  const bodyH = Math.max(5, rows - (cols >= 110 ? 8 : 9));
   if (!run) return <Box paddingX={1}>{data.error ? <Text color="red">{data.error}</Text> : <Text color="gray">Loading {runId}…</Text>}</Box>;
 
   const [sc, sw] = STATUS[run.status];
@@ -261,13 +264,14 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
   return (
     <Box flexDirection="column" paddingX={1} height={rows}>
       {/* Header: the run, its status and the meters */}
-      <Box justifyContent="space-between">
-        <Text>
+      {/* Below 110 columns the meters go on their own line under the run's name. */}
+      <Box justifyContent="space-between" flexDirection={cols >= 110 ? "row" : "column"}>
+        <Text wrap="truncate-end">
           <Text bold>Axelrod</Text>  <Text bold color="white">{run.company}</Text> <Text color="gray">{run.run_id.split("_").pop()}</Text>
           {run.mode !== "live" && <Text color="black" backgroundColor="yellow"> {MODE_LABEL} </Text>}
           {run.status !== "done" && <Text color={sc}>  ● {sw}</Text>}
         </Text>
-        <Text color="gray">
+        <Text color="gray" wrap="truncate-end">
           Cost <Text color="white">{usd(run.usage.cost_usd)}</Text>
           {run.usage.budget_usd !== null ? ` of ${usd(run.usage.budget_usd)}` : ""}  Items <Text color="white">{run.counts.items_total}</Text>  Agents{" "}
           <Text color="white">
@@ -276,7 +280,7 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
         </Text>
       </Box>
       {/* Stage bar */}
-      <Text>
+      <Text wrap="truncate-end">
         {STAGES.map((s, i) => {
           const done = i < stageIdx || run.stage === "complete";
           const now = i === stageIdx && run.stage !== "complete";
@@ -284,9 +288,10 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
           const color = halted ? "red" : now ? ACCENT : done ? "green" : "gray";
           return (
             <Text key={s} color={color} bold={now}>
-              {done ? "✓ " : now ? "▶ " : "· "}
-              {STAGE_LABEL[s]}
-              {i < STAGES.length - 1 ? "  " : ""}
+              {done ? "✓" : now ? "▶" : "·"}
+              {/* Narrow terminals name only the current step. */}
+              {cols >= 110 || now ? ` ${STAGE_LABEL[s]}` : ""}
+              {i < STAGES.length - 1 ? (cols >= 110 ? "  " : " ") : ""}
             </Text>
           );
         })}
@@ -375,7 +380,8 @@ function SourcesPane({
 
   if (!sources.length) return <Text color="gray">Planning sources…</Text>;
   const { start, rows } = windowOf(sources, sel, height - 2);
-  const titleW = Math.max(20, width - 62);
+  const domainW = width < 110 ? 18 : 30;
+  const titleW = Math.max(14, width - 30 - domainW);
   return (
     <Box flexDirection="column">
       <Text bold>{awaiting ? "Approve sources" : "Sources"}</Text>
@@ -384,10 +390,10 @@ function SourcesPane({
         const d = decisionOf(s, drafts, awaiting);
         const tag = awaiting ? (d === "approved" ? ["green", "APPROVE"] : d === "rejected" ? ["red", "REJECT"] : ["yellow", "DECIDE"]) : [s.status === "blocked" || s.status === "revoked" || s.status === "failed" ? "red" : "green", s.status.toUpperCase()];
         return (
-          <Text key={s.source_id} inverse={at === sel}>
+          <Text key={s.source_id} inverse={at === sel} wrap="truncate-end">
             {at === sel ? "▸ " : "  "}
             {pad(s.tier === "priority" ? `${s.rank}` : s.tier === "tier_2" ? "T2" : "T3", 3)}
-            {pad(s.title, titleW)} <Text color="gray">{pad(s.source_id, 6)}</Text> {pad(s.domain, 30)} <Text color={tag[0]}>{pad(tag[1], 10)}</Text>
+            {pad(s.title, titleW)} <Text color="gray">{pad(s.source_id, 6)}</Text> {pad(s.domain, domainW)} <Text color={tag[0]}>{pad(tag[1], 10)}</Text>
           </Text>
         );
       })}
@@ -410,7 +416,8 @@ function TrafficPane({ data, height, width }: { data: RunData; height: number; w
   const [onlyBad, setOnlyBad] = useState(false);
   useInput((input) => input === "b" && setOnlyBad((v) => !v));
   const list = (onlyBad ? data.traffic.filter((t) => t.data.decision !== "allowed") : data.traffic).slice(-(height - 2)).reverse();
-  const targetW = Math.max(20, width - 70);
+  const narrow = width < 110;
+  const targetW = Math.max(12, width - (narrow ? 54 : 70));
   return (
     <Box flexDirection="column">
       <Text color="gray">
@@ -418,18 +425,18 @@ function TrafficPane({ data, height, width }: { data: RunData; height: number; w
         {pad("Agent", 18)}
         {pad("Action", 14)}
         {pad("Decision", 10)}
-        {pad("Rule", 16)}Target
+        {narrow ? "" : pad("Rule", 16)}Target
       </Text>
       {list.map((e) => {
         const d = e.data;
         const color = d.decision === "blocked" ? "red" : d.decision === "flagged" ? "yellow" : undefined;
         return (
-          <Text key={e.seq} color={color}>
+          <Text key={e.seq} color={color} wrap="truncate-end">
             {pad(new Date(e.ts).toLocaleTimeString("en-GB", { hour12: false }), 10)}
             {pad(e.agent_id ?? "—", 18)}
             {pad(d.action, 14)}
             <Text bold={!!color}>{pad(d.decision.toUpperCase(), 10)}</Text>
-            {pad(d.rule_id ?? (/kill|stop/i.test(d.reason) ? "stopped" : "default deny"), 16)}
+            {narrow ? "" : pad(d.rule_id ?? (/kill|stop/i.test(d.reason) ? "stopped" : "default deny"), 16)}
             {trunc(d.target, targetW)}
           </Text>
         );
@@ -537,7 +544,7 @@ function ReportPane({ data, height, width, setCaptured }: { data: RunData; heigh
   const { start, rows } = windowOf(sentences, sel, height - 3);
   return (
     <Box flexDirection="column">
-      <Text>
+      <Text wrap="truncate-end">
         <Text bold>{data.summary.title}</Text>
         <Text color="gray">
           {"  "}
@@ -549,7 +556,7 @@ function ReportPane({ data, height, width, setCaptured }: { data: RunData; heigh
       {rows.map((s, i) => {
         const at = start + i;
         return (
-          <Text key={s.id} inverse={at === sel}>
+          <Text key={s.id} inverse={at === sel} wrap="truncate-end">
             {at === sel ? "▸ " : "  "}
             <Text color={BAND[s.certainty?.band ?? "none"]}>{pad(String(s.certainty?.score ?? "—"), 4)}</Text>
             <Text color="gray">{pad(s.id, 7)}</Text>
