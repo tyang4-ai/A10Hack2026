@@ -31,5 +31,7 @@ export function httpApi(base: string): Api {
     approveSources: (id) => call("POST", `${r(id)}/sources/approve`),
     listClaims: (id) => call("GET", `${r(id)}/claims`),
     getReport: (id) => call("GET", `${r(id)}/report`),
+    resolveBlocked: (id, seq, action, note) => call("POST", `${r(id)}/events/${seq}/resolve`, { action, note }),
+    actOnClaim: (id, cid, action, opts) => call("POST", `${r(id)}/claims/${cid}/action`, { action, ...opts }),
   };
 }

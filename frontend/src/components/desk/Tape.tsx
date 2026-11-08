@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { RunEvent } from "@/lib/api";
+import { BlockedActions } from "./Actions";
 
 const TAG: Record<string, { tag: string; cls: string }> = {
   blocked: { tag: "BLK", cls: "bg-desk-bad text-desk" },
@@ -11,14 +12,15 @@ const TAG: Record<string, { tag: string; cls: string }> = {
   check: { tag: "CHK", cls: "text-desk-good" },
   source_change: { tag: "SRC", cls: "text-desk-ink" },
   approval: { tag: "USR", cls: "text-amber" },
+  resolution: { tag: "USR", cls: "text-amber" },
   step: { tag: "STEP", cls: "text-desk-muted" },
 };
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour12: false });
 
-export function Tape({ events, live }: { events: RunEvent[]; live: boolean }) {
+export function Tape({ events, live, runId, refresh }: { events: RunEvent[]; live: boolean; runId: string; refresh: () => Promise<void> }) {
   const [filter, setFilter] = useState<"all" | "calls" | "blocked">("all");
-  const denied = events.filter((e) => e.decision === "deny");
+  const denied = events.filter((e) => e.type === "blocked");
   const calls = events.filter((e) => e.type === "model_call" || e.type === "fetch");
   const tokens = events.reduce((n, e) => n + (e.tokens ?? 0), 0);
 
@@ -45,7 +47,7 @@ export function Tape({ events, live }: { events: RunEvent[]; live: boolean }) {
   }, [events]);
 
   const shown = events
-    .filter((e) => (filter === "all" ? e.type !== "step" : filter === "blocked" ? e.decision === "deny" : e.type === "model_call" || e.type === "fetch"))
+    .filter((e) => (filter === "all" ? e.type !== "step" : filter === "blocked" ? e.type === "blocked" : e.type === "model_call" || e.type === "fetch"))
     .slice(-200)
     .reverse();
 
@@ -95,7 +97,7 @@ export function Tape({ events, live }: { events: RunEvent[]; live: boolean }) {
       <ol className="min-h-0 flex-1 overflow-y-auto">
         {shown.length === 0 && <li className="px-3.5 py-3 text-desk-muted">Waiting for events…</li>}
         {shown.map((e) => {
-          const t = e.decision === "deny" && e.type !== "stop" ? TAG.blocked : TAG[e.type];
+          const t = TAG[e.type];
           return (
             <li key={e.seq} className={`flex animate-[tape-in_240ms_ease-out] gap-2.5 border-b border-[#1C1C1C] px-3.5 py-1.5 ${e.decision === "deny" ? "bg-[#2A0E0E]" : ""}`}>
               <span className="text-desk-muted tabular-nums">{time(e.ts)}</span>
@@ -109,6 +111,7 @@ export function Tape({ events, live }: { events: RunEvent[]; live: boolean }) {
                     {e.latency_ms ? `${e.latency_ms}ms` : ""} {e.tokens ? `${e.tokens.toLocaleString()}tok` : ""}
                   </span>
                 )}
+                {e.type === "blocked" && !e.claim_id && <BlockedActions dark runId={runId} event={e} events={events} refresh={refresh} />}
               </span>
             </li>
           );

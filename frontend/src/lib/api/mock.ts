@@ -88,9 +88,12 @@ export function mockApi(): Api {
     return s;
   };
 
-  function emit(s: State, e: Omit<RunEvent, "seq" | "ts" | "decision" | "source_id" | "claim_id" | "latency_ms" | "tokens"> & Partial<RunEvent>) {
+  function emit(
+    s: State,
+    e: Pick<RunEvent, "step" | "actor" | "type" | "summary"> & Partial<RunEvent>,
+  ) {
     s.events.push({
-      decision: null, source_id: null, claim_id: null, latency_ms: null, tokens: null,
+      decision: null, source_id: null, claim_id: null, url: null, resolves: null, action: null, latency_ms: null, tokens: null,
       ...e,
       seq: s.events.length + 1,
       ts: new Date().toISOString(),
@@ -167,6 +170,7 @@ export function mockApi(): Api {
       citations: citations.map(([source_id, quote, start]) => ({ source_id, quote, start, found_at: null })),
       code_check: { status: "pending", detail: "" },
       agent_check: { verdict: "pending", reason: "", validator: null },
+      resolution: null,
     });
     return [
       c("C1", "data", "Revenue for FY2025 was €9,999 million.", "9,999", [["S1", "Revenue rose to €9,999 million", 18234]]),
@@ -244,6 +248,7 @@ export function mockApi(): Api {
           await sleep(s, 400);
           emit(s, {
             step: 5, actor: { kind: "agent", id: "fetcher" }, type: "blocked", decision: "deny",
+            url: "https://stock-tips-daily.biz/hot-picks",
             summary: "GET stock-tips-daily.biz/hot-picks blocked: not an approved source (link found inside S3)",
           });
         }
@@ -359,7 +364,14 @@ export function mockApi(): Api {
   function buildReport(s: State): Report {
     const ok = (id: string) => {
       const c = s.claims.find((x) => x.id === id);
-      return !!c && !["not_found", "tier_violation", "source_removed"].includes(c.code_check.status) && c.agent_check.verdict === "supported";
+      return (
+        !!c && c.resolution?.action !== "drop" &&
+        !["not_found", "tier_violation", "source_removed", "pending"].includes(c.code_check.status) && c.agent_check.verdict === "supported"
+      );
+    };
+    const sentence = (id: string) => {
+      const c = s.claims.find((x) => x.id === id);
+      return c ? `${c.text.replace(/\.$/, "")} ${cite(id)}.` : "";
     };
     const cite = (id: string) =>
       (s.claims.find((x) => x.id === id)?.citations ?? []).map((ct) => `[${ct.source_id}]`).join("");
@@ -374,6 +386,7 @@ export function mockApi(): Api {
           paragraphs: keep([
             para(`Comparable revenue grew 5.1% in FY2025 ${cite("C2")}, and adjusted EBIT margin reached 17.2% ${cite("C3")}.`, ["C2", "C3"]),
             para(`Free cash flow was €2.1 billion ${cite("C5")}, with book-to-bill staying above 1.1 ${cite("C6")}.`, ["C5", "C6"]),
+            para(sentence("C1"), ["C1"]),
           ]),
         },
         {
@@ -381,6 +394,8 @@ export function mockApi(): Api {
           paragraphs: keep([
             para(`Margin gains came mainly from Imaging and Oncology ${cite("C7")}.`, ["C7"]),
             para(`US tariffs are a near-term headwind for imaging margins ${cite("C9")}.`, ["C9"]),
+            para(sentence("C4"), ["C4"]),
+            para(sentence("C8"), ["C8"]),
           ]),
         },
         {
@@ -551,5 +566,96 @@ export function mockApi(): Api {
     async getReport(id) {
       return clone(get(id).report);
     },
+    async resolveBlocked(id, seq, action, note) {
+      const s = get(id);
+      const ev = s.events.find((e) => e.seq === seq);
+      if (!ev || ev.type !== "blocked") throw new Error(`event ${seq} is not a blocked action`);
+      if (s.events.some((e) => e.resolves === seq)) throw new Error(`event ${seq} is already resolved`);
+      let summary = `Kept blocked: ${ev.summary}`;
+      if (action === "allow" && ev.source_id) {
+        await this.setSourceTier(id, ev.source_id, 1);
+        summary = `Allowed: ${ev.source_id} promoted to tier 1 by a person`;
+      } else if (action === "add_source" && ev.url) {
+        const src = await this.addSource(id, ev.url, domainOf(ev.url));
+        summary = `Added ${src.id} ${src.domain} as a source (tier ${src.tier})`;
+      }
+      emit(s, {
+        step: s.run.current_step, actor: { kind: "human", id: "tong" }, type: "resolution", decision: action === "dismiss" ? "deny" : "allow",
+        resolves: seq, action, summary: note ? `${summary} · “${note}”` : summary,
+      });
+      return clone(s.events[s.events.length - 1]);
+    },
+    async actOnClaim(id, cid, action, { note, text }) {
+      const s = get(id);
+      const c = s.claims.find((x) => x.id === cid);
+      if (!c) throw new Error(`claim ${cid} not found`);
+      const at = new Date().toISOString();
+      const said = note ? ` · “${note}”` : "";
+      const human = { kind: "human" as const, id: "tong" };
+      const step = s.run.current_step;
+      const rebuild = () => {
+        if (s.report) s.report = buildReport(s);
+      };
+      const recheck = (detail: string, reason: string) => {
+        c.code_check = { status: "pass", detail };
+        c.citations.forEach((ct) => (ct.found_at = ct.start));
+        c.agent_check = { verdict: "supported", reason, validator: `validator:${c.citations[0]?.source_id ?? "?"}` };
+        c.resolution = { ...c.resolution!, state: "done" };
+        emit(s, { step, actor: { kind: "code", id: "quote-check" }, type: "check", decision: "allow", claim_id: cid, summary: `${cid} re-checked → quote found` });
+        emit(s, { step, actor: { kind: "agent", id: c.agent_check.validator! }, type: "check", decision: "allow", claim_id: cid, summary: `${cid}: supported` });
+        rebuild();
+      };
+
+      if (action === "drop") {
+        c.resolution = { action, by: "tong", note, at, state: "done" };
+        emit(s, { step, actor: human, type: "resolution", decision: "deny", claim_id: cid, action, summary: `Dropped ${cid} from the report${said}` });
+        rebuild();
+      } else if (action === "promote_source") {
+        const sid = c.citations[0]?.source_id;
+        if (sid) await this.setSourceTier(id, sid, 1);
+        c.resolution = { action, by: "tong", note, at, state: "working" };
+        emit(s, { step, actor: human, type: "resolution", decision: "allow", claim_id: cid, action, summary: `Promoted ${sid} to tier 1 so it can back ${cid}${said}` });
+        setTimeout(() => recheck(`Quote found; ${sid} is now tier 1 (promoted by a person).`, "Quote supports the claim; source promoted by a person."), 900 / SPEED);
+      } else if (action === "edit" && text) {
+        c.text = text;
+        c.agent_check = { verdict: "pending", reason: "", validator: null };
+        c.resolution = { action, by: "tong", note, at, state: "working" };
+        emit(s, { step, actor: human, type: "resolution", decision: "allow", claim_id: cid, action, summary: `Edited ${cid}: “${text}”${said}` });
+        setTimeout(() => recheck("All quotes found in stored text.", "Edited wording matches the cited quote."), 1200 / SPEED);
+      } else {
+        // send_back: the agent looks for real support and resubmits; checks run again.
+        c.resolution = { action, by: "tong", note, at, state: "working" };
+        c.code_check = { status: "pending", detail: "Agent is looking for support…" };
+        c.agent_check = { verdict: "pending", reason: "", validator: null };
+        emit(s, { step, actor: human, type: "resolution", decision: "allow", claim_id: cid, action, summary: `Sent ${cid} back to the agent${said}` });
+        setTimeout(() => {
+          const fix = FIXES[cid];
+          emit(s, {
+            step, actor: { kind: "agent", id: "fixer" }, type: "model_call", decision: "allow", claim_id: cid,
+            latency_ms: rand(900, 2400), tokens: rand(2000, 6000),
+            summary: fix ? `${cid} rewritten from ${fix.cite[0]}: “${fix.text}”` : `${cid}: no support found`,
+          });
+          if (fix) {
+            c.text = fix.text;
+            c.value = fix.value;
+            c.citations = [{ source_id: fix.cite[0], quote: fix.cite[1], start: fix.cite[2], found_at: null }];
+            recheck("Exact quote found at the stated position.", `Rewritten claim matches ${fix.cite[0]}.`);
+          } else {
+            c.code_check = { status: "not_found", detail: "Agent found no support; the claim stays out of the report." };
+            c.agent_check = { verdict: "unsupported", reason: "No supporting quote in any approved source.", validator: null };
+            c.resolution = { ...c.resolution!, state: "done" };
+            rebuild();
+          }
+        }, 1800 / SPEED);
+      }
+      return clone(c);
+    },
   };
 }
+
+// What the mock agent produces when a failed claim is sent back (mock data).
+const FIXES: Record<string, { text: string; value: string | null; cite: [string, string, number] }> = {
+  C1: { text: "Revenue for FY2025 was €22.1 billion.", value: "€22.1bn", cite: ["S1", "revenue of €22.1 billion", 18240] },
+  C4: { text: "Diagnostics revenue fell 1.5% year on year.", value: "-1.5%", cite: ["S2", "Diagnostics revenue declined 1.5%", 2950] },
+  C8: { text: "The Diagnostics transformation is making progress.", value: null, cite: ["S3", "we are making progress on the Diagnostics transformation", 12020] },
+};

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api, type RunDetail, type RunEvent, type Source } from "@/lib/api";
 import { btn, Footnote, PageHead, Section, StatRow } from "./Shell";
+import { BlockedActions, resolutionOf } from "./Actions";
 
 const TYPE: [RegExp, string][] = [
   [/annual report/i, "FILING"],
@@ -30,7 +31,8 @@ export function SourcesPanel({
   const t1 = live.filter((s) => s.tier === 1);
   const auto = live.filter((s) => s.tier !== 1);
   const waiting = run.status === "awaiting_approval";
-  const blocked = events.filter((e) => e.decision === "deny" && e.step <= 5);
+  const blocked = events.filter((e) => e.type === "blocked" && !e.claim_id);
+  const open = blocked.filter((e) => !resolutionOf(e, events));
   const act = async (p: Promise<unknown>) => {
     await p;
     await refresh();
@@ -59,7 +61,7 @@ export function SourcesPanel({
             { label: "PROPOSED", value: live.length },
             { label: "NEED APPROVAL", value: t1.filter((s) => s.status === "proposed").length },
             { label: "AUTO-APPROVED", value: auto.length },
-            { label: "BLOCKED", value: blocked.length, bad: blocked.length > 0 },
+            { label: "BLOCKED · OPEN", value: `${blocked.length} · ${open.length}`, bad: open.length > 0 },
           ]}
         />
       </div>
@@ -197,12 +199,15 @@ export function SourcesPanel({
       </Section>
 
       {blocked.map((e) => (
-        <p key={e.seq} className="mt-4 animate-[fade-in_250ms_ease-out] text-justify">
-          <strong>
-            <em>Remark.</em>
-          </strong>{" "}
-          <span className="text-bad">Blocked</span>: {e.summary}
-        </p>
+        <div key={e.seq} className="mt-4 max-w-[820px] animate-[fade-in_250ms_ease-out]">
+          <p className="text-justify">
+            <strong>
+              <em>Remark.</em>
+            </strong>{" "}
+            <span className="text-bad">Blocked</span>: {e.summary}
+          </p>
+          <BlockedActions runId={run.id} event={e} events={events} refresh={refresh} />
+        </div>
       ))}
       <Footnote />
     </div>

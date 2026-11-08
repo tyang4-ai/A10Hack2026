@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChartSpec, Claim } from "@/lib/api";
-import { isFailed } from "@/lib/ui";
+import { isWithheld } from "@/lib/ui";
 
 // Renders the agent's chart specs. A chart only draws if every point's claim
 // exists and passed verification; otherwise it is withheld. Values always come
@@ -12,7 +12,7 @@ const fmt = (n: number, signed = false) => (signed && n > 0 ? "+" : "") + (Math.
 
 export function resolveChart(spec: ChartSpec, byId: Map<string, Claim>) {
   const pts = spec.points.map((p) => ({ ...p, claim: byId.get(p.claim_id) }));
-  const bad = pts.filter((p) => !p.claim || isFailed(p.claim) || p.claim.agent_check.verdict !== "supported" || isNaN(num(p.claim.value)));
+  const bad = pts.filter((p) => !p.claim || isWithheld(p.claim) || p.claim.agent_check.verdict !== "supported" || isNaN(num(p.claim.value)));
   return { pts: pts.map((p) => ({ ...p, v: num(p.claim?.value ?? null) })), bad };
 }
 

@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from "react";
 import type { Claim, Report, RunDetail, Source } from "@/lib/api";
-import { isFailed } from "@/lib/ui";
+import { isFailed, isWithheld } from "@/lib/ui";
+import { ClaimActions } from "./Actions";
 import { Chart } from "./Charts";
 import { Footnote, PageHead, Section } from "./Shell";
 
 const kpiLabel = (t: string) => t.split(/ (was|were|reached|stayed) /)[0].replace(/ for FY\d+$/, "");
 
-export function ReportPanel({ run, report, claims, sources }: { run: RunDetail; report: Report | null; claims: Claim[]; sources: Source[] }) {
+export function ReportPanel({ run, report, claims, sources, refresh }: { run: RunDetail; report: Report | null; claims: Claim[]; sources: Source[]; refresh: () => Promise<void> }) {
   const byId = useMemo(() => new Map(claims.map((c) => [c.id, c])), [claims]);
   const [picked, setPicked] = useState<string | null>(null);
-  const withheld = claims.filter(isFailed);
+  const withheld = claims.filter(isWithheld);
 
   if (!report) {
     return (
@@ -79,13 +80,16 @@ export function ReportPanel({ run, report, claims, sources }: { run: RunDetail; 
         {withheld.length > 0 && (
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
             {withheld.map((w) => (
-              <button key={w.id} onClick={() => setPicked(w.id)} className="border border-dashed border-bad px-3 py-2.5 text-left font-mono text-[11px] hover:bg-[#FBEAEA]">
-                <div className="font-bold tracking-[0.08em] text-bad">WITHHELD · {w.id}</div>
+              <div key={w.id} className="animate-[fade-in_250ms_ease-out] border border-dashed border-bad px-3 py-2.5 font-mono text-[11px]">
+                <button onClick={() => setPicked(w.id)} className="font-bold tracking-[0.08em] text-bad hover:underline">
+                  WITHHELD · {w.id}
+                </button>
                 <div className="my-1 font-serif text-[15px]">{w.text}</div>
                 <div className="text-bad">
                   {["pass", "position_off"].includes(w.code_check.status) ? w.agent_check.reason : w.code_check.detail}
                 </div>
-              </button>
+                <ClaimActions runId={run.id} claim={w} refresh={refresh} />
+              </div>
             ))}
           </div>
         )}
@@ -101,7 +105,7 @@ export function ReportPanel({ run, report, claims, sources }: { run: RunDetail; 
 function Provenance({ claim, sources }: { claim: Claim; sources: Source[] }) {
   const ct = claim.citations[0];
   const src = sources.find((s) => s.id === ct?.source_id);
-  const failed = isFailed(claim);
+  const failed = isWithheld(claim);
   const nodes: { kind: string; label: string; sub: string; edge?: [boolean | null, string] }[] = [
     {
       kind: "SOURCE",

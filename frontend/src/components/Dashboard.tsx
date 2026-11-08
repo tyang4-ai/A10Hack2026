@@ -87,11 +87,11 @@ export function Dashboard() {
           <div className="mt-5 flex flex-wrap items-start gap-7">
             <div className="min-w-0 flex-[999_1_640px]">
               {tab === "sources" && <SourcesPanel run={run} sources={sources} events={events} refresh={refresh} />}
-              {tab === "verify" && <VerifyPanel run={run} claims={claims} sources={sources} events={events} />}
-              {tab === "claims" && <ClaimsPanel run={run} claims={claims} sources={sources} />}
-              {tab === "report" && <ReportPanel run={run} report={report} claims={claims} sources={sources} />}
+              {tab === "verify" && <VerifyPanel run={run} claims={claims} sources={sources} events={events} refresh={refresh} />}
+              {tab === "claims" && <ClaimsPanel run={run} claims={claims} sources={sources} refresh={refresh} />}
+              {tab === "report" && <ReportPanel run={run} report={report} claims={claims} sources={sources} refresh={refresh} />}
             </div>
-            {tab === "sources" && <Tape events={events} live={live} />}
+            {tab === "sources" && <Tape events={events} live={live} runId={run.id} refresh={refresh} />}
           </div>
         </main>
       ) : (

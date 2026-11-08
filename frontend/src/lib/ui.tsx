@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CodeCheck, RunStatus, StepStatus, Tier, Verdict } from "@/lib/api";
+import type { Claim, CodeCheck, RunStatus, StepStatus, Tier, Verdict } from "@/lib/api";
 
 export function Badge({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
   return <span className={`badge tone-${tone}`} title={title}>{children}</span>;
@@ -37,9 +37,21 @@ export const verdictTone: Record<Verdict, Tone> = {
   pending: "neutral", supported: "good", unsupported: "bad", misleading: "warn",
 };
 
-export const isFailed = (c: { code_check: { status: CodeCheck }; agent_check: { verdict: Verdict } }) =>
+type Checked = { code_check: { status: CodeCheck }; agent_check: { verdict: Verdict }; resolution?: Claim["resolution"] };
+
+// Failed verification (regardless of what a person did about it).
+export const failedChecks = (c: Checked) =>
   ["not_found", "value_mismatch", "tier_violation", "source_removed"].includes(c.code_check.status) ||
   c.agent_check.verdict === "unsupported" || c.agent_check.verdict === "misleading";
+
+export const isDropped = (c: Checked) => c.resolution?.action === "drop";
+export const isWorking = (c: Checked) => c.resolution?.state === "working";
+
+// A problem still waiting for a person: failed and not yet dropped or being fixed.
+export const isFailed = (c: Checked) => failedChecks(c) && !isDropped(c) && !isWorking(c);
+
+// Kept out of the report: failed, dropped, or being fixed.
+export const isWithheld = (c: Checked) => failedChecks(c) || isDropped(c) || isWorking(c);
 
 export const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });

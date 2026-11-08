@@ -68,7 +68,22 @@ export interface Claim {
   citations: Citation[];
   code_check: { status: CodeCheck; detail: string };
   agent_check: { verdict: Verdict; reason: string; validator: string | null };
+  // Set once a person acts on a failed claim. "working" while the agent fixes it.
+  resolution: Resolution | null;
 }
+
+export interface Resolution {
+  action: string;
+  by: string;
+  note: string;
+  at: string;
+  state?: "working" | "done";
+}
+
+// What a person can do with a blocked gateway action.
+export type BlockedAction = "allow" | "add_source" | "dismiss";
+// What a person can do with a claim that failed verification.
+export type ClaimAction = "send_back" | "promote_source" | "edit" | "drop";
 
 export type EventType =
   | "step"
@@ -78,6 +93,7 @@ export type EventType =
   | "approval"
   | "source_change"
   | "blocked"
+  | "resolution"
   | "stop";
 
 export interface RunEvent {
@@ -90,6 +106,9 @@ export interface RunEvent {
   summary: string;
   source_id: string | null;
   claim_id: string | null;
+  url: string | null;              // e.g. the address of a blocked fetch
+  resolves: number | null;         // on a "resolution" event: the seq of the blocked event it settles
+  action: BlockedAction | ClaimAction | null; // on a "resolution" event: what the person chose
   latency_ms: number | null;
   tokens: number | null;
 }
@@ -135,4 +154,8 @@ export interface Api {
   approveSources(id: string): Promise<RunDetail>;
   listClaims(id: string): Promise<Claim[]>;
   getReport(id: string): Promise<Report | null>;
+  // A person settles a blocked gateway action. Appends a "resolution" event.
+  resolveBlocked(id: string, seq: number, action: BlockedAction, note: string): Promise<RunEvent>;
+  // A person acts on a claim that failed verification.
+  actOnClaim(id: string, cid: string, action: ClaimAction, opts: { note: string; text?: string }): Promise<Claim>;
 }

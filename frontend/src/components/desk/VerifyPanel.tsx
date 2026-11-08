@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { Claim, RunDetail, RunEvent, Source } from "@/lib/api";
-import { codeLabel, isFailed } from "@/lib/ui";
+import { codeLabel, failedChecks, isFailed, isWorking } from "@/lib/ui";
+import { ClaimActions } from "./Actions";
 import { Footnote, PageHead, Section, StatRow } from "./Shell";
 
 const failedCode = (c: Claim) => ["not_found", "value_mismatch", "tier_violation", "source_removed"].includes(c.code_check.status);
@@ -12,8 +13,8 @@ function why(c: Claim) {
   return c.agent_check.verdict.toUpperCase();
 }
 
-export function VerifyPanel({ run, claims, sources, events }: { run: RunDetail; claims: Claim[]; sources: Source[]; events: RunEvent[] }) {
-  const problems = claims.filter(isFailed);
+export function VerifyPanel({ run, claims, sources, events, refresh }: { run: RunDetail; claims: Claim[]; sources: Source[]; events: RunEvent[]; refresh: () => Promise<void> }) {
+  const problems = claims.filter((c) => isFailed(c) || isWorking(c));
   const [picked, setPicked] = useState<string | null>(null);
   const sel = claims.find((c) => c.id === picked) ?? problems[0] ?? null;
 
@@ -191,7 +192,7 @@ export function VerifyPanel({ run, claims, sources, events }: { run: RunDetail; 
                   <td className="py-1.5 pr-2 font-bold">{p.id}</td>
                   <td className="px-2 font-serif text-[15px]">{p.text}</td>
                   <td className="px-2 whitespace-nowrap">{p.citations.map((c) => c.source_id).join(", ")}</td>
-                  <td className="pl-2 font-bold whitespace-nowrap text-bad">{why(p)}</td>
+                  <td className={`pl-2 font-bold whitespace-nowrap ${isWorking(p) ? "animate-pulse text-ink" : "text-bad"}`}>{isWorking(p) ? "FIXING…" : why(p)}</td>
                 </tr>
               ))}
             </tbody>
@@ -200,13 +201,13 @@ export function VerifyPanel({ run, claims, sources, events }: { run: RunDetail; 
         <Footnote />
       </div>
 
-      {sel && <Inspector claim={sel} sources={sources} />}
+      {sel && <Inspector claim={sel} sources={sources} runId={run.id} refresh={refresh} />}
     </div>
   );
 }
 
-export function Inspector({ claim, sources }: { claim: Claim; sources: Source[] }) {
-  const bad = isFailed(claim);
+export function Inspector({ claim, sources, runId, refresh }: { claim: Claim; sources: Source[]; runId: string; refresh: () => Promise<void> }) {
+  const bad = failedChecks(claim);
   const ct = claim.citations[0];
   const src = sources.find((s) => s.id === ct?.source_id);
   const status = claim.code_check.status;
@@ -253,11 +254,17 @@ export function Inspector({ claim, sources }: { claim: Claim; sources: Source[] 
           </span>
         </div>
       </div>
+      {(bad || claim.resolution) && (
+        <div className="border-t border-desk-line px-3.5 py-3">
+          <div className="text-[10px] tracking-[0.12em] text-desk-muted">YOUR CALL</div>
+          <ClaimActions dark runId={runId} claim={claim} refresh={refresh} />
+        </div>
+      )}
     </aside>
   );
 }
 
-export function ClaimsPanel({ run, claims, sources }: { run: RunDetail; claims: Claim[]; sources: Source[] }) {
+export function ClaimsPanel({ run, claims, sources, refresh }: { run: RunDetail; claims: Claim[]; sources: Source[]; refresh: () => Promise<void> }) {
   const [picked, setPicked] = useState<string | null>(null);
   const sel = claims.find((c) => c.id === picked) ?? claims[0] ?? null;
   const kinds: Claim["kind"][] = ["data", "conclusion", "extrapolation"];
@@ -308,7 +315,7 @@ export function ClaimsPanel({ run, claims, sources }: { run: RunDetail; claims: 
         })}
         <Footnote />
       </div>
-      {sel && <Inspector claim={sel} sources={sources} />}
+      {sel && <Inspector claim={sel} sources={sources} runId={run.id} refresh={refresh} />}
     </div>
   );
 }
