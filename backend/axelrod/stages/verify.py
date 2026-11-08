@@ -9,6 +9,7 @@ by code and recorded as votes_for / votes_total, which feed the certainty score.
 from __future__ import annotations
 
 import asyncio
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from ..agents import judge
@@ -33,19 +34,36 @@ NEEDED = 2
 # ---------------------------------------------------------------------------
 
 
+def plain(x: Decimal | float) -> str:
+    """A number as a plain string, no exponent: 403000000, -0.21. Floats go through repr, so 0.1 stays 0.1."""
+    d = x if isinstance(x, Decimal) else Decimal(repr(x))
+    s = format(d.normalize(), "f")
+    return "0" if s in ("-0", "0") else s
+
+
 def data_view(d: m.DataItem) -> dict:
-    """A data item as evidence: statement, value, period, tier and the exact evidence quote."""
+    """A data item as evidence: statement, value, period, tier and the exact evidence quote.
+
+    expr_value sits next to the as-reported value: what the item's id stands for in a computation
+    (checks.base_value: base units, the sign as reported, a percentage as a fraction). Judges misread signs
+    from the words (G5b C-003, B-fix-yield C-064 and C-065: "EBIT less a −375 amortization" read as not
+    adding it back), so code shows them the signed number the arithmetic used."""
     v = d.value
     out = {"id": d.id, "statement": d.statement, "source_tier": d.source_tier}
     if v is not None:
-        out.update({"value": v.as_reported, "unit": v.unit, "scale": v.scale, "period": v.period})
+        out.update({"value": v.as_reported, "expr_value": plain(checks.base_value(d)), "unit": v.unit,
+                    "scale": v.scale, "period": v.period})
     out["quote"] = " | ".join(c.quote for c in d.citations if c.role == "evidence")
     return out
 
 
+def _computation_view(x: m.Computation, **extra) -> dict:
+    """A computation with code's exact result, so a judge checks the words against the real arithmetic."""
+    return {"name": x.name, "expr": x.expr, "result": plain(x.result), "display": x.display, **extra}
+
+
 def conclusion_view(c: m.Conclusion) -> dict:
-    return {"id": c.id, "text": c.text,
-            "computations": [{"name": x.name, "expr": x.expr, "display": x.display} for x in c.computations]}
+    return {"id": c.id, "text": c.text, "computations": [_computation_view(x) for x in c.computations]}
 
 
 def rubric_view(criterion: str) -> dict:
@@ -61,8 +79,7 @@ def rubric_view(criterion: str) -> dict:
 def claim_view(item: m.Item) -> dict:
     if item.kind == "conclusion":
         return {"kind": "conclusion", "text": item.text,
-                "computations": [{"name": x.name, "expr": x.expr, "display": x.display, "checked_by_code": True}
-                                 for x in item.computations]}
+                "computations": [_computation_view(x, checked_by_code=True) for x in item.computations]}
     if item.kind == "extrapolation":
         return {"kind": "score", "criterion": item.criterion, "label": label(item.criterion), "score": item.score,
                 "na_reason": item.na_reason, "confidence": item.confidence, "text": item.text,

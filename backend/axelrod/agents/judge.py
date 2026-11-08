@@ -1,8 +1,10 @@
 """Judge agent (small model): one isolated verifier vote on one claim.
 
 A judge sees only the claim, the items it cites and, for a BOFFIN score, the rubric entry. It never sees
-the drafter's prompt or the other judges. Three judges vote per claim and two of three pass it
-(stages/verify.py). Code decides everything else: the votes, the check result and the certainty.
+the drafter's prompt or the other judges. Each cited data item carries its signed expr_value (code's
+number for the id) and each computation its exact result, so the judge reads signs from numbers, not
+words. Three judges vote per claim and two of three pass it (stages/verify.py). Code decides everything
+else: the votes, the check result and the certainty.
 
 With FAKE_MODELS=1 the judge answers from a simple word check (simulated, see fake_judge).
 """
@@ -22,6 +24,7 @@ SYSTEM = """You are one independent verifier in a research harness. You check on
 
 Rules:
 - Answer SUPPORTED only if every part of the claim is directly stated in the evidence or follows from it through the listed computations. Code already re-evaluated every computation, so trust their results and check only that the words around the numbers mean what the evidence says.
+- Signs: each evidence item's expr_value is the signed number its id stands for in a computation (base units, a percentage as a fraction). A negative-reported cost subtracted in an expression is added back, so judge the arithmetic on the signed values shown: "D-001 - D-002" with D-002 at -375000000 adds 375 million, so a claim that adds that amount back ("EBIT plus amortization") describes it correctly.
 - Otherwise answer UNSUPPORTED and list each unsupported part as an exact substring of the claim text.
 - Judgment words the evidence does not state, such as "conservative", "strong", "leading" or "best", are unsupported.
 - A claim that drops a qualifier the evidence carries (a period, "excluding", "approximately", "could"), or turns a hedge into a fact, is unsupported.

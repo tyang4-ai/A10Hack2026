@@ -18,6 +18,9 @@ Checks per kind (in this order):
   sentence       citations_resolve, then copy_exact (copied) or numbers_traced (derived)
   tier rules     check_tier_rule / check_tier_rules: tier 2 and tier 3 data items, tier-3-only conclusions
 
+period_match also reads a data item's statement: every fiscal year or year-end it names must appear in a
+cited quote (evidence, unit or period context) or be one of the value's period years.
+
 What numbers_traced accepts: a cited data item's value (after scale, rounded half up to the shown
 decimals), a cited computation's display, the criterion's rubric numbers, the BOFFIN scale (-1, 0, +1)
 for scores, rollup numbers for "rollup", chart points for charts, and the numbers in the verified
@@ -1175,6 +1178,58 @@ def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | No
     return _cr("period_match", "pass", f"The {where} names {label}{tail}")
 
 
+def _statement_years(statement: str) -> list[tuple[int, str]]:
+    """The fiscal years and year-ends a statement names, as (year, the words as written), in order.
+    A bare 4-digit number written as an amount ("€2030 million", "2030%") is not a year."""
+    s = text.normalize(statement)
+    amounts = {t.core_start for t in scan_numbers(s, include_labels=True) if t.currency or t.word or t.pct}
+    return [(y, s[a:b]) for y, a, b in period_mentions(s)
+            if not (re.fullmatch(r"\d{4}", s[a:b]) and a in amounts)]
+
+
+def _json_years(doc, pointer: str) -> set[int]:
+    """The years a JSON fact's period ends in, read the way _json_period reads it: its end dates, else its fy
+    label. A start date or a filing's fy next to a dated fact is not the fact's year (a 10-K's fy is the
+    filing year, also on its comparatives)."""
+    try:
+        parent = json_pointer_get(doc, pointer.rsplit("/", 1)[0])
+    except (KeyError, IndexError, ValueError):
+        return set()
+    if not isinstance(parent, dict):
+        return set()
+    dates = _json_dates(parent)
+    if dates:
+        return {d.year for d in dates}
+    return {parent["fy"]} if isinstance(parent.get("fy"), int) else set()
+
+
+def _statement_period(statement: str, v: m.Value, quotes: list[str], extra: set[int] | None = None) -> str | None:
+    """A failure detail naming the first year the statement names that no cited quote shows (evidence, unit
+    or period context) and that is not one of the value's period years. None when every year is backed.
+    Seen in G5b: D-262 says "due in fiscal year 2029", and its quote says 2031."""
+    shown = {y for q in quotes for y, _, _ in period_mentions(q)} | period_key(v.period or "")[0] | (extra or set())
+    for y, said in _statement_years(statement):
+        if y not in shown:
+            return f"The statement names '{said}', but no cited quote shows {y}, and the value's period is {v.period}"
+    return None
+
+
+def _with_statement(p: m.CheckResult | None, statement: str, v: m.Value, quotes: list[str],
+                    extra: set[int] | None = None) -> m.CheckResult | None:
+    """period_match also covers the statement: a year it names must be backed by a quote or be the value's
+    period. A statement year that is not backed fails the check, and joins an existing failure's detail.
+    Only items with a value period get period_match, so a fact without a number is left as it was (its
+    statement often adds the report's own year, "in fiscal year 2025", which no quote repeats)."""
+    if p is None:
+        return None
+    bad = _statement_period(statement, v, quotes, extra)
+    if bad is None:
+        return p
+    if p.result == "fail":
+        return p.model_copy(update={"detail": f"{p.detail.rstrip('.')}. {bad}"})
+    return _cr("period_match", "fail", bad)
+
+
 def _source_resolves(item: m.DataItem, sources: dict[str, m.Source]) -> m.CheckResult:
     src = sources.get(item.source_id)
     if src is None:
@@ -1243,14 +1298,15 @@ def check_data_item(item: m.DataItem, pages_by_doc: dict[str, list[str]],
         if ev:
             out.append(_value_in_quote(v, ev))
             out.append(_unit_context(item, uc, ev))
-            p = _period_text(v, ev, pc)
+            p = _with_statement(_period_text(v, ev, pc), item.statement, v, ev + uc + pc)
             if p is not None:
                 out.append(p)
         elif not json_docs:
             out.append(_cr("value_in_quote", "fail", "No evidence citation holds the value"))
         if json_docs and not ev:
             cit, doc = json_docs[0]
-            p = _json_period(v, doc, cit.locator.pointer)
+            p = _with_statement(_json_period(v, doc, cit.locator.pointer), item.statement, v,
+                                uc + pc, _json_years(doc, cit.locator.pointer))
             if p is not None:
                 out.append(p)
     out.append(_numbers_traced(item.statement, _data_cands(item, quotes=True), what="statement"))
