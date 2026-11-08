@@ -6,7 +6,7 @@ DEMO RUN: run_20261108_rzpoj7 (picked 1:32 AM)
   - `CACHE_DOCUMENTS=on`: the gateway decides every fetch, then serves it from the S3 cache.
   - `CACHE_MODELS=record`: model calls stay live and each answer is also recorded, so the in-person rehearsals record the demo path for the replay fallback. Runs say `cache_mode: documents`.
   - `DEMO_PACING=0.8`: seconds before each fetch. In the scripted check, STOP landed at about 52 s with a 10 s approval, revoking S-006 right after the first fetches. Set what the in-person rehearsal needs: `bash backend/infra/remote.sh --set-env DEMO_PACING=<seconds>`, or ask this session.
-  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5` (per run), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
+  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=1` (per run, since 1:42 AM: the live part costs about $0.10 to $0.18 up to STOP), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
 - **Fallback if Bedrock throttles:** `--set-env CACHE_MODELS=replay` serves recorded answers at $0, labeled `documents_and_models`. So far that's R2's 291 answers. It's untested on the live segment until a rehearsal has run with `record`.
 - **Cut:** the scripted G6b rehearsal and B-rehearse (Gordon, 1 AM). The script stays in the repo, unused. Nothing else: v2 steps 1 to 12 are built.
 
@@ -27,7 +27,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | Code, corpus | v1, 10 sources, live fetches | v2, 16 sources (plan v2 plus the archive), `cache_mode` documents: 16 of 16 fetches from the cache |
 | Items | 374 (348 data, 15 conclusions, 6 scores, 5 charts) | 647 (592 data, 41 conclusions, 6 scores, 8 charts) |
 | Pass or fixed | 345 + 18 of 374 = **97.1%** | 570 + 55 of 647 = **96.6%** |
-| Failed (declared holes) | 11 (13 holes) | 22 (24 holes): 19 data, C-018 and C-019 (tier 3 only), C-026 (judges: year labels reversed) |
+| Failed (declared holes) | 11 (13 holes) | 22 (24 holes): 19 data, C-018 and C-019 (tier 3 only), C-026 (a judge error, see Known issues) |
 | Scores | rotic_level -1, rotic_vs_peers 0, liquidity -1. secular_growth and leverage failed. Research stage N/A | rotic_level -1, **rotic_vs_peers -1** (below GE HealthCare 24.6% and Philips 16.8%, text and sign agree), secular_growth +1, leverage -1, liquidity -1. Research stage N/A |
 | Coverage | 3 of 6 | **5 of 6** |
 | Rollup | -0.6 | -0.6 |
@@ -37,7 +37,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | Bobby's calls | none (before v2) | plan proceed, extract rework (3 extractors), repair proceed, brief proceed |
 
   **Picked R2**: the same pass rate on 1.7 times the items, 5 of 6 criteria scored instead of 3, every score's sign agrees with its text, and it shows Bobby, the cache and the archive. demo-ok-1 stays as the backup (tag and replay kept). Exported to `backend/data/replay/run_20261108_rzpoj7` (47.6 MB, text only), tagged `demo-ok-2`.
-  **For the pitch (docs/PLAN.md 1:20 to 2:35):** in R2 the judges rejected no score. All five scorable criteria are scored, and the gaps are 19 data items, two tier-3-only conclusions and C-026 (judges: year labels reversed). So "The judges rejected two scores" should become something like "the judges threw out a conclusion that reversed its years, so it shows as a gap". ROTIC still scores -1 with certainty flagged (54, four of ten years computable).
+  **For the pitch (docs/PLAN.md 1:20 to 2:35):** in R2 the judges rejected no score, and all five scorable criteria are scored, so "The judges rejected two scores" doesn't fit R2. Don't show C-026 as a caught error: its rejection is a judge error (Known issues). ROTIC still scores -1 with certainty flagged (54, four fiscal years computable).
 
 ## v2 plans
 
@@ -111,6 +111,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- **C-026's rejection in R2 is a judge error.** C-026 says €488 million at September 30, 2025 and €592 million at September 30, 2024, exactly as D-413 (FY2025) and D-424 (FY2024) state. Two of three judges said the years were reversed. It shows as a failed conclusion and a hole, so nobody shows it as a caught error.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere, so demo_live measures it from the events.
 - Resume inside draft asks a drafter again if it finished inside the STOP cut, because draft builds items only after every drafter answers. A few cents, no wrong data.
@@ -124,7 +125,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - An analyst edit (`PATCH /items`) keeps the old judge votes (marked) and doesn't update holes or the rollup.
 - Allow rules ignore scheme and port, and the path prefix has no segment boundary (same host only).
 - The gateway blocks link-local hosts, but a DNS name resolving to one isn't caught (EC2 requires IMDSv2).
-- The workshop account id is in RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md`. Scrub before the repo goes public if there's time.
+- The workshop account id is out of RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md` (1:45 AM). They point at `AWS_EXPECTED_ACCOUNT` in backend/.env, which is gitignored. The deploy scripts still check `AWS_ACCOUNT_ID` in the same file (same value). It's still in `docs/INTEGRATE.md` line 29 (main, not ours) and in git history (not rewritten, Gordon's call).
 - Guard quirk: a redirect or pipe after `git push` (or any `>`, `2>&1` in a git command) is read as a path or push target. Use plain git commands.
 
 ## Needs Gordon
@@ -173,3 +174,5 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:29 AM: R2 done: run_20261108_rzpoj7, 647 items, 96.6% pass or fixed, 5 of 6 scored, $2.84, 3.4 min.
 - Sun 1:32 AM: picked R2 over demo-ok-1 (table in Now). Exported as a replay, tagged demo-ok-2.
 - Sun 1:33 AM: demo env set on EC2. DEMO RUN line posted: run_20261108_rzpoj7.
+- Sun 1:42 AM: BUDGET_USD=1 on EC2 (Gordon, 1:45 AM message: no API key, so this caps each run).
+- Sun 1:47 AM: account id moved to backend/.env (AWS_EXPECTED_ACCOUNT). C-026 logged as a judge error. On call until the 5:30 freeze: DEMO_PACING after the first in-person rehearsal, then one replay-fallback test.

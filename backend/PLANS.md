@@ -242,7 +242,7 @@ Stage S1, in parallel with P-scaffold. Agent: `aws-operator`.
 **Owns.** `backend/.env` (values), `backend/AWS_RESOURCES.md`, `backend/infra/`.
 
 **Tasks.**
-1. Account check: `aws sts get-caller-identity` must show account 506556958358.
+1. Account check: `aws sts get-caller-identity` must show the account in `AWS_EXPECTED_ACCOUNT` (backend/.env).
 2. Model ids: find the exact inference profile ids for Claude Sonnet 5.5 and Claude Haiku 5.5 (`aws bedrock list-inference-profiles`, `aws bedrock list-foundation-models`). One Converse call to each with one tool and `toolChoice` forcing it. Print only the tool input and token usage. If a model isn't enabled, record the error under needs (Gordon may have to request access in the console).
 3. Concurrency: `backend/infra/concurrency_test.py` fires 50 parallel small-model calls (short prompt, forced tool, adaptive retries), then 8 large ones. Record successes, throttles, p50 and p95 latency, and recommend `MAX_CONCURRENCY_SMALL` and `MAX_CONCURRENCY_LARGE`.
 4. Prices: per-million-token input and output prices for both models from the Bedrock pricing page, as `PRICES_JSON`.
