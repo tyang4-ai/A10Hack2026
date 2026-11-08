@@ -4,7 +4,7 @@
 // While dragging, geometry lives in local state, so only this window re-renders;
 // the store is updated once, when the pointer is released.
 import { memo, useMemo, useRef, useState } from "react";
-import { clampGeo, MODULE_KINDS, TITLE_PX, useWindows, type Geo, type Win } from "@/lib/windows";
+import { clampGeo, KEEP_PX, MODULE_KINDS, TITLE_PX, useWindows, type Geo, type Win } from "@/lib/windows";
 import { KIND_META, TitleExtras, WindowBody, WinSubtitle, winTitle } from "./WindowContent";
 
 type Mode = "move" | "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
@@ -155,7 +155,7 @@ function applyGroups(groups: EdgeGroup[], orig: Record<string, Win>, dx: number,
 
 // Filling empty space only triggers from a small square at the centre of that space,
 // so a window can still be dropped freely anywhere else in it.
-const TARGET_PX = 56;
+const TARGET_PX = 72;
 function targetSquare(region: Geo, desk: DOMRect): Geo {
   const s = Math.min(TARGET_PX, region.w * desk.width * 0.5, region.h * desk.height * 0.5);
   const cx = (region.x + region.w / 2) * desk.width;
@@ -255,14 +255,26 @@ export const Window = memo(function Window({ id }: { id: string }) {
     const dx = (e.clientX - d.sx) / d.desk.width;
     const dy = (e.clientY - d.sy) / d.desk.height;
     if (d.mode === "move") {
-      // Dragging into the bottom edge: the bottom stays put and the window gets shorter,
-      // down to its minimum height. Past that it slides off the bottom, title bar still showing.
+      // Dragging into the bottom, left or right edge: the edge side stays put and the window
+      // gets smaller, down to its minimum size. Past that it slides off, title bar still reachable.
+      const minW = Math.min(d.g.w, MIN_W / d.desk.width);
+      const minH = Math.min(d.g.h, MIN_H / d.desk.height);
+      let x = d.g.x + dx;
+      let w = d.g.w;
       let y = d.g.y + dy;
       let h = d.g.h;
-      const pushing = y + h > 1;
-      if (pushing) h = Math.max(Math.min(d.g.h, MIN_H / d.desk.height), 1 - y);
-      y = Math.min(y, 1 - TITLE_PX / d.desk.height);
-      setGeo(clampGeo({ ...d.g, x: d.g.x + dx, y, h }, TITLE_PX / d.desk.height));
+      const pushRight = x + w > 1;
+      const pushLeft = x < 0;
+      const pushDown = y + h > 1;
+      const pushing = pushRight || pushLeft || pushDown;
+      if (pushRight) w = Math.max(minW, 1 - x);
+      else if (pushLeft) {
+        const right = x + d.g.w;
+        w = Math.max(minW, right);
+        x = right - w;
+      }
+      if (pushDown) h = Math.max(minH, 1 - y);
+      setGeo(clampGeo({ x, y, w, h }, TITLE_PX / d.desk.height, KEEP_PX / d.desk.width));
       const px = e.clientX - d.desk.left;
       const py = e.clientY - d.desk.top;
       let snap: Geo | null;
@@ -273,17 +285,18 @@ export const Window = memo(function Window({ id }: { id: string }) {
         snap = over ? { x: over.x, y: over.y, w: over.w, h: over.h } : null;
       } else {
         // Desk edges first, then another window's title bar (drop to swap), then the empty space under the pointer.
-        // While a window is pushed into the bottom edge, the shrink is the point: no swap or fill.
+        // Filling needs a drop on the small centre square, so it stays on even while the window
+        // is pushed into an edge; only the title bar swap waits until the window is clear of the edges.
         const edge = snapFor(px, py, d.desk.width, d.desk.height);
         const bar = edge || pushing ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
         d.target = bar?.id ?? null;
         snap =
           edge ??
           (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ??
-          (pushing ? null : fillTarget(id, px, py, d.desk));
+          fillTarget(id, px, py, d.desk);
       }
       const cur = useWindows.getState();
-      const hint = !snap && !pushing && !cur.auto ? hintAt(id, px, py, d.desk) : null;
+      const hint = !snap && !cur.auto ? hintAt(id, px, py, d.desk) : null;
       if (JSON.stringify(snap) !== JSON.stringify(cur.snap) || JSON.stringify(hint) !== JSON.stringify(cur.snapHint)) useWindows.setState({ snap, snapHint: hint });
     } else {
       const res = applyGroups(d.groups, d.wins, dx, dy, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));

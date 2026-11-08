@@ -136,14 +136,21 @@ export function tileGeos(n: number): Geo[] {
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), Math.max(lo, hi));
 
 export const TITLE_PX = 32;
+// How much of a window must stay on the desk when it hangs off the left or right.
+export const KEEP_PX = 96;
 
-// Keep a window on the desk. Sideways and upwards it stays fully on; downwards it may
-// hang off the bottom, but its title bar always stays on screen so it can be dragged back.
-// titleFrac is the title bar's height as a fraction of the desk.
-export function clampGeo(g: Geo, titleFrac = 0.05): Geo {
+// Keep a window reachable. It never goes above the desk. It may hang off the left,
+// right or bottom, but its title bar always stays on screen so it can be dragged back.
+// titleFrac and keepFrac are TITLE_PX and KEEP_PX as fractions of the desk.
+export function clampGeo(g: Geo, titleFrac = 0.05, keepFrac = 0.08): Geo {
   const w = clamp(g.w, 0.05, 1);
   const h = clamp(g.h, 0.05, 1);
-  return { w, h, x: clamp(g.x, 0, 1 - w), y: clamp(g.y, 0, Math.max(1 - h, 1 - titleFrac)) };
+  return {
+    w,
+    h,
+    x: clamp(g.x, Math.min(0, keepFrac - w), Math.max(1 - w, 1 - keepFrac)),
+    y: clamp(g.y, 0, Math.max(1 - h, 1 - titleFrac)),
+  };
 }
 
 // ---- persistence (best effort: the app works when storage is blocked) ----
@@ -318,13 +325,13 @@ export const useWindows = create<WinState>((set, get) => ({
     const w = wins[id];
     if (!w) return;
     // Placing a window by hand turns auto tiling off.
-    set({ wins: { ...wins, [id]: { ...w, ...clampGeo(g, TITLE_PX / get().desk.h), max } }, dirty: true, auto: false });
+    set({ wins: { ...wins, [id]: { ...w, ...clampGeo(g, TITLE_PX / get().desk.h, KEEP_PX / get().desk.w), max } }, dirty: true, auto: false });
   },
 
   // Commit a shared-edge resize: every window on the dragged line at once.
   resizeMany: (geos) => {
     const wins = { ...get().wins };
-    for (const [id, g] of Object.entries(geos)) if (wins[id]) wins[id] = { ...wins[id], ...clampGeo(g, TITLE_PX / get().desk.h), max: false };
+    for (const [id, g] of Object.entries(geos)) if (wins[id]) wins[id] = { ...wins[id], ...clampGeo(g, TITLE_PX / get().desk.h, KEEP_PX / get().desk.w), max: false };
     set({ wins, peek: {}, dirty: true, auto: false });
   },
 
