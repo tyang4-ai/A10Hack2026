@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2, waiting on the port approval). B-fix-checks, B-fix-repair (R0 fixes). Verifier (G3). W1 is 5/5 done.
+- Running: A-deploy (W2, waiting on the port approval). B-fix-checks (R0 fixes). Verifier (G3). W1 is 5/5 done.
 - Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -30,7 +30,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-brief | builder | R0 fix | done | suite 415, 1 live | Sonnet wrapped its whole answer in an extra string. Runner now unwraps it safely. Both R0 outputs replay as valid |
 | B-fix-extract | builder | R0 fix | done | suite 441 | live: plan pages 100/100, r0 failure pages 148/150. Replaying r0 outputs: 48 fails down to 6 (98.3% pass or fixed). $0.42 |
 | B-fix-draft | builder | R0 fix | done | 35 passed (suite 442), 1 live | live on R0 data: 5 of 6 scored, ROTIC -1 at 9.8% (3 of 10 years, low confidence), all 12 conclusions pass or fixed. Tuning spend about $9 |
-| B-fix-repair | builder | R0 fix | running | | repair must never undo code's threshold score |
+| B-fix-repair | builder | R0 fix | done | 50 passed (suite 457) | code's threshold score wins (9.996% keeps -1), judgment scores only move toward 0 or N/A, blocked items never repaired |
 | B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
 | B-fix-checks | builder | R0 fix | running | | 3 period-check refinements from B-fix-extract (one false-pass risk) |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |

@@ -6,6 +6,15 @@ becomes N/A). Code makes every repair it can by itself, and the repairer agent o
 refuses any repair that strengthens a claim: a stronger score, a higher data coverage, a new citation or an
 unchanged text. Every repair is checked again by code and by three fresh judges.
 
+Scores, by rubric kind:
+- Numeric threshold (rotic_level "> 15%" / "< 10%", liquidity "> 2x" / "< 1x"): the score is the one the
+  threshold_rule check accepts for the unrounded rule input, and nothing else. The repairer may narrow the
+  text, lower the data coverage or declare N/A. Any other score it proposes is refused and code's score and
+  code's own sentence stand (the refusal is in the attempt note). A display that rounds onto the bar
+  (9.996% shown as 10.0% against "< 10%") is spelled out in that sentence, so judges see why it is -1.
+- Judgment (no numeric bar): the score may stay or move to 0, never away from 0, and N/A never becomes a
+  score. A stronger proposal is refused and the score becomes N/A with the refusal as its note.
+
 Order: conclusions first, then the scores and charts that cite them are checked again, then those still
 failing are repaired. Blocked items (a revoked, quarantined or rejected source behind them) are left alone,
 and finalize declares them as holes. An item still failing after two repairs stays `fail` and becomes a hole.
@@ -174,38 +183,132 @@ def _bar_text(bar: tuple[str, Decimal, str]) -> str:
     return f"{bar[0]} {bar[1]}{bar[2]}"
 
 
-def _signed(score: int) -> str:
+def _signed(score: int | None) -> str:
+    if score is None:
+        return "N/A"
     return f"{score:+d}" if score else "0"
 
 
-def recompute_threshold(e: m.Extrapolation, items: dict) -> Proposal:
-    """The score a numeric rubric bar gives for the recomputed input. The text is rebuilt by code."""
-    crit = RUBRIC["criteria"][e.criterion]
+# ---------------------------------------------------------------------------
+# Threshold scores: code's recomputation is the score
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class CodeScore:
+    """The score code gets from a numeric rubric bar, and the sentence code writes for it."""
+    score: int
+    rule_input: str
+    display: str
+    shown_as: str    # the display, plus the side of the bar before rounding when the display rounds onto it
+    why: str
+    text: str
+
+
+def numeric_bars(criterion: str) -> tuple[tuple[str, Decimal, str], tuple[str, Decimal, str]] | None:
+    """(+1 bar, -1 bar) when the rubric scores the criterion by numeric thresholds. Judgment criteria and
+    worded bars ("Followed closely for more than a year") give None: code cannot recompute those."""
+    crit = RUBRIC["criteria"].get(criterion) or {}
+    if crit.get("scoring") != "threshold":
+        return None
     plus, minus = _bar(crit.get("plus_one")), _bar(crit.get("minus_one"))
+    return (plus, minus) if plus is not None and minus is not None else None
+
+
+def _rule_input(e: m.Extrapolation, items: dict) -> tuple[m.Conclusion, m.Computation] | None:
     cid, _, name = (e.rule.input or "").partition(":")
     c = items.get(cid)
-    comp = next((x for x in c.computations if x.name == name), None) if c is not None and c.kind == "conclusion" else None
-    if plus is None or minus is None or comp is None or cid not in e.conclusion_ids:
+    if c is None or c.kind != "conclusion" or cid not in e.conclusion_ids:
+        return None
+    comp = next((x for x in c.computations if x.name == name), None)
+    return (c, comp) if comp is not None else None
+
+
+def checked_score(e: m.Extrapolation, items: dict) -> int | None:
+    """The one score the threshold_rule check passes for this rule input, or None when none does. Asking the
+    check itself keeps repair and verify on one rule (it compares the unrounded value, not the display)."""
+    for s in (-1, 0, 1):
+        found = checks.check_extrapolation(e.model_copy(update={"score": s}), items, RUBRIC)
+        r = next((x for x in found if x.check == "threshold_rule"), None)
+        if r is None:
+            return None
+        if r.result == "pass":
+            return s
+    return None
+
+
+def _bar_value(bar: tuple[str, Decimal, str]) -> Decimal:
+    return bar[1] / 100 if bar[2] == "%" else bar[1]
+
+
+def _shown_score(display: str, plus: tuple, minus: tuple) -> int | None:
+    """The score the rounded display alone would suggest ("10.0%" against "< 10%" suggests 0)."""
+    toks = scan_numbers(vtext.normalize(display), include_labels=True)
+    if not toks:
+        return None
+    t = toks[0]
+    n = t.number * WORD_FACTOR[t.word] if t.word else t.number
+    x = n / 100 if t.pct else n
+    return 1 if _meets(x, plus) else -1 if _meets(x, minus) else 0
+
+
+def code_score(e: m.Extrapolation, items: dict) -> CodeScore | None:
+    """Code's score for a numeric-threshold criterion and its sentence, or None (judgment criterion, worded
+    bar, or a rule input that does not recompute). When the display rounds onto the bar, the sentence says
+    which side of the bar the unrounded value is on, using only numbers the checks can trace."""
+    bars = numeric_bars(e.criterion)
+    found = _rule_input(e, items) if bars is not None else None
+    if bars is None or found is None:
+        return None
+    score = checked_score(e, items)
+    if score is None:
+        return None
+    (plus, minus), (c, comp) = bars, found
+    try:
+        x = checks.conclusion_env(c, items)[comp.name]
+    except (compute.ComputeError, KeyError):
+        return None
+    why = {1: f"meets the +1 bar ({_bar_text(plus)})", -1: f"meets the -1 bar ({_bar_text(minus)})"}.get(
+        score, f"sits between the bars ({_bar_text(minus)} and {_bar_text(plus)})")
+    shown = _shown_score(comp.display, plus, minus)
+    if shown is not None and shown != score:
+        bar = minus if score == -1 or (score == 0 and shown == -1) else plus
+        side = f"{'below' if x < _bar_value(bar) else 'above'} {bar[1]}{bar[2]}"
+        shown_as = f"{comp.display} after rounding ({side} before rounding)"
+        value = (f"the recomputed value shows as {comp.display} after rounding, but before rounding it is {side}, "
+                 f"so it {why}")
+    else:
+        shown_as = comp.display
+        value = f"the recomputed value {comp.display} {why}"
+    text = f"{label(e.criterion)} scores {_signed(score)} under the framework: {value}."
+    return CodeScore(score=score, rule_input=e.rule.input or "", display=comp.display, shown_as=shown_as, why=why,
+                     text=text)
+
+
+def recompute_threshold(e: m.Extrapolation, items: dict) -> Proposal:
+    """The score the threshold_rule check accepts for the recomputed input. The text is rebuilt by code."""
+    found = _rule_input(e, items)
+    if numeric_bars(e.criterion) is None or found is None:
         return not_determinable(e, items, "The threshold input could not be recomputed from a verified conclusion.",
                                 "Code: the rule input names no cited computation, so no score can be recomputed.")
     try:
-        x = checks.conclusion_env(c, items)[name]
+        checks.conclusion_env(found[0], items)
     except compute.ComputeError as err:
         return not_determinable(e, items, f"The threshold input could not be recomputed ({err}).",
                                 f"Code: {e.rule.input} does not recompute.")
-    if _meets(x, plus):
-        score, why = 1, f"meets the +1 bar ({_bar_text(plus)})"
-    elif _meets(x, minus):
-        score, why = -1, f"meets the -1 bar ({_bar_text(minus)})"
-    else:
-        score, why = 0, f"sits between the bars ({_bar_text(minus)} and {_bar_text(plus)})"
-    if score == e.score:
-        return not_determinable(e, items, "The threshold check failed for a reason a recompute cannot fix.",
-                                "Code: the recomputed score equals the stated one, so the failure is elsewhere.")
-    text = f"{crit['label']} scores {_signed(score)} under the framework: the recomputed value {comp.display} {why}."
-    new = e.model_copy(update={"score": score, "text": text})
-    return Proposal("recompute", f"Code recomputed {e.rule.input} = {comp.display}: score "
-                                 f"{_signed(e.score) if e.score is not None else 'N/A'} became {_signed(score)}.", new)
+    cs = code_score(e, items)
+    if cs is None:
+        return not_determinable(e, items, "The threshold input could not be recomputed from a verified conclusion.",
+                                f"Code: no score passes the threshold check for {e.rule.input}.")
+    if cs.score == e.score:
+        # The failure came from a stale check (a cited conclusion changed since). The score already matches
+        # code, so code's sentence is checked again rather than giving the score up.
+        return Proposal("recompute", f"Code recomputed {e.rule.input} = {cs.shown_as}: the score "
+                                     f"{_signed(cs.score)} stands, checked again with code's sentence.",
+                        e.model_copy(update={"text": cs.text}))
+    new = e.model_copy(update={"score": cs.score, "text": cs.text})
+    return Proposal("recompute", f"Code recomputed {e.rule.input} = {cs.shown_as}, which {cs.why}: score "
+                                 f"{_signed(e.score)} became {_signed(cs.score)}.", new)
 
 
 def repair_extrapolation_by_code(e: m.Extrapolation, items: dict) -> Proposal | None:
@@ -287,26 +390,76 @@ def _apply_conclusion(c: m.Conclusion, out: repairer.RepairOutput) -> Proposal:
     return Proposal("downgrade", f"Repairer: {out.note.strip()}{tail}", new)
 
 
-def _apply_extrapolation(e: m.Extrapolation, out: repairer.RepairOutput, items: dict) -> Proposal:
-    if out.action != "downgrade":
-        reason = (out.na_reason or "").strip() or "The cited evidence does not support a score."
-        return not_determinable(e, items, reason, f"Repairer: {out.note.strip()}")
-    score = out.score if out.score is not None else e.score
-    if score not in (e.score, 0):
-        return not_determinable(e, items, "Repair proposed a stronger score, which is not allowed, so it is not scored.",
-                                f"Code refused the repair: {_signed(e.score)} to {_signed(score)} is not a weakening.")
-    conf = out.confidence if out.confidence and _CONF_RANK[out.confidence] <= _CONF_RANK[e.confidence] else e.confidence
-    text = out.text.strip()
-    if not text or (text == e.text and score == e.score and conf == e.confidence):
-        return not_determinable(e, items, "No weaker supported score was found.",
-                                "The repairer gave no weaker version, so the score is not determinable.")
+def judgment_move_ok(old: int | None, new: int | None) -> bool:
+    """A judgment score may stay or move to 0, never away from 0. N/A never becomes a score."""
+    return new == old or (old is not None and new == 0)
+
+
+def _lower_confidence(e: m.Extrapolation, proposed: str | None) -> tuple[str, str]:
+    """Data coverage may only go down. Returns the coverage to use and a note when a raise was refused."""
+    if proposed is None or _CONF_RANK[proposed] <= _CONF_RANK[e.confidence]:
+        return proposed or e.confidence, ""
+    return e.confidence, f"Code kept data coverage {e.confidence}: the repairer's {proposed} would raise it."
+
+
+def _kept_conclusions(e: m.Extrapolation, out: repairer.RepairOutput) -> list[str]:
+    """A subset of the cited conclusions, always with the rule input's conclusion."""
     keep = [i for i in dict.fromkeys(out.keep_ids) if i in e.conclusion_ids] or list(e.conclusion_ids)
     if e.rule.input:
         cid = e.rule.input.split(":")[0]
         if cid in e.conclusion_ids and cid not in keep:
             keep.append(cid)
-    new = e.model_copy(update={"score": score, "confidence": conf, "text": text, "conclusion_ids": keep})
-    return Proposal("downgrade", f"Repairer: {out.note.strip()}", new)
+    return keep
+
+
+def _notes(*parts: str) -> str:
+    return " ".join(p for p in parts if p)
+
+
+def _apply_threshold(e: m.Extrapolation, out: repairer.RepairOutput, cs: CodeScore) -> Proposal:
+    """A numeric-threshold score: code's recomputed score always stands. The repairer may narrow the text and
+    lower the data coverage. A different score is refused, and then code's own sentence replaces the text,
+    since the repairer's text argued for the refused score."""
+    proposed = out.score if out.score is not None else e.score
+    conf, conf_note = _lower_confidence(e, out.confidence)
+    text = out.text.strip()
+    refused = ""
+    if proposed != cs.score:
+        refused = (f"Code refused the repairer's score {_signed(proposed)}: {cs.rule_input} recomputes to "
+                   f"{cs.shown_as}, which {cs.why}, so the score stays {_signed(cs.score)} with code's sentence.")
+        text = cs.text
+    elif not text or (text == e.text and conf == e.confidence):
+        refused = "The repairer gave no weaker version, so code's own sentence for the recomputed score is checked again."
+        text = cs.text
+    new = e.model_copy(update={"score": cs.score, "confidence": conf, "text": text,
+                               "conclusion_ids": _kept_conclusions(e, out)})
+    action = "recompute" if refused else "downgrade"
+    return Proposal(action, _notes(refused, conf_note, f"Repairer: {out.note.strip()}"), new)
+
+
+def _apply_extrapolation(e: m.Extrapolation, out: repairer.RepairOutput, items: dict) -> Proposal:
+    if out.action != "downgrade":
+        reason = (out.na_reason or "").strip() or "The cited evidence does not support a score."
+        return not_determinable(e, items, reason, f"Repairer: {out.note.strip()}")
+    cs = code_score(e, items)
+    if cs is not None:
+        return _apply_threshold(e, out, cs)
+    if numeric_bars(e.criterion) is not None:
+        return not_determinable(e, items, "The threshold input could not be recomputed, so no score can stand.",
+                                f"Code: no score passes the threshold check for {e.rule.input or 'a missing rule input'}.")
+    score = out.score if out.score is not None else e.score
+    if not judgment_move_ok(e.score, score):
+        return not_determinable(e, items, "Repair proposed a stronger score, which is not allowed, so it is not scored.",
+                                f"Code refused the repair: {_signed(e.score)} to {_signed(score)} moves away from 0, "
+                                f"which is not a weakening. Repairer: {out.note.strip()}")
+    conf, conf_note = _lower_confidence(e, out.confidence)
+    text = out.text.strip()
+    if not text or (text == e.text and score == e.score and conf == e.confidence):
+        return not_determinable(e, items, "No weaker supported score was found.",
+                                "The repairer gave no weaker version, so the score is not determinable.")
+    new = e.model_copy(update={"score": score, "confidence": conf, "text": text,
+                               "conclusion_ids": _kept_conclusions(e, out)})
+    return Proposal("downgrade", _notes(conf_note, f"Repairer: {out.note.strip()}"), new)
 
 
 async def agent_repair(ctx: RunContext, item: m.Item) -> Proposal:
@@ -319,7 +472,10 @@ async def agent_repair(ctx: RunContext, item: m.Item) -> Proposal:
     history = [{"attempt": a.attempt, "action": a.action, "before": a.before, "after": a.after, "note": a.note}
                for a in v.attempts]
     rubric = rubric_view(item.criterion) if item.kind == "extrapolation" else None
-    prompt = repairer.repair_prompt(claim, failing, evidence_view(state, item), history, rubric)
+    cs = code_score(item, state.items) if item.kind == "extrapolation" else None
+    fixed = None if cs is None else {"score": cs.score, "rule_input": cs.rule_input, "display": cs.display,
+                                     "code_sentence": cs.text}
+    prompt = repairer.repair_prompt(claim, failing, evidence_view(state, item), history, rubric, code_score=fixed)
     n = sum(a.action in REPAIRS for a in v.attempts) + 1
     runner = AgentRunner(ctx, "repairer", f"Repair {item.id} (attempt {n})", [item.id], "large")
     giving_up = "not_determinable" if item.kind == "extrapolation" else "delete"
@@ -380,13 +536,19 @@ def _give_up(ctx: RunContext, item: m.Item, book: CertaintyBook) -> None:
     emit_verified(ctx, item, book, message=f"{item.id} still fails after two repairs: declared as a hole")
 
 
+def rests_on_blocked(v: m.Verification) -> bool:
+    """A revoked, quarantined or rejected source (or a blocked item) sits behind the claim. Rewording cannot
+    fix that, so repair leaves it alone even when another check failed, and finalize declares it."""
+    return any(c.check == "citations_resolve" and c.result == "blocked" for c in v.checks)
+
+
 async def repair_item(ctx: RunContext, item_id: str, book: CertaintyBook) -> None:
     """Repair one failed item until it passes, is blocked, is dropped, or has had two repairs."""
     state = ctx.state
     while True:
         item = state.items[item_id]
         v = item.verification
-        if v.status != "fail":
+        if v.status != "fail" or rests_on_blocked(v):
             return
         if sum(a.action in REPAIRS for a in v.attempts) >= MAX_REPAIRS:
             _give_up(ctx, item, book)
