@@ -156,18 +156,43 @@ export function Agents() {
   );
 }
 
+// The vault fills in as the run goes, so the tree is fetched again every few seconds while the run is live,
+// once more when it ends, and on Refresh (which also reloads the open file).
+const VAULT_POLL_MS = 4000;
+
 export function Vault() {
   const runId = useRunStore((s) => s.runId)!;
+  const status = useRunStore((s) => s.run?.status);
+  const stage = useRunStore((s) => s.run?.stage);
+  const live = status === "running" || status === "awaiting_approval";
   const [tree, setTree] = useState<VaultNode | null>(null);
   const [file, setFile] = useState<VaultFile | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const loadTree = () =>
+    api.vaultTree(runId).then(
+      (t) => {
+        setTree(t);
+        setErr(null);
+      },
+      (e) => setErr(String(e)),
+    );
   useEffect(() => {
-    api.vaultTree(runId).then(setTree, (e) => setErr(String(e)));
-  }, [runId]);
+    void loadTree();
+    if (!live) return;
+    const timer = setInterval(() => void loadTree(), VAULT_POLL_MS);
+    return () => clearInterval(timer);
+  }, [runId, live, stage, status]);
   const open = (p: string) => api.vaultFile(runId, p).then(setFile, (e) => setErr(String(e)));
+  const refresh = () => {
+    void loadTree();
+    if (file) void open(file.path);
+  };
   return (
     <div className="flex h-full">
       <div className="w-[40%] max-w-80 min-w-40 flex-none overflow-auto border-r border-desk-line p-2">
+        <button onClick={refresh} className="mb-1 text-desk-muted hover:text-white" title="Fetch the vault again">
+          ↻ Refresh{live ? " (updates every few seconds)" : ""}
+        </button>
         {err && <div className="text-desk-bad">{err}</div>}
         {tree ? <Node n={tree} depth={0} onOpen={open} active={file?.path} /> : <div aria-busy="true" className="text-desk-muted">Loading the vault</div>}
       </div>
