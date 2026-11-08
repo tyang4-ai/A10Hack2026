@@ -4,16 +4,16 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 ## Now
 
-- Stage: S0 Preflight, not started. Coding starts 8:00 PM Saturday.
-- Running: nothing.
-- Next: G0 checks (RUNBOOK.md section 4).
+- Stage: S1 Scaffold and AWS (started 7:16 PM, early by Gordon's call).
+- Running: P-scaffold (scaffolder), A-setup (aws-operator).
+- Next: G1 checks once both REPORTs are in.
 
 ## Plans
 
 | Plan | Agent | Stage | Status | Tests | Notes |
 |---|---|---|---|---|---|
-| P-scaffold | scaffolder | S1 | todo | | |
-| A-setup | aws-operator | S1 | todo | | |
+| P-scaffold | scaffolder | S1 | running | | |
+| A-setup | aws-operator | S1 | running | | |
 | B-store-api | builder | W1 | todo | | |
 | B-gateway | builder | W1 | todo | | |
 | B-verify | builder | W1 | todo | | |
@@ -32,7 +32,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 | Gate | Result | When | Notes |
 |---|---|---|---|
-| G0 Preflight | | | |
+| G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | | | |
 | G2 Core | | | |
 | G3 Pipeline and pre-smoke | | | |
@@ -46,8 +46,14 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Decisions
 
+- Sat 7:15 PM: start S1 right after G0 instead of at 8:00 PM (Gordon's call). Cutoffs stay at their clock times.
+- Sat 7:15 PM: venv is Python 3.12 via uv (no pip inside, so installs use `uv pip install --python .venv/Scripts/python.exe`). Code targets 3.11 for EC2.
+- Sat 7:16 PM: no git identity on this machine. Commits use `git -c user.name=Claude -c user.email=noreply@anthropic.com`, matching the earlier backend commits. Git config is not changed.
+
 ## Known issues
 
 ## Needs Gordon
 
 ## Log
+
+- Sat 7:15 PM: G0 pass. Guard self-test denied as expected, test_guard 80/80, AWS account 506556958358, `origin/main` b61ffa0 already merged, venv created with base packages.
