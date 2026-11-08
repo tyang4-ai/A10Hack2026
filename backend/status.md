@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: B-fix-s015, B-rehearse, B-fix-score2.
+- Running: B-fix-s015. G6b rehearsal 1 on EC2 meanwhile (it stops in early extract, so the S-015 fix doesn't matter to it).
 - Next: deploy, then R2 on EC2 (`CACHE_MODELS=record`) and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -23,8 +23,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V8-fork | 11 | builder | done | 41 passed (suite 798) | rerun from a step (new run, own policy and log, ids kept, parent unchanged), `orchestrator.start_from`, model cache (`CACHE_MODELS=record/replay`, decision first, a hit costs $0, the n-th identical call gets its own record) |
 | pre-R2 | 12 | orchestrator | done | | run_20261108_5zqdvb on EC2, cache_mode documents, 16 sources (13 cache hits, 10 from the archive). 659 items (522 pass, 88 fixed, 49 fail = 92.6%), 52 holes, certainty 93, rollup +0.4 (4 of 6: rotic_level 0, rotic_vs_peers +1, secular_growth +1, leverage -1), brief 2.8 pages, $3.03, 6 min. Bobby: plan escalate, extract rework (S-015 extractors), repair proceed, brief proceed. **Bug: rotic_vs_peers +1 while its text says SHL trails both peers.** Fixes: B-fix-score, B-fix-s015 |
 | B-fix-score | 12 | builder | done | 93 passed (suite 824), 3 live | judges check a score's direction against its text and rubric (`score_direction`). Live on r2a rotic_vs_peers +1: 0 of 3, all naming "trails both peers". Same text at -1: 3 of 3. Bobby's plan gate proceeds on the r2a digest. $0.034 live |
-| B-fix-score2 | 12 | builder | running | | wire the drafter's direction pre-check, swap every drafter key for its id (E-002 kept "(c_sh_fy2025_rotic)"), plan-gate digest lists criteria with no need and needs with no source |
-| B-rehearse | 12 | builder | running | | demo_live.py `--webapp`: reorder and reject at approval, cache labels, stop one goon, launch to STOP at most 55 s, suggested DEMO_PACING |
+| B-fix-score2 | 12 | builder | done | 15 passed (suite 879) | wire the drafter's direction pre-check, swap every drafter key for its id (E-002 kept "(c_sh_fy2025_rotic)"), plan-gate digest lists criteria with no need and needs with no source |
+| B-rehearse | 12 | builder | done | 38 passed | demo_live.py `--webapp`: reorder and reject at approval, cache labels, stop one goon, launch to STOP at most 55 s, suggested DEMO_PACING |
 | R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
 
 ## v1 plans (all done)
@@ -54,6 +54,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Decisions
 
+- Sun 1:08 AM: the demo approval moves S-002 up above S-001 and rejects S-016 (Philips 2023: one page, 0 data items in the pre-R2 run, and S-008 carries those balances). The only non-priority sources are S-006, S-009 and S-010, which are never touched, so the rejection has to be a priority source. That makes S-006 the 13th fetch.
 - Sun 12:46 AM (Gordon may override): `CACHE_MODELS=record` labels a run `documents` (or `off`), since it replays nothing. Only replay sets `documents_and_models`, and replay with the document cache off says so too (the contract has no models-only value), so replayed answers are never hidden.
 - Sun 12:46 AM: a fork keeps `R-stop-<id>` only for agents it copies (they never run again there, and the rule keeps their unfinished work a declared hole). Every other stop rule is dropped, `R-stop-bobby` included. A fork's Bobby doesn't get the rerun instructions: they're for the goons that redo work.
 - Sun 12:28 AM (Gordon may override): judges never see rerun instructions, so no instruction can steer a check, and Bobby can't use a judge rerun to pass a claim.
@@ -74,6 +75,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere, so demo_live measures it from the events.
 - Resume inside draft asks a drafter again if it finished inside the STOP cut, because draft builds items only after every drafter answers. A few cents, no wrong data.
 - Plan v2 has 13 priority sources (was 7), and 6 more paced fetches come before S-006. Retune `DEMO_PACING` at G6b for the 55 s launch-to-STOP. The ROTIC drafter group should be about 310 rows against MAX_ROWS=400.
 
@@ -125,3 +127,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:50 AM: B-rehearse started (webapp beats for the G6b rehearsal).
 - Sun 12:58 AM: B-fix-score done and committed. B-fix-score2 started (its three follow-ups, before R2).
 - Sun 1:03 AM: V6-resume done and committed. Its gates.py follow-up (only analyst-stopped goons count as stopped by the analyst) went to B-fix-score2.
+- Sun 1:08 AM: B-fix-score2 and B-rehearse done and committed. test_bobby given a real analyst stop rule (gate glue).
