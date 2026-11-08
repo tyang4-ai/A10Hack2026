@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-reason, A-deploy, B-g2fix (W2). W1 is 5/5 done.
+- Running: B-reason, A-deploy (W2). W1 is 5/5 done.
 - Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
 
 ## Plans
@@ -24,7 +24,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-brief | builder | W2 | done | 23 passed | fixture brief 18 sentences, 2.0 pages. Unfaithful sentence 0/3 votes, one-word copy edit caught and restored |
 | B-cli | builder | W2 | done | 21 passed (suite 334) | tail colors traffic, inject-errors 3/3 caught then re-cited. CLI uses urllib (own API only) |
 | A-deploy | aws-operator | W2 | running | | |
-| B-g2fix | builder | W2 | running | | G2 findings: fail closed on skipped scan, deny link-local, pre-approval policy view, label fake runs |
+| B-g2fix | builder | W2 | done | suite 366 passed | skipped scan now quarantines, link-local blocked (metadata URL too), pre-approval policy shows system rules, fake runs labeled |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
 | B-live | builder | W3 | todo | | |
 | B-baseline | builder | W3 | todo | | |
@@ -77,7 +77,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - G2 minor, left as is: allow rules ignore scheme and port, and the path prefix has no segment boundary (same host only, low risk). Cost in event messages uses `:.4f` (not a report value).
 - The workshop account id is in RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md`. AWS doesn't treat account ids as secret, and the account goes away after the event, but scrub them before the repo goes public if there's time.
 
-- The gateway does not refuse link-local or private hosts, so an analyst-added source could point at instance metadata. EC2 requires IMDSv2 (A-deploy). Optional hardening in W3: deny 169.254.0.0/16 in the gateway.
+- The gateway now blocks link-local hosts (B-g2fix), but a DNS name that resolves to a link-local address isn't caught. EC2 requires IMDSv2, which covers it.
 
 - Verify limit: a dash followed by a space before a number ("– 9,871") could be a minus or a range dash, so a dropped minus is not caught there. Negatives in parentheses are always strict.
 

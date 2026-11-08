@@ -455,6 +455,55 @@ async def test_scan_error_keeps_the_document_quarantined():
     await collect.run(ctx)
     assert ctx.state.documents[0].quarantined is True and ctx.state.documents[0].scan.verdict == "error"
     assert ctx.state.sources[0].status == "quarantined"
+    assert ctx.state.documents[0].scan.detail.startswith("Scan error, untrusted source quarantined")
+
+
+async def test_skipped_scan_quarantines_untrusted_sources_and_never_touches_trusted_ones():
+    """B-g2fix finding 1: no guardrail configured means skipped, and skipped never releases an untrusted page."""
+    news_html, _ = long_html(4)
+    ctx = make_ctx(_three_sources(), {
+        PDF_URL: fetched(PDF_URL, make_pdf(STATEMENT_PAGES), "application/pdf"),
+        NEWS_URL: fetched(NEWS_URL, news_html.encode(), "text/html; charset=utf-8"),
+        FORUM_URL: fetched(FORUM_URL, b"<html><body><article><p>Clean forum words.</p></article></body></html>",
+                           "text/html"),
+    })
+
+    async def skipped_scan(agent, url, source_id, text):
+        ctx.gateway.scans.append((url, source_id, text))
+        return m.ScanResult(scanner="none", verdict="skipped", detail="No guardrail configured")
+
+    ctx.gateway.scan = skipped_scan  # type: ignore[method-assign]
+    await collect.run(ctx)
+    docs = {d.source_id: d for d in ctx.state.documents}
+    by_id = {s.source_id: s for s in ctx.state.sources}
+    for sid in ("S-006", "S-009"):               # news (tier_2) and forum (tier_3): untrusted
+        assert docs[sid].quarantined is True and docs[sid].scan.verdict == "skipped", sid
+        assert docs[sid].scan.detail == "No guardrail configured, untrusted source quarantined"
+        assert by_id[sid].status == "quarantined" and "No guardrail configured" in by_id[sid].error
+        assert ctx.state.agent_pages(docs[sid].doc_id) == []
+    assert docs["S-001"].quarantined is False and by_id["S-001"].status == "fetched"
+    assert ctx.state.agent_pages(docs["S-001"].doc_id) == ctx.state.pages[docs["S-001"].doc_id]
+    assert "S-001" not in [s[1] for s in ctx.gateway.scans]   # trusted: never scanned
+
+
+async def test_ingest_without_an_agent_keeps_untrusted_sources_quarantined():
+    src = make_source("S-009", FORUM_URL, kind="forum", tier="tier_3", folder="10-Demand-Evidence")
+    ctx = make_ctx([src], {})
+    body = b"<html><body><article><p>Clean forum words.</p></article></body></html>"
+    doc = await ing.ingest(ctx, src, fetched(FORUM_URL, body, "text/html"))
+    assert doc.quarantined is True and doc.scan.verdict == "skipped" and "quarantined" in doc.scan.detail
+    assert ctx.gateway.scans == []
+
+
+def test_held_scan_reasons():
+    clean = m.ScanResult(scanner="bedrock_guardrails", verdict="clean", detail="2 page(s) scanned")
+    flagged = m.ScanResult(scanner="bedrock_guardrails", verdict="flagged", detail="page 1 of 1: PROMPT_ATTACK")
+    assert ing.held_scan(clean) == clean and ing.held_scan(flagged) == flagged
+    fake = ing.held_scan(m.ScanResult(scanner="none", verdict="skipped", detail="FAKE_MODELS=1: guardrail not called"))
+    assert fake.verdict == "skipped"
+    assert fake.detail == "No guardrail configured, untrusted source quarantined (FAKE_MODELS=1: guardrail not called)"
+    bare = ing.held_scan(m.ScanResult(scanner="none", verdict="skipped"))
+    assert bare.detail == "No guardrail configured, untrusted source quarantined"
 
 
 # ---------------------------------------------------------------------------
@@ -565,3 +614,49 @@ async def test_real_gateway_flags_the_planted_page_and_blocks_its_links(settings
     assert state.agent_pages(doc.doc_id) == []
     assert doc.vault_paths.raw.startswith(f"runs/{state.run.run_id}/siemens-healthineers/10-Demand-Evidence/S-008_")
     assert store.vault.get_bytes(state.run.run_id, doc.vault_paths.raw) == body
+
+
+async def test_planted_page_is_quarantined_with_guardrail_id_unset(settings, monkeypatch):
+    """B-g2fix finding 1: a deploy with no GUARDRAIL_ID (and no fakes) must still hold the planted page back.
+
+    Real Store, RunContext and Gateway, the real planted test page (simulated), only the HTTP call faked.
+    Nothing reaches AWS: with no guardrail id the scan is skipped before any client is made.
+    """
+    from backend.axelrod import bedrock
+    from backend.axelrod.fetch import http
+    from backend.axelrod.runtime import RunContext
+    from backend.axelrod.store import Store
+
+    planted = Path(__file__).resolve().parents[1] / "data" / "test_pages" / "injection.html"
+    page = "http://127.0.0.1:8000/test-pages/injection.html"
+    body = planted.read_bytes()
+    misconfigured = settings.model_copy(update={"fake_models": False, "guardrail_id": None,
+                                                "guardrail_version": None})
+    let_through: list[str] = []
+
+    async def fake_get_once(url: str, *, user_agent: str, **_: object) -> tuple[int, dict[str, str], bytes]:
+        let_through.append(url)
+        return 200, {"content-type": "text/html; charset=utf-8", "x-axelrod-simulated": "true"}, body
+
+    monkeypatch.setattr(http, "get_once", fake_get_once)
+    bedrock.register_fake_scan(None)
+    store = Store(misconfigured)
+    state = store.create_run(m.CreateRunRequest(company="Siemens Healthineers AG", ticker="SHL"))
+    state.run.stage = "collect"
+    state.sources = [make_source("S-010", page, kind="other", tier="tier_3", folder="10-Demand-Evidence",
+                                 approval="auto_approved",
+                                 title="Axelrod test page: planted prompt injection (simulated)")]
+    ctx = RunContext.create(state, store, store.vault, misconfigured)
+    ctx.gateway.build_policy()
+    await collect.run(ctx)
+
+    assert let_through == [page]
+    doc = state.documents[0]
+    assert doc.quarantined is True and doc.scan.verdict == "skipped"
+    assert doc.scan.detail == "No guardrail configured, untrusted source quarantined"
+    assert state.sources[0].status == "quarantined" and "No guardrail configured" in state.sources[0].error
+    assert state.agent_pages(doc.doc_id) == []
+    assert "Ignore all previous instructions" in "".join(state.pages[doc.doc_id])   # stored for the analyst only
+    reqs = [e.data for e in state.events if e.type == "gateway.request"]
+    assert [r.decision for r in reqs if r.target == page] == ["allowed"]           # no scan ran, so no flag
+    assert [r.target for r in reqs if r.decision == "blocked"] == ["https://example.org/axelrod-test/shl-buyer-survey"]

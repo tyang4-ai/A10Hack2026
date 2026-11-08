@@ -222,9 +222,61 @@ def test_agent_pages_empty_for_quarantined(settings):
 def test_policy_and_summary_placeholders(settings):
     ctx = make_ctx(Store(settings))
     pol = ctx.state.policy_view()
-    assert pol.version == 0 and pol.rules == [] and pol.default_effect == "deny"
+    assert pol.version == 0 and [r.rule_id for r in pol.rules] == ["R-sys-models"] and pol.default_effect == "deny"
     brief = ctx.state.human_report()
     assert brief.status == "not_started" and brief.sections == []
+
+
+def test_pre_approval_policy_shows_what_the_gateway_enforces(settings):
+    """B-g2fix finding 4: before approval GET /policy shows R-sys-models and the role scopes, as the mock does."""
+    from fastapi.testclient import TestClient
+
+    from backend.axelrod.api import create_app
+
+    store = Store(settings)
+    state = store.create_run(m.CreateRunRequest(company="Siemens Healthineers AG", ticker="SHL", created_via="api"))
+    ctx = RunContext.create(state, store, store.vault, settings)          # the real Gateway
+    view = state.policy_view()
+    enforced = ctx.gateway._policy()
+    assert view.version == 0 and view.default_effect == "deny" and not view.kill_switch
+    assert view.rules == enforced.rules and view.role_scopes == enforced.role_scopes
+    (sys_rule,) = view.rules
+    assert (sys_rule.rule_id, sys_rule.effect, sys_rule.action, sys_rule.origin) == (
+        "R-sys-models", "allow", "model.invoke", "system")
+    scopes = {s.role: s for s in view.role_scopes}
+    assert set(scopes) == {"planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer",
+                           "reviser"}
+    assert scopes["planner"].models == [settings.model_large] and scopes["fetcher"].actions == ["fetch"]
+    assert view.budget_usd == settings.budget_usd
+    # The view matches what decide does: the planner may call its model, every fetch is default deny.
+    planner = m.Agent(agent_id="planner-01", role="planner", status="working", task="t")
+    fetcher = m.Agent(agent_id="fetcher-01", role="fetcher", status="working", task="t")
+    assert ctx.gateway.decide(planner, "model.invoke", settings.model_large)[:2] == ("allowed", "R-sys-models")
+    assert ctx.gateway.decide(fetcher, "fetch", "https://www.siemens-healthineers.com/")[:2] == ("blocked", None)
+    # Same answer through the API route.
+    with TestClient(create_app(settings, store=store)) as client:
+        r = client.get(f"/api/v1/runs/{state.run.run_id}/policy")
+    assert r.status_code == 200, r.text
+    api_view = m.Policy.model_validate(r.json())
+    assert api_view.rules == view.rules and api_view.role_scopes == view.role_scopes and api_view.version == 0
+    # After approval the built policy replaces the base.
+    ctx.gateway.build_policy()
+    assert state.policy_view().version == 1 and state.policy_view().rules[0].rule_id == "R-sys-models"
+
+
+def test_fake_model_runs_are_labeled_simulated(settings):
+    """B-g2fix finding 6: FAKE_MODELS=1 puts a Simulated line in Run.notes. mode stays live."""
+    from backend.axelrod.store import FAKE_MODELS_NOTE
+
+    fake = Store(settings)
+    plain = fake.create_run(m.CreateRunRequest(company="Siemens Healthineers AG"))
+    noted = fake.create_run(m.CreateRunRequest(company="Siemens Healthineers AG", notes="analyst note"))
+    assert settings.fake_models and plain.run.mode == "live"
+    assert plain.run.notes == FAKE_MODELS_NOTE == "Simulated: model answers come from offline fakes (FAKE_MODELS=1)"
+    assert noted.run.notes == f"analyst note | {FAKE_MODELS_NOTE}"
+    real = Store(settings.model_copy(update={"fake_models": False}))
+    assert real.create_run(m.CreateRunRequest(company="Siemens Healthineers AG")).run.notes is None
+    assert real.create_run(m.CreateRunRequest(company="X", notes="analyst note")).run.notes == "analyst note"
 
 
 # ---------------------------------------------------------------------------

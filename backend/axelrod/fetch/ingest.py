@@ -5,8 +5,9 @@ The stored page text is the ground truth: extractors read it, the checker matche
 code computes every offset into it. So it is stored once, exactly, and never rewritten.
 
 Untrusted sources (news, forum, other, and anything in tier_3) start quarantined and are only released
-when the Guardrails scan through the gateway comes back clean or is not configured. A flagged page or a
-scan error keeps the whole document quarantined (fail closed), and RunState.agent_pages hides it.
+when the Guardrails scan through the gateway comes back clean. Flagged, error and skipped (no guardrail
+configured) all keep the whole document quarantined (fail closed), and RunState.agent_pages hides it.
+Trusted sources are never scanned and never quarantined.
 """
 from __future__ import annotations
 
@@ -29,6 +30,11 @@ if TYPE_CHECKING:
     from ..store.state import RunState
 
 UNTRUSTED_KINDS = frozenset({"news", "forum", "other"})
+# Why an untrusted document stays quarantined when its scan was not clean (flagged keeps its own detail).
+HELD_REASONS = {
+    "skipped": "No guardrail configured, untrusted source quarantined",
+    "error": "Scan error, untrusted source quarantined",
+}
 TARGET_CHARS = 3000
 EXT = {"pdf": "pdf", "html": "html", "json": "json", "text": "txt"}
 INDEX_RELPATH = "00-Meta/_document-index.json"
@@ -129,17 +135,18 @@ async def ingest(ctx: RunContext, source: m.Source, result: FetchResult, *,
                  agent: m.Agent | None = None) -> m.Document:
     """Store result's body for source and return the Document (pages go into ctx.state.pages).
 
-    With an agent, untrusted sources are scanned page by page through ctx.gateway.scan. Without one they
-    stay quarantined, because nothing has cleared them.
+    With an agent, untrusted sources are scanned page by page through ctx.gateway.scan, and only a clean
+    verdict releases them. Without one they stay quarantined, because nothing has cleared them.
     """
     parsed = await asyncio.to_thread(parse_body, result.body, result.content_type, result.final_url or result.url)
     untrusted = is_untrusted(source)
     if untrusted:
-        scan = (await scan_pages(ctx, agent, source, result.url, parsed.pages) if agent is not None
-                else m.ScanResult(scanner="none", verdict="skipped", detail="Untrusted source, not scanned yet"))
+        scan = (held_scan(await scan_pages(ctx, agent, source, result.url, parsed.pages)) if agent is not None
+                else m.ScanResult(scanner="none", verdict="skipped",
+                                  detail="Untrusted source, not scanned: quarantined"))
     else:
         scan = m.ScanResult(scanner="none", verdict="skipped", detail=f"Trusted source kind ({source.kind}), not scanned")
-    quarantined = untrusted and (agent is None or scan.verdict not in ("clean", "skipped"))
+    quarantined = untrusted and (agent is None or scan.verdict != "clean")
 
     doc_id = ctx.next_id("DOC")
     run_id = ctx.state.run.run_id
@@ -183,6 +190,20 @@ async def scan_pages(ctx: RunContext, agent: m.Agent, source: m.Source, url: str
             return result  # no guardrail configured: every page would say the same
     return m.ScanResult(scanner="bedrock_guardrails", verdict="clean",
                         detail=f"{len(pages)} page(s) scanned, no prompt attack detected")
+
+
+def held_scan(scan: m.ScanResult) -> m.ScanResult:
+    """The scan with a plain quarantine reason when its verdict is skipped or error (fail closed).
+
+    A misconfigured deploy (no GUARDRAIL_ID) must never release an untrusted page, so skipped holds it too.
+    """
+    reason = HELD_REASONS.get(scan.verdict)
+    if reason is None:
+        return scan
+    detail = scan.detail or ""
+    if detail and detail.lower() not in reason.lower():
+        reason = f"{reason} ({detail})"
+    return scan.model_copy(update={"detail": reason})
 
 
 def meta_json(doc: m.Document, result: FetchResult) -> str:

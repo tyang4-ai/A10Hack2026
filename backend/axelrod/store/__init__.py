@@ -30,6 +30,7 @@ REPLAY_DIR = BACKEND_DIR / "data" / "replay"
 STATE_FILE = "state.json"
 EVENTS_REL = "00-Meta/events.jsonl"
 INTERRUPTED = "Interrupted: the API restarted while this run was in progress"
+FAKE_MODELS_NOTE = "Simulated: model answers come from offline fakes (FAKE_MODELS=1)"
 FLUSH_DELAY_S = 0.2
 
 
@@ -53,15 +54,21 @@ class Store:
         return self.settings.store == "aws"
 
     def create_run(self, req: m.CreateRunRequest) -> RunState:
-        """A fresh live run at stage plan. Not persisted yet: the caller emits run.created, then saves."""
+        """A fresh live run at stage plan. Not persisted yet: the caller emits run.created, then saves.
+
+        With FAKE_MODELS=1 the notes say the run is simulated. mode stays "live", the only fitting contract value.
+        """
         now = now_iso()
         run_id = new_run_id()
         while run_id in self._runs:
             run_id = new_run_id()
         budget = req.budget_usd if req.budget_usd is not None else self.settings.budget_usd
+        notes = req.notes
+        if self.settings.fake_models:
+            notes = f"{notes.strip()} | {FAKE_MODELS_NOTE}" if (notes or "").strip() else FAKE_MODELS_NOTE
         run = m.Run(run_id=run_id, company=req.company.strip(), ticker=(req.ticker or "").strip() or None,
                     depth=req.depth, status="running", stage="plan", created_at=now, updated_at=now,
-                    created_via=req.created_via, notes=req.notes, policy_version=0, counts=m.RunCounts(),
+                    created_via=req.created_via, notes=notes, policy_version=0, counts=m.RunCounts(),
                     usage=m.Usage(budget_usd=budget), last_seq=0, mode="live")
         state = RunState(run=run)
         register_run(run_id, run.company)

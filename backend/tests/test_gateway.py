@@ -455,6 +455,64 @@ async def test_redirect_loop_is_blocked(ctx: FakeCtx, pages):
     assert len(ctx.of("gateway.request")) == gw_mod.MAX_REDIRECTS + 2
 
 
+# ---------------------------------------------------------------------------
+# Link-local targets (B-g2fix finding 3)
+# ---------------------------------------------------------------------------
+
+
+IMDS_URL = "http://169.254.169.254/latest/meta-data/"
+
+
+def test_is_link_local_hosts():
+    for host in ("169.254.169.254", "169.254.0.1", "169.254.169.254.", "fe80::1", "[fe80::1]", "fe80::1%25eth0",
+                 "fd00:ec2::254", "[fd00:ec2::254]", "::ffff:169.254.169.254", "::ffff:a9fe:a9fe",
+                 "64:ff9b::a9fe:a9fe", "2852039166", "0xa9fea9fe", "169.254.43518", "instance-data",
+                 "instance-data.ec2.internal"):
+        assert gw_mod.is_link_local(host), host
+    # Loopback and private stay as they are: local runs serve the test page from 127.0.0.1.
+    for host in ("127.0.0.1", "10.0.0.5", "192.168.1.10", "172.16.0.1", "::1", "fd00:ec2::253", "8.8.8.8",
+                 "localhost", "www.siemens-healthineers.com", "169.254.example.com", "deadbeef", "2130706433"):
+        assert not gw_mod.is_link_local(host), host
+
+
+async def test_analyst_added_metadata_source_is_approved_and_still_blocked(settings, pages):
+    """An analyst adds the EC2 metadata URL as a source and approves it: the rule exists, the fetch never runs."""
+    added = src("S-011", IMDS_URL)
+    added.proposed_by, added.kind = "user", "other"
+    local = src("S-012", "http://127.0.0.1:8000/test-pages/injection.html", tier="tier_3")
+    c = FakeCtx(settings, [s.model_copy(deep=True) for s in SOURCES] + [added, local])
+    policy = c.gateway.build_policy()
+    allow = next(r for r in policy.rules if r.rule_id == "R-allow-S-011")
+    assert (allow.domain, allow.path_prefix) == ("169.254.169.254", "/latest/meta-data/")
+    decision, rule_id, reason = c.gateway.decide(agent(), "fetch", IMDS_URL)
+    assert (decision, rule_id) == ("blocked", None) and reason == "169.254.169.254: link-local address, never fetched."
+    with pytest.raises(Blocked) as exc:
+        await c.gateway.fetch(agent(), IMDS_URL + "iam/security-credentials/", source_id="S-011")
+    assert "link-local address, never fetched" in exc.value.reason
+    (ev,) = c.of("gateway.request")
+    assert (ev.data.decision, ev.data.rule_id, ev.data.source_id) == ("blocked", None, "S-011")
+    assert pages["_calls"] == []                       # nothing left the gateway
+    # Loopback is still allowed by its rule.
+    assert c.gateway.decide(agent(), "fetch", local.url)[:2] == ("allowed", "R-allow-S-012")
+
+
+def test_link_local_blocked_for_every_form(ctx: FakeCtx):
+    g, f = ctx.gateway, agent()
+    for url in ("http://[fd00:ec2::254]/latest/meta-data/", "http://[fe80::a9fe:a9fe]/", "http://2852039166/latest/",
+                "http://instance-data/latest/meta-data/", "https://169.254.170.2/v2/credentials"):
+        decision, rule_id, reason = g.decide(f, "fetch", url)
+        assert (decision, rule_id) == ("blocked", None) and "link-local address" in reason, url
+
+
+async def test_redirect_to_metadata_is_blocked(ctx: FakeCtx, pages):
+    pages[AR_URL] = (302, {"location": IMDS_URL}, b"")
+    with pytest.raises(Blocked) as exc:
+        await ctx.gateway.fetch(agent(), AR_URL, source_id="S-001")
+    assert "link-local address" in exc.value.reason
+    assert [e.data.decision for e in ctx.of("gateway.request")] == ["allowed", "blocked"]
+    assert pages["_calls"] == [AR_URL]
+
+
 async def test_every_decision_emits_exactly_one_gateway_request(ctx: FakeCtx, pages, settings):
     bedrock.register_fake("Metric", metric_fake)
     g, decisions = ctx.gateway, 0

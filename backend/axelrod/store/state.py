@@ -6,12 +6,15 @@ change items, sources, agents and documents directly and then emit the matching 
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
 
 from ..contract import RUBRIC, m
 from ..ids import IdAllocator
+
+if TYPE_CHECKING:
+    from ..config import Settings
 
 PageRanges = list[list[int]]        # [[150, 156], [170, 172]]: 1-based PDF page indices, inclusive
 
@@ -153,14 +156,19 @@ class RunState(BaseModel):
             certainty=None, markdown_path=None, as_of_seq=self.run.last_seq,
         )
 
-    def policy_view(self) -> m.Policy:
-        """What the gateway enforces right now. Before approval: no rules, default deny."""
+    def policy_view(self, settings: Settings | None = None) -> m.Policy:
+        """What the gateway enforces right now. Before approval it is the gateway's own version 0 base:
+        R-sys-models and the role scopes from settings (default: get_settings()), every fetch default deny."""
         if self.policy is not None:
             return self.policy.model_copy(update={"as_of_seq": self.run.last_seq,
                                                   "kill_switch": self.policy.kill_switch or self.kill_switch})
-        return m.Policy(run_id=self.run.run_id, version=0, kill_switch=self.kill_switch, rules=[], role_scopes=[],
-                        budget_usd=self.run.usage.budget_usd, updated_at=self.run.created_at,
-                        as_of_seq=self.run.last_seq)
+        from ..config import get_settings
+        from ..gateway import base_policy
+
+        settings = settings or get_settings()
+        budget = self.run.usage.budget_usd if self.run.usage.budget_usd is not None else settings.budget_usd
+        return base_policy(self.run.run_id, settings, budget_usd=budget, at=self.run.created_at,
+                           as_of_seq=self.run.last_seq, kill_switch=self.kill_switch)
 
     def agent_list(self) -> m.AgentList:
         return m.AgentList(agents=list(self.agents.values()), as_of_seq=self.run.last_seq)

@@ -2,12 +2,17 @@
 and the budget, meters every call, emits one gateway.request per decision, and fails closed.
 
 Decision order (CONTRACT.md section 6, first match wins): kill switch, budget, role scope, explicit
-deny, allow, default deny. Any exception while deciding or carrying out a request is a deny.
+deny, allow, default deny. Any exception while deciding or carrying out a request is a deny. Link-local
+fetch targets (instance metadata lives there) are denied with the explicit denies, so no allow rule,
+not even an analyst-approved source, can reach them.
 """
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
+import re
+import socket
 import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
@@ -30,6 +35,13 @@ SYS_RULE_ID = "R-sys-models"
 MAX_REDIRECTS = 5
 REDIRECT_CODES = frozenset({301, 302, 303, 307, 308})
 KILL_REASON = "Kill switch: run stopped. Every request is denied."
+
+# EC2 instance metadata: the IPv6 endpoint (not link-local by prefix) and its DNS names.
+IMDS_V6 = ipaddress.IPv6Address("fd00:ec2::254")
+NAT64 = ipaddress.IPv6Network("64:ff9b::/96")
+METADATA_HOSTS = frozenset({"instance-data", "instance-data.ec2.internal"})
+# Shorthand IPv4 forms resolvers accept (2852039166, 0xa9fea9fe, 169.254.43518, 0251.0376.0251.0376).
+_NUMERIC_V4 = re.compile(r"(?:0x[0-9a-f]+|\d+)(?:\.(?:0x[0-9a-f]+|\d+)){0,3}")
 
 # Which model sizes each role may call. The fetcher is the only role that may fetch.
 ROLE_SIZES: dict[str, tuple[str, ...]] = {
@@ -99,6 +111,38 @@ def role_scopes(settings: Settings) -> list[m.RoleScope]:
     return out
 
 
+def host_ip(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """The IP address a host names literally, or None for a DNS name.
+
+    Brackets, a trailing dot and an IPv6 zone id are dropped. Numeric IPv4 shorthands count as addresses,
+    because the OS resolver would connect to them.
+    """
+    h = host.strip().lower().strip("[]").rstrip(".").split("%", 1)[0]
+    try:
+        return ipaddress.ip_address(h)
+    except ValueError:
+        pass
+    if _NUMERIC_V4.fullmatch(h):
+        try:
+            return ipaddress.IPv4Address(socket.inet_aton(h))
+        except OSError:
+            return None
+    return None
+
+
+def is_link_local(host: str) -> bool:
+    """169.254.0.0/16, fe80::/10, fd00:ec2::254, an IPv4 one inside IPv6 (mapped or NAT64), or a metadata name."""
+    if host.strip().lower().rstrip(".") in METADATA_HOSTS:
+        return True
+    ip = host_ip(host)
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip == IMDS_V6 or ip.is_link_local:
+            return True
+        inner = ip.ipv4_mapped or (ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF) if ip in NAT64 else None)
+        return inner is not None and inner.is_link_local
+    return ip is not None and ip.is_link_local
+
+
 def _norm_host(host: str) -> str:
     host = host.lower().rstrip(".")
     return host[4:] if host.startswith("www.") else host
@@ -131,6 +175,14 @@ def rule_matches(rule: m.PolicyRule, role: str, action: str, target: str,
 def _sys_rule(at: str) -> m.PolicyRule:
     return m.PolicyRule(rule_id=SYS_RULE_ID, effect="allow", action="model.invoke", roles=[], origin="system",
                         note="Model calls allowed per role scope", created_at=at)
+
+
+def base_policy(run_id: str, settings: Settings, *, budget_usd: float | None, at: str, as_of_seq: int = 0,
+                kill_switch: bool = False) -> m.Policy:
+    """Version 0, what the gateway enforces before approval: R-sys-models and the role scopes, every fetch
+    default deny. RunState.policy_view shows the same thing, so the panel never hides a rule in force."""
+    return m.Policy(run_id=run_id, version=0, kill_switch=kill_switch, rules=[_sys_rule(at)],
+                    role_scopes=role_scopes(settings), budget_usd=budget_usd, updated_at=at, as_of_seq=as_of_seq)
 
 
 def source_rule(src: m.Source, revoked: dict[str, str | None], at: str) -> m.PolicyRule | None:
@@ -203,7 +255,8 @@ class Gateway:
         st = self.ctx.state
         if st.policy is not None:
             return st.policy
-        return self._make_policy(version=0, rules=[_sys_rule(now_iso())], kill_switch=False)
+        return base_policy(st.run.run_id, self.ctx.settings, budget_usd=self.budget_usd(), at=st.run.created_at,
+                           as_of_seq=st.run.last_seq)
 
     def _make_policy(self, *, version: int, rules: list[m.PolicyRule], kill_switch: bool) -> m.Policy:
         st = self.ctx.state
@@ -336,7 +389,9 @@ class Gateway:
         if action == "model.invoke" and target not in scope.models:
             return "blocked", None, f"Role '{role}' may not call {target}."
         parts = http.split_url(target) if action == "fetch" else None
-        # 4. explicit deny
+        # 4. explicit deny: link-local hosts first (no rule can allow them), then the policy's deny rules
+        if parts is not None and is_link_local(parts[1]):
+            return "blocked", None, f"{parts[1]}: link-local address, never fetched."
         for rule in policy.rules:
             if rule.effect == "deny" and rule_matches(rule, role, action, target, parts):
                 return "blocked", rule.rule_id, _deny_reason(rule)

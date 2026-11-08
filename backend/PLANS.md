@@ -616,9 +616,16 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `patch_item` keeps the old judge votes, with a "From before the analyst edit" note, and doesn't update holes or the rollup.
 - `scripts/export_run.py <run_id> [--name] [--dest]` refuses unfinished runs, replays and an existing destination. It uses `Store._load_local` / `_load_aws`, because `load_all` marks unfinished runs failed.
 
-**2026-11-07 8:20 PM, B-extract REPORT.**
+**2026-11-07 8:23 PM, B-extract REPORT.**
 - Live presmoke on S-001 pages 15, 138, 140, 141 and 162: 49/49 items pass, $0.0619 (the first run passed about 65% and led to three fixes). `scripts/presmoke.py --source S-001 --pages a,b|a-b [--until <stage>] [--budget 1.0] [--fake] [--data-dir] [--keep] [--plan]`.
 - The tool name is `record_data_items`. Unit and period headers come from the evidence's own page: the model's header line if it checks out there, else the nearest header above the row. Located quotes store the exact page text (cells joined by " \n").
 - Facts without a number are allowed when a need asks for one directly (value empty). Percentage-change table columns are skipped (see the known issue on `_period_text`). The tier rule runs once at the end of extract.
 - JSON sources S-007 and S-008: 9 ROTIC input concepts (us-gaap or ifrs-full), `extracted_by: "code"`. Period is `FYyyyy` for income lines and an ISO date for balances. The latest filing wins when a year is restated.
 - A failed extractor page records no Hole. finalize declares it (sent to B-reason). Items still failing after the code recite stay `fail` for repair.
+
+**2026-11-07 8:27 PM, B-g2fix REPORT. This supersedes part of the 8:07 PM note.**
+- Untrusted sources are released only on a `clean` scan. `skipped` (no guardrail) and `error` quarantine them, and a Document can show `scan.verdict: "skipped"` with `quarantined: true`. Offline tests and presmoke runs that need news or forum pages must register a fake scan (`bedrock.register_fake_scan`) or set `GUARDRAIL_ID`.
+- `Gateway.decide` blocks link-local hosts before any allow rule: 169.254.0.0/16, fe80::/10, fd00:ec2::254, mapped and numeric forms, and the instance-data names. The block has `rule_id` None. Loopback and private addresses still pass. Not caught: a DNS name that resolves to link-local (IMDSv2 covers that).
+- `gateway.base_policy(run_id, settings, *, budget_usd, at, as_of_seq=0, kill_switch=False)` is the pre-approval policy, used by both `RunState.policy_view(settings=None)` and the gateway. Also `gateway.is_link_local(host)`, `gateway.host_ip(host)`, `ingest.held_scan(scan)`, `ingest.HELD_REASONS`, `store.FAKE_MODELS_NOTE`.
+- With `FAKE_MODELS=1`, `Run.notes` starts with "Simulated: model answers come from offline fakes (FAKE_MODELS=1)".
+- The orchestrator changed `api.py` to call `policy_view(rt.settings)`.

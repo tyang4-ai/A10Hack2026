@@ -320,11 +320,11 @@ async def revoke(run_id: str, source_id: str, rt: RT, req: Optional[m.RevokeRequ
     except ValueError as e:
         raise ApiError(409, "invalid_state", str(e)) from None
     await rt.store.save_async(state)
-    return m.RevokeResponse(source=source, policy=state.policy_view())
+    return m.RevokeResponse(source=source, policy=state.policy_view(rt.settings))
 
 
 async def read_policy(run_id: str, rt: RT):
-    return rt.state(run_id).policy_view()
+    return rt.state(run_id).policy_view(rt.settings)
 
 
 # -- reports ------------------------------------------------------------------------------
