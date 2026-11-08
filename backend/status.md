@@ -5,8 +5,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2). B-live, B-baseline (W3, started early). G3 checks by the orchestrator. W1 is 5/5 done.
-- Next: G3 now (live presmoke through every stage). G4 when A-deploy lands.
+- Running: A-deploy (W2). B-live, B-baseline (W3, started early). Verifier (G3). W1 is 5/5 done.
+- Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run.
 
 ## Plans
 
@@ -37,7 +37,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
 | G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
-| G3 Pipeline and pre-smoke | | | |
+| G3 Pipeline and pre-smoke | partial | Sat 8:36 PM | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
 | G4 Deploy | | | |
 | G5 Full SHL run, demo-ok-1 | | | |
 | G6 Demo rehearsal | | | |
@@ -69,6 +69,9 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:58 PM: Gordon's call: don't wait at gates. W2 starts now, while B-verify finishes and G2 runs alongside. No W2 plan owns a B-verify file.
 
 ## Known issues
+
+- Windows only: with a long DATA_DIR (for example a temp folder), vault paths for S-002 and S-009 pass the 260-character MAX_PATH limit and their ingest fails. The default `backend/.data` is fine, and EC2 is Linux. Keep DATA_DIR short on the laptop.
+- Presmoke cost on 5 pages: $0.80 (146 model calls). The full run reads 36 PDF pages plus HTML and JSON, so expect about $3 to $5 against `BUDGET_USD=5`. Raise the budget for R1 if the estimate holds.
 
 - `verify/checks.py` `_period_text`: in a mixed table row (amounts plus % change columns), % tokens are aligned to the year header, so a % change column reads as the prior year. For now the extractor skips % change columns. Growth rates written in a sentence are still extracted. Fix in W3 if time allows.
 
@@ -106,3 +109,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
 - Sat 8:26 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
+- Sat 8:36 PM: B-reason done (W2 6/7, only A-deploy left). G3: live presmoke ok through every stage, $0.80. Verifier on W2 running.

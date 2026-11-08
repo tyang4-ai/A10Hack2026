@@ -650,7 +650,7 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - With `FAKE_MODELS=1`, `Run.notes` starts with "Simulated: model answers come from offline fakes (FAKE_MODELS=1)".
 - The orchestrator changed `api.py` to call `policy_view(rt.settings)`.
 
-**2026-11-07 8:30 PM, B-reason REPORT.**
+**2026-11-07 8:26 PM, B-reason REPORT.**
 - Drafters: one per group of in-scope criteria that share a plan need, run in parallel. For SHL that is 5 Sonnet calls: {rotic_level, rotic_vs_peers}, secular_growth, leverage, liquidity, research_stage. Drafter `max_tokens` is 12000. The repairer uses the large model, judges the small one.
 - Judge ids keep counting on re-checks (`verifier-C-005-4` to `-6` after a repair). `finalize_report` emits `report.ready` with stage "repair".
 - Code only lowers model claims: research_stage is forced N/A with a coverage-history Hole, and data coverage is "low" for a 10-year criterion with fewer than ten fiscal years of cited data.
