@@ -8,7 +8,6 @@ import { api } from "@/lib/api";
 import { useRunStore } from "@/lib/store";
 import { LAYOUTS, useWindows, type Geo, type Win } from "@/lib/windows";
 import { Window } from "./Window";
-import { usePopover } from "./Switchers";
 import { KIND_META, KIND_ORDER, winTitle } from "./WindowContent";
 
 // "A, B and C"
@@ -208,19 +207,17 @@ export function LayoutControl() {
     <div className="flex flex-wrap items-center gap-2">
       <div role="group" aria-label="Layout presets, one per pipeline phase" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
         {LAYOUTS.map((l, i) => (
-          <button key={l.id} aria-pressed={layout === l.id} onClick={() => applyLayout(l.id)} className={seg(layout === l.id, i === 0)}>
-            {l.label}
-          </button>
+          <LayoutButton key={l.id} id={l.id} label={l.label} on={layout === l.id} first={i === 0} />
         ))}
       </div>
       {customs.length > 0 && (
         <div role="group" aria-label="Your saved layouts" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
           {customs.map((c, i) => (
-            <SavedLayoutButton key={c.id} id={c.id} label={c.label} on={layout === c.id} first={i === 0} />
+            <LayoutButton key={c.id} id={c.id} label={c.label} on={layout === c.id} first={i === 0} saved index={i} count={customs.length} />
           ))}
         </div>
       )}
-      <LayoutMenu />
+      <NewLayout />
       {suggest && (
         <button onClick={() => applyLayout(suggest)} className="h-7 rounded-[4px] border border-accent px-2.5 text-[12px] font-medium text-accent hover:bg-desk-raised">
           Switch to {label(suggest)}
@@ -230,11 +227,19 @@ export function LayoutControl() {
   );
 }
 
-// A saved layout: click to apply it, right-click (or the Menu key) to delete it.
-function SavedLayoutButton({ id, label, on, first }: { id: string; label: string; on: boolean; first: boolean }) {
-  const { applyLayout, deleteLayout } = useWindows.getState();
+const menuItem = "flex h-8 w-full items-center gap-2 rounded-[4px] px-2.5 text-left text-[13px] hover:bg-desk-raised focus:bg-desk-raised";
+
+// The saved layout being dragged, shared by all the buttons while a reorder drag is on.
+let draggingLayout: string | null = null;
+
+// A layout button: click to apply it. Right-click (or the Menu key) for Reset, and for a
+// saved layout, Move left, Move right and Delete. Saved layouts also reorder by drag and drop.
+function LayoutButton({ id, label, on, first, saved, index = 0, count = 0 }: { id: string; label: string; on: boolean; first: boolean; saved?: boolean; index?: number; count?: number }) {
+  const { applyLayout, deleteLayout, moveLayout } = useWindows.getState();
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [over, setOver] = useState(false);
   const btn = useRef<HTMLButtonElement | null>(null);
   const menu = useRef<HTMLDivElement | null>(null);
 
@@ -242,7 +247,7 @@ function SavedLayoutButton({ id, label, on, first }: { id: string; label: string
     setAt(null);
     setConfirm(false);
   };
-  // Close on a click elsewhere, Escape, or scrolling away; focus the menu when it opens.
+  // Close on a click elsewhere, Escape, or the window losing focus; focus the menu when it opens.
   useEffect(() => {
     if (!at) return;
     menu.current?.querySelector<HTMLElement>("button")?.focus();
@@ -277,119 +282,152 @@ function SavedLayoutButton({ id, label, on, first }: { id: string; label: string
           setAt(e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : { x: r.left, y: r.bottom + 4 });
           setConfirm(false);
         }}
-        className={`${seg(on, first)} max-w-32 truncate`}
+        draggable={saved}
+        onDragStart={(e) => {
+          draggingLayout = id;
+          setDragging(true);
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", label);
+        }}
+        onDragEnd={() => {
+          draggingLayout = null;
+          setDragging(false);
+        }}
+        onDragOver={(e) => {
+          if (!saved || !draggingLayout || draggingLayout === id) return;
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          if (draggingLayout && draggingLayout !== id) moveLayout(draggingLayout, index);
+        }}
+        className={`${seg(on, first)} ${saved ? "max-w-32 truncate" : ""} transition-opacity ${dragging ? "opacity-40" : ""} ${over ? "bg-desk-raised outline-1 -outline-offset-2 outline-accent" : ""}`}
       >
         {label}
       </button>
       {at && (
-        <div ref={menu} role="menu" aria-label={`${label} layout`} style={{ left: Math.min(at.x, window.innerWidth - 232), top: at.y }} className="fixed z-[200000] w-56 rounded-[6px] border border-desk-line-strong bg-desk p-1 text-desk-ink">
+        <div
+          ref={menu}
+          role="menu"
+          aria-label={`${label} layout`}
+          style={{ left: Math.min(at.x, window.innerWidth - 232), top: at.y }}
+          className="fixed z-[200000] w-56 animate-[snap-in_120ms_ease-out] rounded-[6px] border border-desk-line-strong bg-desk p-1 text-desk-ink"
+        >
           <button
             role="menuitem"
             onClick={() => {
-              if (!confirm) return setConfirm(true);
-              deleteLayout(id);
+              applyLayout(id, { reset: true });
               close();
             }}
-            className={`${menuItem} ${confirm ? "bg-desk-bad font-semibold text-desk hover:bg-desk-bad focus:bg-desk-bad" : "text-desk-bad"}`}
+            className={menuItem}
           >
-            {confirm ? `Confirm delete ${label}` : `Delete ${label}`}
+            Reset {label}
           </button>
+          {saved && index > 0 && (
+            <button
+              role="menuitem"
+              onClick={() => {
+                moveLayout(id, index - 1);
+                close();
+              }}
+              className={menuItem}
+            >
+              Move left
+            </button>
+          )}
+          {saved && index < count - 1 && (
+            <button
+              role="menuitem"
+              onClick={() => {
+                moveLayout(id, index + 1);
+                close();
+              }}
+              className={menuItem}
+            >
+              Move right
+            </button>
+          )}
+          {saved && (
+            <button
+              role="menuitem"
+              onClick={() => {
+                if (!confirm) return setConfirm(true);
+                deleteLayout(id);
+                close();
+              }}
+              className={`${menuItem} ${confirm ? "bg-desk-bad font-semibold text-desk hover:bg-desk-bad focus:bg-desk-bad" : "text-desk-bad"}`}
+            >
+              {confirm ? `Confirm delete ${label}` : `Delete ${label}`}
+            </button>
+          )}
         </div>
       )}
     </>
   );
 }
 
-const menuItem = "flex h-8 w-full items-center gap-2 rounded-[4px] px-2.5 text-left text-[13px] hover:bg-desk-raised focus:bg-desk-raised";
-
-// The + button: everything about layouts that isn't picking one.
-function LayoutMenu() {
-  const layout = useWindows((s) => s.layout);
-  const dirty = useWindows((s) => s.dirty);
-  const { applyLayout, saveAs } = useWindows.getState();
-  const { open, setOpen, root, trigger } = usePopover();
+// The + button grows into a name field for saving the current windows as a new layout.
+// Enter saves, Escape or clicking away with nothing typed collapses it back.
+function NewLayout() {
+  const saveAs = useWindows((s) => s.saveAs);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
-  const menu = useRef<HTMLDivElement | null>(null);
+  const input = useRef<HTMLInputElement | null>(null);
+  const plus = useRef<HTMLButtonElement | null>(null);
 
-  // Each time it opens, start on the menu, not the name form.
   useEffect(() => {
-    if (!open) setNaming(false);
-    else menu.current?.querySelector<HTMLElement>("[role^=menuitem]")?.focus();
-  }, [open]);
+    if (naming) input.current?.focus();
+  }, [naming]);
 
-  const close = () => {
-    setOpen(false);
-    trigger.current?.focus();
-  };
-
-  // Up and down arrows move between items.
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    const items = [...(menu.current?.querySelectorAll<HTMLElement>("[role^=menuitem]") ?? [])];
-    const i = items.indexOf(document.activeElement as HTMLElement);
-    e.preventDefault();
-    items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+  const collapse = (refocus: boolean) => {
+    setNaming(false);
+    setName("");
+    if (refocus) requestAnimationFrame(() => plus.current?.focus());
   };
 
   return (
-    <div ref={root} className="relative">
-      <button
-        ref={trigger}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="Layout options"
-        onClick={() => setOpen((o) => !o)}
-        className={`grid h-7 w-7 place-items-center rounded-[4px] border border-desk-line-strong text-[16px] leading-none text-desk-ink hover:bg-desk-raised ${open ? "bg-desk-raised" : ""}`}
-      >
-        +
-      </button>
-      {open && (
-        <div ref={menu} role="menu" aria-label="Layout options" onKeyDown={onKey} className="absolute top-full left-0 z-50 mt-1 w-60 rounded-[6px] border border-desk-line-strong bg-desk p-1 text-desk-ink">
-          {naming ? (
-            <form
-              className="flex items-center gap-1 p-1"
-              onSubmit={(e) => {
-                e.preventDefault();
-                saveAs(name);
-                setName("");
-                close();
-              }}
-            >
-              <label htmlFor="layout-name" className="sr-only">
-                Name for this layout
-              </label>
-              <input
-                id="layout-name"
-                autoFocus
-                value={name}
-                maxLength={24}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Layout name"
-                className="h-8 min-w-0 flex-1 rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 text-[13px] text-desk-ink placeholder:text-desk-muted focus:border-accent"
-              />
-              <button className="h-8 rounded-[4px] bg-accent px-2.5 text-[12px] font-semibold text-accent-ink">Save</button>
-            </form>
-          ) : (
-            <>
-              <button role="menuitem" onClick={() => setNaming(true)} className={menuItem}>
-                Save layout as…
-              </button>
-              {dirty && (
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    applyLayout(layout, { reset: true });
-                    close();
-                  }}
-                  className={menuItem}
-                >
-                  Reset layout
-                </button>
-              )}
-            </>
-          )}
-        </div>
+    <div className={`h-7 overflow-hidden rounded-[4px] border transition-[width,border-color] duration-200 ease-out ${naming ? "w-52 border-accent" : "w-7 border-desk-line-strong"}`}>
+      {naming ? (
+        <form
+          className="flex h-full animate-[snap-in_200ms_ease-out] items-center"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveAs(name);
+            collapse(true);
+          }}
+        >
+          <label htmlFor="layout-name" className="sr-only">
+            Name for the new layout
+          </label>
+          <input
+            ref={input}
+            id="layout-name"
+            value={name}
+            maxLength={24}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") collapse(true);
+            }}
+            onBlur={(e) => {
+              if (!name.trim() && !e.currentTarget.form?.contains(e.relatedTarget as Node | null)) collapse(false);
+            }}
+            placeholder="Name this layout"
+            className="h-full min-w-0 flex-1 bg-transparent px-2 text-[12px] text-desk-ink outline-none placeholder:text-desk-muted"
+          />
+          <button className="h-full flex-none bg-accent px-2.5 text-[12px] font-semibold text-accent-ink">Save</button>
+        </form>
+      ) : (
+        <button
+          ref={plus}
+          aria-label="Save these windows as a new layout"
+          onClick={() => setNaming(true)}
+          className="grid h-full w-full place-items-center text-[16px] leading-none text-desk-ink hover:bg-desk-raised"
+        >
+          +
+        </button>
       )}
     </div>
   );

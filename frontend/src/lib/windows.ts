@@ -195,6 +195,7 @@ interface WinState {
   swapPlaces: (a: string, b: string) => void;
   saveAs: (label: string) => void;
   deleteLayout: (id: string) => void;
+  moveLayout: (id: string, to: number) => void;
 }
 
 function presetWins(name: LayoutName, customs: Custom[]): Win[] {
@@ -344,6 +345,15 @@ export const useWindows = create<WinState>((set, get) => ({
       writeSaved({ ...saved, customs: get().customs });
     }
     if (layout === id) get().applyLayout("read");
+  },
+
+  // Reorder saved layouts: put this one at position `to`.
+  moveLayout: (id, to) => {
+    const list = get().customs.filter((c) => c.id !== id);
+    const c = get().customs.find((x) => x.id === id);
+    if (!c) return;
+    list.splice(Math.max(0, Math.min(list.length, to)), 0, c);
+    set({ customs: list });
   },
 
   // Drop a window on another's title bar: the two trade position and size.
