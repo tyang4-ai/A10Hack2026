@@ -42,4 +42,7 @@ async def delete_run(rt: Any, state: Any) -> dict:
         check_deletable(state, list(rt.settings.protected_runs))   # still finished once its tasks ended
     events, files = await rt.store.remove_run(run_id)
     rt.contexts.pop(run_id, None)
+    from . import docimage
+
+    docimage.forget_run(run_id)               # its rendered pages and PDF bytes leave the image cache too
     return {"run_id": run_id, "events": events, "vault_files": files, "note": NOTE}
