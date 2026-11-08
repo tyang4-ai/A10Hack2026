@@ -582,3 +582,8 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `numbers_traced` accepts only a cited item's value or a computation's display. Other numbers in a cited item's quote don't count. Drafter and summarizer prompts must say so, and spell out small counts ("three years").
 - Check order: data items, then conclusions, then extrapolations and charts, then sentences (checks read the cited items' status).
 - Known limit: a dash followed by a space before a number is `sign_ambiguous`, so a dropped minus is not caught when the dash is spaced. Parenthesised negatives stay strict.
+
+**2026-11-07 8:10 PM, B-testpage REPORT.**
+- `Settings.test_page_url` (`TEST_PAGE_URL`). `GET` and `HEAD /test-pages/{name}` serve `backend/data/test_pages/<name>.html` with `X-Axelrod-Simulated: true`, outside `/api/v1`, with no key needed. The plan stage swaps the planted page's URL, domain and rationale when `TEST_PAGE_URL` is set. It finds the page by its plan.json URL plus "(simulated)" in the title, not by the id.
+- `R-allow-S-010` covers the API host and the path prefix `/test-pages/injection.html` only. `/api/v1/*` on the same host stays default deny. Rules ignore the port.
+- The gateway does not refuse loopback, private or link-local hosts. Mitigation: EC2 requires IMDSv2 (sent to A-deploy). Possible hardening for B-live: deny 169.254.0.0/16 in `decide`.

@@ -10,6 +10,7 @@ import json
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 
 from ..config import BACKEND_DIR
 from ..contract import m
@@ -23,6 +24,10 @@ FROZEN_NOTE = ("Frozen demo plan: the needs and sources for Siemens Healthineers
                "not generated live.")
 UNAVAILABLE = "only the frozen Siemens Healthineers plan is available in this build"
 _LEGAL_FORMS = {"ag", "se", "inc", "corp", "plc", "ltd", "nv", "sa", "co", "gmbh", "kgaa"}
+TEST_PAGE_FILE = "/data/test_pages/injection.html"     # how plan.json's URL for the planted page ends
+SERVED_RATIONALE = (" Served by Axelrod's own API at {url} (TEST_PAGE_URL), because the GitHub repo stays private "
+                    "until submission. Still simulated: the API marks the page with X-Axelrod-Simulated: true.")
+SERVED_NOTE = "{sid} is the planted test page (simulated), served by Axelrod's own API at {url}, not GitHub."
 
 
 class PlanUnavailable(RuntimeError):
@@ -79,6 +84,9 @@ async def run(ctx: RunContext) -> None:
     needs = [m.DataNeed.model_validate(n) for n in plan.get("needs", [])]
     sources = [_fresh_source(s) for s in plan.get("sources", [])]
     _apply_plan_fields(ctx, plan, needs, sources)
+    served = serve_test_page(sources, ctx.settings.test_page_url)
+    if served:
+        _append_note(state.run, served)
     await _write_plan_files(ctx, plan, needs, sources)
 
     for need in needs:
@@ -115,6 +123,36 @@ def _apply_plan_fields(ctx: RunContext, plan: dict[str, Any], needs: list[m.Data
     state.run.notes = f"{state.run.notes.strip()} | {note}" if (state.run.notes or "").strip() else note
     _bump_counter(ctx, "N", [n.need_id for n in needs])
     _bump_counter(ctx, "S", [s.source_id for s in sources])
+
+
+def is_test_page(source: m.Source) -> bool:
+    """The planted page: its plan.json URL points at backend/data/test_pages/injection.html and it says simulated."""
+    return urlsplit(source.url).path.endswith(TEST_PAGE_FILE) and "(simulated)" in source.title
+
+
+def serve_test_page(sources: list[m.Source], url: str | None) -> str | None:
+    """With TEST_PAGE_URL set, the planted page's source gets that URL (and its host as domain) in place.
+
+    Returns the Run.notes line, or None when TEST_PAGE_URL is unset. A URL that isn't http(s) fails the run
+    here, because the gateway would never allow it and the demo would break later with no clear reason.
+    """
+    url = (url or "").strip()
+    if not url:
+        return None
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError(f"TEST_PAGE_URL must be an http(s) URL, got {url!r}")
+    for i, source in enumerate(sources):
+        if is_test_page(source):
+            sources[i] = source.model_copy(update={
+                "url": url, "domain": parts.hostname.lower(),
+                "rationale": source.rationale + SERVED_RATIONALE.format(url=url)})
+            return SERVED_NOTE.format(sid=source.source_id, url=url)
+    return "TEST_PAGE_URL is set, but the plan has no planted test page, so no source URL was changed."
+
+
+def _append_note(run: m.Run, note: str) -> None:
+    run.notes = f"{run.notes.strip()} | {note}" if (run.notes or "").strip() else note
 
 
 async def _write_plan_files(ctx: RunContext, plan: dict[str, Any], needs: list[m.DataNeed],

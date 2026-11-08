@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-extract, B-reason, B-brief, B-cli, B-testpage, A-deploy (W2), verifier (G2). W1 is 5/5 done.
+- Running: B-extract, B-reason, B-brief, B-cli, A-deploy (W2), verifier (G2). W1 is 5/5 done.
 - Next: finish G2 when B-verify and the verifier report. Then G3 (presmoke with live Bedrock).
 
 ## Plans
@@ -24,7 +24,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-brief | builder | W2 | running | | |
 | B-cli | builder | W2 | running | | |
 | A-deploy | aws-operator | W2 | running | | |
-| B-testpage | builder | W2 | running | | |
+| B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
 | B-live | builder | W3 | todo | | |
 | B-baseline | builder | W3 | todo | | |
 | B-p1 | builder | W3 | todo | | |
@@ -68,6 +68,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:58 PM: Gordon's call: don't wait at gates. W2 starts now, while B-verify finishes and G2 runs alongside. No W2 plan owns a B-verify file.
 
 ## Known issues
+
+- The gateway does not refuse link-local or private hosts, so an analyst-added source could point at instance metadata. EC2 requires IMDSv2 (A-deploy). Optional hardening in W3: deny 169.254.0.0/16 in the gateway.
 
 - Verify limit: a dash followed by a space before a number ("– 9,871") could be a minus or a range dash, so a dropped minus is not caught there. Negatives in parentheses are always strict.
 

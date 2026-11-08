@@ -9,6 +9,10 @@ Usage (from the repo root):
 The URL checks are a dev preflight, not agent traffic: no agent runs and nothing is stored, so they use stdlib
 urllib (HEAD, then a 1 KB ranged GET) instead of the gateway, which needs a run and has no HEAD. The planted
 test page only warns until the orchestrator pushes the backend branch. Exit code 1 means at least one error.
+
+With TEST_PAGE_URL set (env or backend/.env), runs fetch the planted page from Axelrod's own API instead of
+raw GitHub, so this script checks that URL instead: its shape offline, and online that it answers with the
+page and the X-Axelrod-Simulated header. A failure there is an error, since the demo depends on it.
 """
 from __future__ import annotations
 
@@ -38,6 +42,9 @@ TEST_PAGE_PATH = REPO / "backend" / "data" / "test_pages" / "injection.html"
 TEST_PAGE_URL = ("https://raw.githubusercontent.com/tyang4-ai/A10Hack2026/backend/"
                  "backend/data/test_pages/injection.html")
 TEST_PAGE_TITLE = "Axelrod test page: planted prompt injection (simulated)"
+SERVED_PATH = "/test-pages/injection.html"     # where api.py serves the page, under TEST_PAGE_URL's host
+SIMULATED_HEADER = "X-Axelrod-Simulated"
+LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 REVOKE_TARGET = "S-006"           # the demo revokes this tier_2 article mid-collect
 PAGE_BUDGET = (30, 45)            # extract pages in total: they drive the live-model cost of a full run
 TIER_ORDER = {"priority": 0, "tier_2": 1, "tier_3": 2}
@@ -464,6 +471,50 @@ def check_test_page_file(path: Path = TEST_PAGE_PATH) -> list[Issue]:
     return issues
 
 
+def check_test_page_override(url: str) -> list[Issue]:
+    """TEST_PAGE_URL must be Axelrod's own route for this page: http(s), a host, the path /test-pages/injection.html."""
+    parts = urlsplit(url)
+    where = "TEST_PAGE_URL"
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        return [err(where, f"must be an http(s) URL with a host, got {url!r}")]
+    issues: list[Issue] = []
+    if not parts.path.endswith(SERVED_PATH):
+        issues.append(err(where, f"path must end with {SERVED_PATH} (the API route that serves the page)"))
+    if parts.query or parts.fragment:
+        issues.append(err(where, "must have no query or fragment: the gateway rule's path prefix is the URL path"))
+    if parts.scheme == "http" and parts.hostname not in LOOPBACK:
+        issues.append(warn(where, "plain http on a non-local host: use the https API Gateway invoke URL"))
+    return issues
+
+
+def check_served_page(url: str, user_agent: str, timeout: float = 20.0, opener: Opener | None = None,
+                      path: Path = TEST_PAGE_PATH) -> tuple[list[Issue], str]:
+    """GET the page from Axelrod's API: 200, HTML, the simulated header and title, ideally the same bytes."""
+    opener = opener or urllib.request.urlopen
+    where = "TEST_PAGE_URL"
+    req = urllib.request.Request(url, headers={"User-Agent": user_agent})
+    try:
+        with opener(req, timeout=timeout) as resp:
+            status, headers, body = int(resp.status), resp.headers, resp.read()
+    except urllib.error.HTTPError as exc:
+        return [err(where, f"HTTP {exc.code} from {url}. Is the Axelrod API running there?")], f"  FAIL served page {url}"
+    except Exception as exc:  # noqa: BLE001  any network error is a failed check
+        return [err(where, f"{type(exc).__name__}: {exc}. Is the Axelrod API running there?")], f"  FAIL served page {url}"
+    issues: list[Issue] = []
+    if status != 200:
+        issues.append(err(where, f"HTTP {status}, expected 200"))
+    if not (headers.get("Content-Type") or "").lower().startswith("text/html"):
+        issues.append(err(where, f"Content-Type {headers.get('Content-Type')!r} is not text/html"))
+    if (headers.get(SIMULATED_HEADER) or "").lower() != "true":
+        issues.append(err(where, f"{SIMULATED_HEADER}: true header is missing"))
+    if f"<title>{TEST_PAGE_TITLE}</title>".encode("utf-8") not in body:
+        issues.append(err(where, f"the page title is not {TEST_PAGE_TITLE!r}"))
+    if not issues and path.exists() and body != path.read_bytes():
+        issues.append(warn(where, "served bytes differ from the local file: the server runs another commit"))
+    errors = sum(1 for i in issues if i.level == "error")
+    return issues, f"  {'FAIL' if errors else 'ok  '} served page {status} {len(body)} bytes {url}"
+
+
 # ---------------------------------------------------------------------------
 # URLs
 # ---------------------------------------------------------------------------
@@ -503,17 +554,26 @@ def request_once(url: str, method: str, user_agent: str, timeout: float, opener:
         return Probe(False, None, method, f"{type(exc).__name__}: {exc}")
 
 
-def check_urls(sources: list[m.Source], probe: Callable[[str], Probe]) -> tuple[list[Issue], list[str]]:
-    """Every source URL must answer. The test page only warns, since it answers only after the push."""
+def check_urls(sources: list[m.Source], probe: Callable[[str], Probe],
+               test_page_url: str | None = None) -> tuple[list[Issue], list[str]]:
+    """Every source URL must answer. The GitHub test page only warns, since it answers only after the push.
+
+    With test_page_url (TEST_PAGE_URL) set, the test page is probed there instead, and a failure is an error.
+    """
     issues: list[Issue] = []
     lines: list[str] = []
     for s in sources:
-        result = probe(s.url)
+        served = bool(test_page_url) and s.url == TEST_PAGE_URL
+        url = test_page_url if served else s.url
+        result = probe(url)
         lines.append(f"  {'ok  ' if result.ok else 'FAIL'} {s.source_id} {result.method} {result.status} "
-                     f"{result.detail} {s.url}")
+                     f"{result.detail} {url}")
         if result.ok:
             continue
-        if s.url == TEST_PAGE_URL:
+        if served:
+            issues.append(err(s.source_id, f"test page at TEST_PAGE_URL does not answer ({result.detail}). "
+                                           "Is the Axelrod API running there?"))
+        elif s.url == TEST_PAGE_URL:
             issues.append(warn(s.source_id, f"test page does not answer yet ({result.detail}). "
                                             "Expected until the backend branch is pushed"))
         else:
@@ -601,16 +661,24 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     plan = load_plan(args.plan)
     print(f"check_plan: {args.plan.name}: {summary(plan)}")
-    issues = check_structure(plan) + check_test_page_file()
-    print_issues(issues)
-    if not args.offline or args.pages:
-        from backend.axelrod.config import get_settings
+    from backend.axelrod.config import get_settings
 
-        user_agent = get_settings().http_user_agent
+    settings = get_settings()
+    served = (settings.test_page_url or "").strip() or None
+    issues = check_structure(plan) + check_test_page_file()
+    if served:
+        print(f"test page: TEST_PAGE_URL is set, runs fetch S-010 from {served}")
+        issues += check_test_page_override(served)
+    print_issues(issues)
+    user_agent = settings.http_user_agent
     if not args.offline:
         sources = [m.Source.model_validate(s) for s in plan["sources"]]
         print("urls:")
-        url_issues, lines = check_urls(sources, lambda u: probe_url(u, user_agent, args.timeout))
+        url_issues, lines = check_urls(sources, lambda u: probe_url(u, user_agent, args.timeout), served)
+        if served:
+            page_issues, line = check_served_page(served, user_agent, args.timeout)
+            url_issues += page_issues
+            lines.append(line)
         print("\n".join(lines))
         print_issues(url_issues)
         issues += url_issues

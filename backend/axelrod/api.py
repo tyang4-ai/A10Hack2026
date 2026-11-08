@@ -9,16 +9,17 @@ from __future__ import annotations
 import asyncio
 import hmac
 import logging
+import re
 from contextlib import asynccontextmanager
 from typing import Annotated, Any, Callable, Optional
 
 from fastapi import Body, Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .config import Settings, get_settings
+from .config import BACKEND_DIR, Settings, get_settings
 from .contract import CONTRACT_VERSION, m
 from .ids import now_iso
 from .orchestrator import start_run
@@ -30,6 +31,9 @@ from .store.state import RunState
 
 PREFIX = "/api/v1"
 KEY_HEADER = "X-Axelrod-Key"
+TEST_PAGES_DIR = BACKEND_DIR / "data" / "test_pages"
+TEST_PAGE_NAME = re.compile(r"[a-z0-9_-]+\.html")      # fullmatch: a plain file name, no dots, slashes or newline
+SIMULATED_HEADER = "X-Axelrod-Simulated"
 log = logging.getLogger(__name__)
 
 
@@ -101,6 +105,7 @@ def create_app(settings: Settings | None = None, *, store: Store | None = None) 
     _install_key_check(app)
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     app.get("/healthz", response_model=m.Health)(healthz)
+    app.api_route("/test-pages/{name}", methods=["GET", "HEAD"], response_class=HTMLResponse)(serve_test_page)
     _install_routes(app)
     return app
 
@@ -153,6 +158,21 @@ def _install_key_check(app: FastAPI) -> None:
 
 async def healthz():
     return m.Health(ok=True, version=CONTRACT_VERSION, mode="live")
+
+
+async def serve_test_page(name: str):
+    """SIMULATED planted pages from backend/data/test_pages/, so S-010 works while the GitHub repo is private.
+
+    Outside /api/v1, so the X-Axelrod-Key check never applies (the gateway's fetcher sends no key). Only a plain
+    lowercase file name in that one folder is served. Anything else is a 404, which rules out path traversal.
+    """
+    if not TEST_PAGE_NAME.fullmatch(name):
+        raise ApiError(404, "not_found", "No such test page")
+    path = TEST_PAGES_DIR / name
+    if path.resolve().parent != TEST_PAGES_DIR.resolve() or not path.is_file():
+        raise ApiError(404, "not_found", "No such test page")
+    return Response(path.read_bytes(), media_type="text/html; charset=utf-8",
+                    headers={SIMULATED_HEADER: "true", "Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
 
 
 # ---------------------------------------------------------------------------

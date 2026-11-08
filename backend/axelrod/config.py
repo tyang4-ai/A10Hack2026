@@ -38,6 +38,7 @@ ENV_VARS: dict[str, str] = {
     "api_key": "AXELROD_API_KEY",
     "public_ui_url": "PUBLIC_UI_URL",
     "demo_pacing": "DEMO_PACING",
+    "test_page_url": "TEST_PAGE_URL",
 }
 
 
@@ -61,6 +62,7 @@ class Settings(BaseModel):
     api_key: str | None = None                               # AXELROD_API_KEY
     public_ui_url: str | None = None                         # PUBLIC_UI_URL (CLI prints run links)
     demo_pacing: float = 0.0                                 # DEMO_PACING (seconds between fetches in the live demo)
+    test_page_url: str | None = None                         # TEST_PAGE_URL (planted page S-010, served by our own API)
 
 
 def _env_file_from_environ() -> Path | None:
