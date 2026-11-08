@@ -1,0 +1,4158 @@
+{
+  "run_id": "run_20261108_fx0001",
+  "company": "Northwind Instruments (fixture)",
+  "ticker": "NWI-X",
+  "depth": "screen",
+  "status": "final",
+  "generated_at": "2026-11-08T00:31:10.000Z",
+  "sections": [
+    {
+      "category": "compounder",
+      "title": "Compounder",
+      "item_ids": [
+        "D-001",
+        "D-002",
+        "D-003",
+        "D-004",
+        "D-005",
+        "D-006",
+        "D-007",
+        "D-008",
+        "D-009",
+        "D-010",
+        "D-011",
+        "D-012",
+        "D-013",
+        "D-014",
+        "D-015",
+        "D-016",
+        "D-017",
+        "D-018",
+        "D-019",
+        "D-020",
+        "D-021",
+        "D-022",
+        "D-023",
+        "D-024",
+        "D-026",
+        "D-027",
+        "D-034",
+        "D-035",
+        "D-036",
+        "D-037",
+        "C-001",
+        "C-002",
+        "C-003",
+        "C-004",
+        "C-008",
+        "G-001",
+        "G-002",
+        "E-001",
+        "E-003"
+      ]
+    },
+    {
+      "category": "dominant_business",
+      "title": "Dominant Business",
+      "item_ids": [
+        "D-025",
+        "C-009",
+        "E-002"
+      ]
+    },
+    {
+      "category": "financial_strength",
+      "title": "Financial Strength",
+      "item_ids": [
+        "D-028",
+        "D-029",
+        "D-030",
+        "D-031",
+        "D-032",
+        "D-033",
+        "C-005",
+        "C-006",
+        "C-007",
+        "E-004",
+        "E-005"
+      ]
+    },
+    {
+      "category": "research_stage",
+      "title": "Research Stage",
+      "item_ids": [
+        "E-006"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "D-001",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "Revenues for FY2021 was $1,710 million.",
+      "value": {
+        "number": 1710000000,
+        "as_reported": "1710000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2021"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Revenues/units/USD/0/val"
+          },
+          "quote": "1710000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Revenues/units/USD/0/val = 1710000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2021 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.120Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-002",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "Revenues for FY2022 was $1,905 million.",
+      "value": {
+        "number": 1905000000,
+        "as_reported": "1905000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2022"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Revenues/units/USD/1/val"
+          },
+          "quote": "1905000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Revenues/units/USD/1/val = 1905000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2022 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.240Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-003",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "Revenues for FY2023 was $2,050 million.",
+      "value": {
+        "number": 2050000000,
+        "as_reported": "2050000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2023"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Revenues/units/USD/2/val"
+          },
+          "quote": "2050000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Revenues/units/USD/2/val = 2050000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2023 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.360Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-004",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "Revenues for FY2024 was $2,213 million.",
+      "value": {
+        "number": 2213000000,
+        "as_reported": "2213000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Revenues/units/USD/3/val"
+          },
+          "quote": "2213000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Revenues/units/USD/3/val = 2213000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.480Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-005",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "Revenues for FY2025 was $2,412 million.",
+      "value": {
+        "number": 2412000000,
+        "as_reported": "2412000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Revenues/units/USD/4/val"
+          },
+          "quote": "2412000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Revenues/units/USD/4/val = 2412000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.600Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-006",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Operating income (GAAP EBIT) for FY2024 was $470 million.",
+      "value": {
+        "number": 470000000,
+        "as_reported": "470000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/OperatingIncomeLoss/units/USD/0/val"
+          },
+          "quote": "470000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/OperatingIncomeLoss/units/USD/0/val = 470000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.720Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-007",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Operating income (GAAP EBIT) for FY2025 was $530 million.",
+      "value": {
+        "number": 530000000,
+        "as_reported": "530000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/OperatingIncomeLoss/units/USD/1/val"
+          },
+          "quote": "530000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/OperatingIncomeLoss/units/USD/1/val = 530000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.840Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-008",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Amortization of acquired intangibles for FY2024 was $60 million.",
+      "value": {
+        "number": 60000000,
+        "as_reported": "60000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/AmortizationOfIntangibleAssets/units/USD/0/val"
+          },
+          "quote": "60000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/AmortizationOfIntangibleAssets/units/USD/0/val = 60000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:30.960Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-009",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Amortization of acquired intangibles for FY2025 was $58 million.",
+      "value": {
+        "number": 58000000,
+        "as_reported": "58000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/AmortizationOfIntangibleAssets/units/USD/1/val"
+          },
+          "quote": "58000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/AmortizationOfIntangibleAssets/units/USD/1/val = 58000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.080Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-010",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Total assets for FY2023 was $4,900 million.",
+      "value": {
+        "number": 4900000000,
+        "as_reported": "4900000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2023"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Assets/units/USD/0/val"
+          },
+          "quote": "4900000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Assets/units/USD/0/val = 4900000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2023 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.200Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-011",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Total assets for FY2024 was $5,050 million.",
+      "value": {
+        "number": 5050000000,
+        "as_reported": "5050000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Assets/units/USD/1/val"
+          },
+          "quote": "5050000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Assets/units/USD/1/val = 5050000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.320Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-012",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Total assets for FY2025 was $5,300 million.",
+      "value": {
+        "number": 5300000000,
+        "as_reported": "5300000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Assets/units/USD/2/val"
+          },
+          "quote": "5300000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Assets/units/USD/2/val = 5300000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.440Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-013",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Cash and cash equivalents for FY2023 was $620 million.",
+      "value": {
+        "number": 620000000,
+        "as_reported": "620000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2023"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/CashAndCashEquivalentsAtCarryingValue/units/USD/0/val"
+          },
+          "quote": "620000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/CashAndCashEquivalentsAtCarryingValue/units/USD/0/val = 620000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2023 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.560Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-014",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Cash and cash equivalents for FY2024 was $700 million.",
+      "value": {
+        "number": 700000000,
+        "as_reported": "700000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/CashAndCashEquivalentsAtCarryingValue/units/USD/1/val"
+          },
+          "quote": "700000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/CashAndCashEquivalentsAtCarryingValue/units/USD/1/val = 700000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.680Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-015",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Cash and cash equivalents for FY2025 was $810 million.",
+      "value": {
+        "number": 810000000,
+        "as_reported": "810000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/CashAndCashEquivalentsAtCarryingValue/units/USD/2/val"
+          },
+          "quote": "810000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/CashAndCashEquivalentsAtCarryingValue/units/USD/2/val = 810000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.800Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-016",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Goodwill for FY2023 was $1,850 million.",
+      "value": {
+        "number": 1850000000,
+        "as_reported": "1850000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2023"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Goodwill/units/USD/0/val"
+          },
+          "quote": "1850000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Goodwill/units/USD/0/val = 1850000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2023 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:31.920Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-017",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Goodwill for FY2024 was $1,860 million.",
+      "value": {
+        "number": 1860000000,
+        "as_reported": "1860000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Goodwill/units/USD/1/val"
+          },
+          "quote": "1860000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Goodwill/units/USD/1/val = 1860000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:32.040Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-018",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Goodwill for FY2025 was $1,875 million.",
+      "value": {
+        "number": 1875000000,
+        "as_reported": "1875000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/Goodwill/units/USD/2/val"
+          },
+          "quote": "1875000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/Goodwill/units/USD/2/val = 1875000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:32.160Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-019",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Accounts payable and accrued liabilities (non-interest-bearing current liabilities) for FY2023 was $640 million.",
+      "value": {
+        "number": 640000000,
+        "as_reported": "640000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2023"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/AccountsPayableAndAccruedLiabilitiesCurrent/units/USD/0/val"
+          },
+          "quote": "640000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/AccountsPayableAndAccruedLiabilitiesCurrent/units/USD/0/val = 640000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2023 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:32.280Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-020",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Accounts payable and accrued liabilities (non-interest-bearing current liabilities) for FY2024 was $690 million.",
+      "value": {
+        "number": 690000000,
+        "as_reported": "690000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2024"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/AccountsPayableAndAccruedLiabilitiesCurrent/units/USD/1/val"
+          },
+          "quote": "690000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/AccountsPayableAndAccruedLiabilitiesCurrent/units/USD/1/val = 690000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2024 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:32.400Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-021",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "Accounts payable and accrued liabilities (non-interest-bearing current liabilities) for FY2025 was $720 million.",
+      "value": {
+        "number": 720000000,
+        "as_reported": "720000000",
+        "unit": "USD",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-002",
+          "locator": {
+            "type": "json",
+            "pointer": "/facts/us-gaap/AccountsPayableAndAccruedLiabilitiesCurrent/units/USD/2/val"
+          },
+          "quote": "720000000",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-001",
+      "source_tier": "priority",
+      "extracted_by": "code",
+      "agent_id": "xbrl-reader",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "json_value",
+            "method": "code",
+            "result": "pass",
+            "detail": "/facts/us-gaap/AccountsPayableAndAccruedLiabilitiesCurrent/units/USD/2/val = 720000000",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "period_match",
+            "method": "code",
+            "result": "pass",
+            "detail": "fy=2025 fp=FY form=10-K",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:32.520Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "S-001",
+        "basis": "Read by code from structured data, S-001 (priority, reliability 0.98)"
+      }
+    },
+    {
+      "id": "D-022",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "need_id": "N-01",
+      "statement": "The U.S. federal statutory income tax rate used as the normalized rate is 21%.",
+      "value": {
+        "number": 21,
+        "as_reported": "21%",
+        "unit": "%",
+        "scale": "one",
+        "period": null
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 2,
+            "char_start": 322,
+            "char_end": 367
+          },
+          "quote": "U.S. federal statutory income tax rate of 21%",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-02",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'21%' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:32.920Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-023",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-04",
+      "statement": "Consumables and services represented 61% of total revenue in fiscal 2025, compared with 58% in fiscal 2024.",
+      "value": {
+        "number": 61,
+        "as_reported": "61%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 281,
+            "char_end": 388
+          },
+          "quote": "Consumables and services represented 61% of total revenue in fiscal 2025, compared with 58% in fiscal 2024.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-01",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'61%' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:33.320Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-024",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-04",
+      "statement": "The installed base exceeded 42,000 instruments at the end of fiscal 2025.",
+      "value": {
+        "number": 42000,
+        "as_reported": "42,000",
+        "unit": "count",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 389,
+            "char_end": 462
+          },
+          "quote": "Our installed base exceeded 42,000 instruments at the end of fiscal 2025.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-01",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'42,000' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:33.720Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-025",
+      "kind": "data",
+      "category": "dominant_business",
+      "criteria": [
+        "supply_side"
+      ],
+      "need_id": "N-04",
+      "statement": "Three suppliers accounted for approximately 34% of direct material purchases in fiscal 2025.",
+      "value": {
+        "number": 34,
+        "as_reported": "34%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 528,
+            "char_end": 624
+          },
+          "quote": "Three suppliers accounted for approximately 34% of our direct material purchases in fiscal 2025.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-01",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'34%' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:34.120Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-026",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-04",
+      "statement": "Academic and government customers accounted for 18% of revenue in fiscal 2025.",
+      "value": {
+        "number": 18,
+        "as_reported": "18%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 688,
+            "char_end": 766
+          },
+          "quote": "Academic and government customers accounted for 18% of revenue in fiscal 2025.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-01",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'18%' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:34.520Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-027",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-04",
+      "statement": "The company says reductions in research funding could reduce demand for its instruments.",
+      "value": null,
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 767,
+            "char_end": 838
+          },
+          "quote": "Reductions in research funding could reduce demand for our instruments.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-01",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:34.920Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-028",
+      "kind": "data",
+      "category": "financial_strength",
+      "criteria": [
+        "leverage"
+      ],
+      "need_id": "N-05",
+      "statement": "Total debt was $1,150 million at September 30, 2025.",
+      "value": {
+        "number": 1150,
+        "as_reported": "1,150",
+        "unit": "USD",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 291,
+            "char_end": 307
+          },
+          "quote": "Total debt 1,150",
+          "role": "evidence"
+        },
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 201,
+            "char_end": 238
+          },
+          "quote": "Contractual obligations (In millions)",
+          "role": "unit_context"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-03",
+      "verification": {
+        "status": "fixed",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'1,150' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "unit_context",
+            "method": "code",
+            "result": "pass",
+            "detail": "Scale 'million' from 'Contractual obligations (In millions)'",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "fail",
+            "checks": [
+              {
+                "check": "quote_exact",
+                "method": "code",
+                "result": "fail",
+                "detail": "Quote not found in DOC-001 page 3. Closest span differs by 2 characters.",
+                "model_id": null,
+                "agent_id": null,
+                "diff": [
+                  {
+                    "op": "equal",
+                    "agent": "Total debt 1,",
+                    "source": "Total debt 1,"
+                  },
+                  {
+                    "op": "insert",
+                    "agent": "",
+                    "source": "1"
+                  },
+                  {
+                    "op": "equal",
+                    "agent": "5",
+                    "source": "5"
+                  },
+                  {
+                    "op": "delete",
+                    "agent": "1",
+                    "source": ""
+                  },
+                  {
+                    "op": "equal",
+                    "agent": "0",
+                    "source": "0"
+                  }
+                ],
+                "closest_locator": {
+                  "type": "text",
+                  "page": 3,
+                  "char_start": 291,
+                  "char_end": 307
+                },
+                "unsupported_spans": []
+              },
+              {
+                "check": "value_in_quote",
+                "method": "code",
+                "result": "fail",
+                "detail": "'1,510' is not in the source span 'Total debt 1,150'",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              }
+            ],
+            "action": "recite",
+            "before": "Total debt was $1,510 million at September 30, 2025.",
+            "after": "Total debt was $1,150 million at September 30, 2025.",
+            "note": "Quote replaced with the exact source span. Statement re-derived from the corrected quote.",
+            "at": "2026-11-08T00:30:35.120Z"
+          },
+          {
+            "attempt": 2,
+            "status": "fixed",
+            "checks": [
+              {
+                "check": "quote_exact",
+                "method": "code",
+                "result": "pass",
+                "detail": "Quote found verbatim at the cited span",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              },
+              {
+                "check": "value_in_quote",
+                "method": "code",
+                "result": "pass",
+                "detail": "'1,150' appears in the quote",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              },
+              {
+                "check": "unit_context",
+                "method": "code",
+                "result": "pass",
+                "detail": "Scale 'million' from 'Contractual obligations (In millions)'",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              }
+            ],
+            "action": null,
+            "before": null,
+            "after": null,
+            "note": "All checks pass",
+            "at": "2026-11-08T00:30:35.320Z"
+          }
+        ],
+        "verified_at": "2026-11-08T00:30:35.320Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-029",
+      "kind": "data",
+      "category": "financial_strength",
+      "criteria": [
+        "liquidity"
+      ],
+      "need_id": "N-05",
+      "statement": "Senior notes due 2027 total $400 million.",
+      "value": {
+        "number": 400,
+        "as_reported": "400",
+        "unit": "USD",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 239,
+            "char_end": 264
+          },
+          "quote": "Senior notes due 2027 400",
+          "role": "evidence"
+        },
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 201,
+            "char_end": 238
+          },
+          "quote": "Contractual obligations (In millions)",
+          "role": "unit_context"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-03",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'400' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "unit_context",
+            "method": "code",
+            "result": "pass",
+            "detail": "Scale 'million' from 'Contractual obligations (In millions)'",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:35.720Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-030",
+      "kind": "data",
+      "category": "financial_strength",
+      "criteria": [
+        "liquidity"
+      ],
+      "need_id": "N-06",
+      "statement": "Scheduled principal payments over the next five fiscal years total $400 million.",
+      "value": {
+        "number": 400,
+        "as_reported": "400",
+        "unit": "USD",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 309,
+            "char_end": 389
+          },
+          "quote": "Scheduled principal payments over the next five fiscal years total $400 million.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-03",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'400' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:36.120Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-031",
+      "kind": "data",
+      "category": "financial_strength",
+      "criteria": [
+        "leverage",
+        "liquidity"
+      ],
+      "need_id": "N-06",
+      "statement": "Free cash flow was $468 million in fiscal 2025.",
+      "value": {
+        "number": 468,
+        "as_reported": "468",
+        "unit": "USD",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 33,
+            "char_end": 123
+          },
+          "quote": "Free cash flow was $468 million in fiscal 2025, compared with $431 million in fiscal 2024.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-03",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'468' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:36.520Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-032",
+      "kind": "data",
+      "category": "financial_strength",
+      "criteria": [
+        "liquidity"
+      ],
+      "need_id": "N-05",
+      "statement": "The $500 million revolving credit facility expires in 2028 and had no amounts drawn at September 30, 2025.",
+      "value": {
+        "number": 500,
+        "as_reported": "500",
+        "unit": "USD",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 3,
+            "char_start": 390,
+            "char_end": 508
+          },
+          "quote": "We have a $500 million revolving credit facility that expires in 2028, with no amounts drawn as of September 30, 2025.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-03",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'500' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:36.920Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-033",
+      "kind": "data",
+      "category": "financial_strength",
+      "criteria": [
+        "liquidity"
+      ],
+      "need_id": "N-06",
+      "statement": "The company has not paid cash dividends and does not plan to.",
+      "value": null,
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 2,
+            "char_start": 426,
+            "char_end": 523
+          },
+          "quote": "We have not paid cash dividends on our common stock and do not plan to in the foreseeable future.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-02",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:37.320Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-034",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-04",
+      "statement": "Revenue increased 9% to $2,412 million in fiscal 2025.",
+      "value": {
+        "number": 9,
+        "as_reported": "9%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-001",
+          "locator": {
+            "type": "text",
+            "page": 2,
+            "char_start": 95,
+            "char_end": 212
+          },
+          "quote": "Revenue increased 9% to $2,412 million in fiscal 2025, driven by consumables growth in the pharmaceutical end market.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-002",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-02",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'9%' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:37.720Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "S-002",
+        "basis": "Exact quote, S-002 (priority, reliability 0.97)"
+      }
+    },
+    {
+      "id": "D-035",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "The laboratory analytical instruments market is projected to grow at a compound annual rate of 5.4% from 2025 to 2030.",
+      "value": {
+        "number": 5.4,
+        "as_reported": "5.4%",
+        "unit": "%",
+        "scale": "one",
+        "period": "2025-2030"
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-003",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 66,
+            "char_end": 184
+          },
+          "quote": "The laboratory analytical instruments market is projected to grow at a compound annual rate of 5.4% from 2025 to 2030.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-005",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-04",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'5.4%' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:38.120Z"
+      },
+      "certainty": {
+        "score": 75,
+        "band": "medium",
+        "strength": 0.75,
+        "support": 1.0,
+        "inherited": 0.75,
+        "completeness": 1.0,
+        "weakest_ref": "S-005",
+        "basis": "Exact quote, S-005 (priority, reliability 0.75)"
+      }
+    },
+    {
+      "id": "D-036",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-03",
+      "statement": "Most industry estimates place long-run market growth between 5% and 6% per year.",
+      "value": null,
+      "citations": [
+        {
+          "doc_id": "DOC-003",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 185,
+            "char_end": 265
+          },
+          "quote": "Most industry estimates place long-run market growth between 5% and 6% per year.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-005",
+      "source_tier": "priority",
+      "extracted_by": "agent",
+      "agent_id": "extractor-04",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:38.520Z"
+      },
+      "certainty": {
+        "score": 75,
+        "band": "medium",
+        "strength": 0.75,
+        "support": 1.0,
+        "inherited": 0.75,
+        "completeness": 1.0,
+        "weakest_ref": "S-005",
+        "basis": "Exact quote, S-005 (priority, reliability 0.75)"
+      }
+    },
+    {
+      "id": "D-037",
+      "kind": "data",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "need_id": "N-04",
+      "statement": "The five-year agreement covers consumables supply for 14 manufacturing sites.",
+      "value": {
+        "number": 14,
+        "as_reported": "14",
+        "unit": "count",
+        "scale": "one",
+        "period": null
+      },
+      "citations": [
+        {
+          "doc_id": "DOC-004",
+          "locator": {
+            "type": "text",
+            "page": 1,
+            "char_start": 217,
+            "char_end": 294
+          },
+          "quote": "The five-year agreement covers consumables supply for 14 manufacturing sites.",
+          "role": "evidence"
+        }
+      ],
+      "source_id": "S-006",
+      "source_tier": "tier_2",
+      "extracted_by": "agent",
+      "agent_id": "extractor-05",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "quote_exact",
+            "method": "code",
+            "result": "pass",
+            "detail": "Quote found verbatim at the cited span",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "value_in_quote",
+            "method": "code",
+            "result": "pass",
+            "detail": "'14' appears in the quote",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "tier_rule",
+            "method": "code",
+            "result": "pass",
+            "detail": "No tier 1 figure for this metric and period, so the tier 2 value may stand",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:38.920Z"
+      },
+      "certainty": {
+        "score": 65,
+        "band": "medium",
+        "strength": 0.65,
+        "support": 1.0,
+        "inherited": 0.65,
+        "completeness": 1.0,
+        "weakest_ref": "S-006",
+        "basis": "Exact quote, S-006 (tier_2, reliability 0.65)"
+      }
+    },
+    {
+      "id": "C-001",
+      "kind": "conclusion",
+      "category": "compounder",
+      "criteria": [
+        "rotic_level"
+      ],
+      "text": "ROTIC was 25.1% in FY2025 and 23.3% in FY2024, an average of 24.2% over the two years with data, using a 21% normalized tax rate.",
+      "data_ids": [
+        "D-006",
+        "D-007",
+        "D-008",
+        "D-009",
+        "D-010",
+        "D-011",
+        "D-012",
+        "D-013",
+        "D-014",
+        "D-015",
+        "D-016",
+        "D-017",
+        "D-018",
+        "D-019",
+        "D-020",
+        "D-021",
+        "D-022"
+      ],
+      "computations": [
+        {
+          "name": "nopat_fy2024",
+          "expr": "(D-006 + D-008) * (1 - D-022)",
+          "result": 418700000.0,
+          "display": "$418.7 million"
+        },
+        {
+          "name": "nopat_fy2025",
+          "expr": "(D-007 + D-009) * (1 - D-022)",
+          "result": 464520000.0,
+          "display": "$464.5 million"
+        },
+        {
+          "name": "ticap_fy2023",
+          "expr": "D-010 - D-013 - D-016 - D-019",
+          "result": 1790000000.0,
+          "display": "$1,790.0 million"
+        },
+        {
+          "name": "ticap_fy2024",
+          "expr": "D-011 - D-014 - D-017 - D-020",
+          "result": 1800000000.0,
+          "display": "$1,800.0 million"
+        },
+        {
+          "name": "ticap_fy2025",
+          "expr": "D-012 - D-015 - D-018 - D-021",
+          "result": 1895000000.0,
+          "display": "$1,895.0 million"
+        },
+        {
+          "name": "rotic_fy2024",
+          "expr": "nopat_fy2024 / ((ticap_fy2023 + ticap_fy2024) / 2)",
+          "result": 0.233259,
+          "display": "23.3%"
+        },
+        {
+          "name": "rotic_fy2025",
+          "expr": "nopat_fy2025 / ((ticap_fy2024 + ticap_fy2025) / 2)",
+          "result": 0.251432,
+          "display": "25.1%"
+        },
+        {
+          "name": "rotic_avg",
+          "expr": "(rotic_fy2024 + rotic_fy2025) / 2",
+          "result": 0.242345,
+          "display": "24.2%"
+        }
+      ],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "computation",
+            "method": "code",
+            "result": "pass",
+            "detail": "8 computation(s) re-evaluated from data values",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-001",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:52.700Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "D-022",
+        "basis": "judges 3/3; weakest input D-022 (0.97)"
+      }
+    },
+    {
+      "id": "C-002",
+      "kind": "conclusion",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "text": "A market report projects 5.4% annual growth for laboratory analytical instruments from 2025 to 2030, and says most industry estimates fall between 5% and 6% per year.",
+      "data_ids": [
+        "D-035",
+        "D-036"
+      ],
+      "computations": [],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-002",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:53.400Z"
+      },
+      "certainty": {
+        "score": 75,
+        "band": "medium",
+        "strength": 0.75,
+        "support": 1.0,
+        "inherited": 0.75,
+        "completeness": 1.0,
+        "weakest_ref": "D-035",
+        "basis": "judges 3/3; weakest input D-035 (0.75)"
+      }
+    },
+    {
+      "id": "C-003",
+      "kind": "conclusion",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "text": "Consumables and services rose from 58% to 61% of revenue between fiscal 2024 and fiscal 2025, alongside an installed base of more than 42,000 instruments.",
+      "data_ids": [
+        "D-023",
+        "D-024"
+      ],
+      "computations": [],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-003",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:54.100Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "D-023",
+        "basis": "judges 3/3; weakest input D-023 (0.97)"
+      }
+    },
+    {
+      "id": "C-004",
+      "kind": "conclusion",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "text": "Academic and government customers were 18% of fiscal 2025 revenue, and the company says reductions in research funding could reduce demand.",
+      "data_ids": [
+        "D-026",
+        "D-027"
+      ],
+      "computations": [],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Supported by 2 of 3 judges. Dissent: one judge read 'could reduce demand' as stronger than the hedged source wording",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-004",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 2,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:54.800Z"
+      },
+      "certainty": {
+        "score": 65,
+        "band": "medium",
+        "strength": 0.6467,
+        "support": 0.6667,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "D-026",
+        "basis": "judges 2/3; weakest input D-026 (0.97)"
+      }
+    },
+    {
+      "id": "C-005",
+      "kind": "conclusion",
+      "category": "financial_strength",
+      "criteria": [
+        "leverage"
+      ],
+      "text": "Total debt of $1,150 million was 2.5 times fiscal 2025 free cash flow of $468 million.",
+      "data_ids": [
+        "D-028",
+        "D-031"
+      ],
+      "computations": [
+        {
+          "name": "debt_to_fcf",
+          "expr": "D-028 / D-031",
+          "result": 2.457265,
+          "display": "2.5"
+        }
+      ],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "fixed",
+        "checks": [
+          {
+            "check": "computation",
+            "method": "code",
+            "result": "pass",
+            "detail": "1 computation(s) re-evaluated from data values",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-005",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "fail",
+            "checks": [
+              {
+                "check": "computation",
+                "method": "code",
+                "result": "pass",
+                "detail": "1 computation(s) re-evaluated from data values",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              },
+              {
+                "check": "numbers_traced",
+                "method": "code",
+                "result": "pass",
+                "detail": "Every number traces",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              },
+              {
+                "check": "support",
+                "method": "llm_judge",
+                "result": "fail",
+                "detail": "'conservative' is a judgment the cited items do not state.",
+                "model_id": "us.anthropic.claude-haiku-5-5",
+                "agent_id": "verifier-C-005",
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": [
+                  "conservative"
+                ],
+                "votes_for": 1,
+                "votes_total": 3
+              }
+            ],
+            "action": "downgrade",
+            "before": "Total debt of $1,150 million was a conservative 2.5 times fiscal 2025 free cash flow of $468 million.",
+            "after": "Total debt of $1,150 million was 2.5 times fiscal 2025 free cash flow of $468 million.",
+            "note": "Removed the unsupported adjective. Claim weakened toward its evidence.",
+            "at": "2026-11-08T00:30:55.200Z"
+          },
+          {
+            "attempt": 2,
+            "status": "fixed",
+            "checks": [],
+            "action": null,
+            "before": null,
+            "after": null,
+            "note": "All checks pass",
+            "at": "2026-11-08T00:30:55.700Z"
+          }
+        ],
+        "verified_at": "2026-11-08T00:30:55.500Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "D-028",
+        "basis": "judges 3/3; weakest input D-028 (0.97)"
+      }
+    },
+    {
+      "id": "C-006",
+      "kind": "conclusion",
+      "category": "financial_strength",
+      "criteria": [
+        "liquidity"
+      ],
+      "text": "Five years of free cash flow at the fiscal 2025 rate would cover the $400 million of scheduled principal payments 5.9 times, and the company pays no dividend.",
+      "data_ids": [
+        "D-030",
+        "D-031",
+        "D-033"
+      ],
+      "computations": [
+        {
+          "name": "coverage",
+          "expr": "(D-031 * 5) / D-030",
+          "result": 5.85,
+          "display": "5.9"
+        }
+      ],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "computation",
+            "method": "code",
+            "result": "pass",
+            "detail": "1 computation(s) re-evaluated from data values",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-006",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:56.200Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "D-030",
+        "basis": "judges 3/3; weakest input D-030 (0.97)"
+      }
+    },
+    {
+      "id": "C-007",
+      "kind": "conclusion",
+      "category": "financial_strength",
+      "criteria": [
+        "liquidity"
+      ],
+      "text": "The $500 million revolving credit facility was undrawn at September 30, 2025 and expires in 2028.",
+      "data_ids": [
+        "D-032"
+      ],
+      "computations": [],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-007",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:56.900Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "D-032",
+        "basis": "judges 3/3; weakest input D-032 (0.97)"
+      }
+    },
+    {
+      "id": "C-008",
+      "kind": "conclusion",
+      "category": "compounder",
+      "criteria": [
+        "secular_growth"
+      ],
+      "text": "Revenue rose every year from $1,710 million in FY2021 to $2,412 million in FY2025.",
+      "data_ids": [
+        "D-001",
+        "D-002",
+        "D-003",
+        "D-004",
+        "D-005"
+      ],
+      "computations": [],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "Every number in the text traces to a cited value or computation",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Directly supported by the cited items",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-008",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:30:57.600Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "D-001",
+        "basis": "judges 3/3; weakest input D-001 (0.98)"
+      }
+    },
+    {
+      "id": "C-009",
+      "kind": "conclusion",
+      "category": "dominant_business",
+      "criteria": [
+        "rotic_vs_peers"
+      ],
+      "text": "Northwind holds the second-largest share of the laboratory analytical instruments market.",
+      "data_ids": [
+        "D-037"
+      ],
+      "computations": [],
+      "agent_id": "drafter",
+      "verification": {
+        "status": "fail",
+        "checks": [
+          {
+            "check": "numbers_traced",
+            "method": "code",
+            "result": "pass",
+            "detail": "No numbers to trace",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "fail",
+            "detail": "D-037 describes one supply contract. Nothing cited states market share.",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-C-009",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [
+              "second-largest share"
+            ],
+            "votes_for": 0,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [
+          {
+            "attempt": 1,
+            "status": "fail",
+            "checks": [
+              {
+                "check": "numbers_traced",
+                "method": "code",
+                "result": "pass",
+                "detail": "No numbers to trace",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              },
+              {
+                "check": "support",
+                "method": "llm_judge",
+                "result": "fail",
+                "detail": "D-037 describes one supply contract. Nothing cited states market share.",
+                "model_id": "us.anthropic.claude-haiku-5-5",
+                "agent_id": "verifier-C-009",
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": [
+                  "second-largest share"
+                ],
+                "votes_for": 0,
+                "votes_total": 3
+              }
+            ],
+            "action": "recite",
+            "before": "Northwind holds the second-largest share of the laboratory analytical instruments market.",
+            "after": "Northwind holds the second-largest share of the laboratory analytical instruments market.",
+            "note": "Repair searched verified data for a market-share figure. None found.",
+            "at": "2026-11-08T00:30:57.900Z"
+          },
+          {
+            "attempt": 2,
+            "status": "fail",
+            "checks": [
+              {
+                "check": "numbers_traced",
+                "method": "code",
+                "result": "pass",
+                "detail": "No numbers to trace",
+                "model_id": null,
+                "agent_id": null,
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": []
+              },
+              {
+                "check": "support",
+                "method": "llm_judge",
+                "result": "fail",
+                "detail": "D-037 describes one supply contract. Nothing cited states market share.",
+                "model_id": "us.anthropic.claude-haiku-5-5",
+                "agent_id": "verifier-C-009",
+                "diff": null,
+                "closest_locator": null,
+                "unsupported_spans": [
+                  "second-largest share"
+                ],
+                "votes_for": 0,
+                "votes_total": 3
+              }
+            ],
+            "action": "not_determinable",
+            "before": "Northwind holds the second-largest share of the laboratory analytical instruments market.",
+            "after": null,
+            "note": "Failed twice. Kept as a declared hole, excluded from scoring.",
+            "at": "2026-11-08T00:30:58.400Z"
+          }
+        ],
+        "verified_at": "2026-11-08T00:30:58.300Z"
+      },
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 0.0,
+        "support": 0.0,
+        "inherited": 0.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Verification fail"
+      }
+    },
+    {
+      "id": "E-001",
+      "kind": "extrapolation",
+      "category": "compounder",
+      "criterion": "rotic_level",
+      "score": 1,
+      "na_reason": null,
+      "text": "ROTIC level scores +1 under the framework: the 24.2% average is above the 15% threshold. Confidence is low because only two years of data were available, against the framework's ten.",
+      "conclusion_ids": [
+        "C-001"
+      ],
+      "rule": {
+        "type": "threshold",
+        "plus_one": "> 15%",
+        "minus_one": "< 10%",
+        "input": "C-001:rotic_avg"
+      },
+      "confidence": "low",
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "threshold_rule",
+            "method": "code",
+            "result": "pass",
+            "detail": "Recomputed from C-001:rotic_avg: score +1",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Score and reasoning follow from the cited conclusions",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-E-001",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:02.600Z"
+      },
+      "certainty": {
+        "score": 58,
+        "band": "low",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 0.6,
+        "weakest_ref": "C-001",
+        "basis": "judges 3/3; weakest input C-001 (0.97); data coverage low (0.60)"
+      }
+    },
+    {
+      "id": "E-002",
+      "kind": "extrapolation",
+      "category": "dominant_business",
+      "criterion": "rotic_vs_peers",
+      "score": null,
+      "na_reason": "Peer financial data was not collected in this run (budget reached before tier 2 finished).",
+      "text": "ROTIC vs peers is not scored.",
+      "conclusion_ids": [],
+      "rule": {
+        "type": "judgment",
+        "plus_one": null,
+        "minus_one": null,
+        "input": null
+      },
+      "confidence": "low",
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "citations_resolve",
+            "method": "code",
+            "result": "pass",
+            "detail": "N/A with a stated reason",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:03.200Z"
+      },
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Not scored: Peer financial data was not collected in this run (budget reached before tier 2 finished)."
+      }
+    },
+    {
+      "id": "E-003",
+      "kind": "extrapolation",
+      "category": "compounder",
+      "criterion": "secular_growth",
+      "score": 0,
+      "na_reason": null,
+      "text": "Secular growth scores 0: market growth estimates of 5% to 6% a year do not point to a secular decline, the framework sets no explicit +1 bar, and 18% of revenue depends on research funding.",
+      "conclusion_ids": [
+        "C-002",
+        "C-003",
+        "C-004"
+      ],
+      "rule": {
+        "type": "judgment",
+        "plus_one": null,
+        "minus_one": "Secular decline ahead",
+        "input": null
+      },
+      "confidence": "medium",
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Judgment is consistent with the cited conclusions and the rubric anchors",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-E-003",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:03.800Z"
+      },
+      "certainty": {
+        "score": 55,
+        "band": "low",
+        "strength": 0.6467,
+        "support": 1.0,
+        "inherited": 0.6467,
+        "completeness": 0.85,
+        "weakest_ref": "C-004",
+        "basis": "judges 3/3; weakest input C-004 (0.65); data coverage medium (0.85)"
+      }
+    },
+    {
+      "id": "E-004",
+      "kind": "extrapolation",
+      "category": "financial_strength",
+      "criterion": "leverage",
+      "score": 0,
+      "na_reason": null,
+      "text": "Leverage scores 0: total debt is 2.5 times annual free cash flow, and the revolving credit facility is undrawn.",
+      "conclusion_ids": [
+        "C-005",
+        "C-007"
+      ],
+      "rule": {
+        "type": "judgment",
+        "plus_one": null,
+        "minus_one": null,
+        "input": null
+      },
+      "confidence": "medium",
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Judgment is consistent with the cited conclusions and the rubric anchors",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-E-004",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:04.400Z"
+      },
+      "certainty": {
+        "score": 82,
+        "band": "medium",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 0.85,
+        "weakest_ref": "C-005",
+        "basis": "judges 3/3; weakest input C-005 (0.97); data coverage medium (0.85)"
+      }
+    },
+    {
+      "id": "E-005",
+      "kind": "extrapolation",
+      "category": "financial_strength",
+      "criterion": "liquidity",
+      "score": 1,
+      "na_reason": null,
+      "text": "Liquidity scores +1 under the framework: five years of free cash flow would cover scheduled principal 5.9 times, above the 2x threshold, with no dividend to fund.",
+      "conclusion_ids": [
+        "C-006",
+        "C-007"
+      ],
+      "rule": {
+        "type": "threshold",
+        "plus_one": "> 2x",
+        "minus_one": "< 1x",
+        "input": "C-006:coverage"
+      },
+      "confidence": "medium",
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "threshold_rule",
+            "method": "code",
+            "result": "pass",
+            "detail": "Recomputed from C-006:coverage: score +1",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          },
+          {
+            "check": "support",
+            "method": "llm_judge",
+            "result": "pass",
+            "detail": "Score and reasoning follow from the cited conclusions",
+            "model_id": "us.anthropic.claude-haiku-5-5",
+            "agent_id": "verifier-E-005",
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": [],
+            "votes_for": 3,
+            "votes_total": 3
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:05.000Z"
+      },
+      "certainty": {
+        "score": 82,
+        "band": "medium",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 0.85,
+        "weakest_ref": "C-006",
+        "basis": "judges 3/3; weakest input C-006 (0.97); data coverage medium (0.85)"
+      }
+    },
+    {
+      "id": "E-006",
+      "kind": "extrapolation",
+      "category": "research_stage",
+      "criterion": "research_stage",
+      "score": null,
+      "na_reason": "First review of this company. Research stage needs a coverage history.",
+      "text": "Research stage is not scored.",
+      "conclusion_ids": [],
+      "rule": {
+        "type": "threshold",
+        "plus_one": "Followed closely > 1y",
+        "minus_one": "Still under review",
+        "input": null
+      },
+      "confidence": "low",
+      "agent_id": "drafter",
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "citations_resolve",
+            "method": "code",
+            "result": "pass",
+            "detail": "N/A with a stated reason",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:05.600Z"
+      },
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Not scored: First review of this company. Research stage needs a coverage history."
+      }
+    },
+    {
+      "id": "G-001",
+      "kind": "chart",
+      "category": "compounder",
+      "title": "Revenue, FY2021 to FY2025",
+      "chart_type": "bar",
+      "unit": "USD",
+      "scale": "million",
+      "series": [
+        {
+          "name": "Revenue",
+          "points": [
+            {
+              "x": "FY2021",
+              "y": 1710.0,
+              "ref": "D-001"
+            },
+            {
+              "x": "FY2022",
+              "y": 1905.0,
+              "ref": "D-002"
+            },
+            {
+              "x": "FY2023",
+              "y": 2050.0,
+              "ref": "D-003"
+            },
+            {
+              "x": "FY2024",
+              "y": 2213.0,
+              "ref": "D-004"
+            },
+            {
+              "x": "FY2025",
+              "y": 2412.0,
+              "ref": "D-005"
+            }
+          ]
+        }
+      ],
+      "refs": [
+        "D-001",
+        "D-002",
+        "D-003",
+        "D-004",
+        "D-005"
+      ],
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "chart_values",
+            "method": "code",
+            "result": "pass",
+            "detail": "5 of 5 points equal their data items",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:06.000Z"
+      },
+      "certainty": {
+        "score": 98,
+        "band": "high",
+        "strength": 0.98,
+        "support": 1.0,
+        "inherited": 0.98,
+        "completeness": 1.0,
+        "weakest_ref": "D-001",
+        "basis": "built by code from refs; weakest input D-001 (0.98)"
+      }
+    },
+    {
+      "id": "G-002",
+      "kind": "chart",
+      "category": "compounder",
+      "title": "ROTIC by fiscal year",
+      "chart_type": "line",
+      "unit": "%",
+      "scale": "one",
+      "series": [
+        {
+          "name": "ROTIC",
+          "points": [
+            {
+              "x": "FY2024",
+              "y": 23.3,
+              "ref": "C-001:rotic_fy2024"
+            },
+            {
+              "x": "FY2025",
+              "y": 25.1,
+              "ref": "C-001:rotic_fy2025"
+            }
+          ]
+        }
+      ],
+      "refs": [
+        "C-001"
+      ],
+      "verification": {
+        "status": "pass",
+        "checks": [
+          {
+            "check": "chart_values",
+            "method": "code",
+            "result": "pass",
+            "detail": "2 of 2 points equal their computations",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
+          }
+        ],
+        "attempts": [],
+        "verified_at": "2026-11-08T00:31:06.200Z"
+      },
+      "certainty": {
+        "score": 97,
+        "band": "high",
+        "strength": 0.97,
+        "support": 1.0,
+        "inherited": 0.97,
+        "completeness": 1.0,
+        "weakest_ref": "C-001",
+        "basis": "built by code from refs; weakest input C-001 (0.97)"
+      }
+    }
+  ],
+  "rollup": {
+    "categories": [
+      {
+        "category": "dominant_business",
+        "weight": 2,
+        "score": null,
+        "scored": 0,
+        "in_scope": 1,
+        "na_criteria": [
+          "rotic_vs_peers"
+        ]
+      },
+      {
+        "category": "compounder",
+        "weight": 2,
+        "score": 0.5,
+        "scored": 2,
+        "in_scope": 2,
+        "na_criteria": []
+      },
+      {
+        "category": "financial_strength",
+        "weight": 1,
+        "score": 0.5,
+        "scored": 2,
+        "in_scope": 2,
+        "na_criteria": []
+      },
+      {
+        "category": "research_stage",
+        "weight": 1,
+        "score": null,
+        "scored": 0,
+        "in_scope": 1,
+        "na_criteria": [
+          "research_stage"
+        ]
+      }
+    ],
+    "weighted_average": 0.5,
+    "normalized_pct": 75,
+    "percent_of_max_pct": 50,
+    "scored": 4,
+    "in_scope": 6,
+    "framework_total": 27,
+    "na_criteria": [
+      "rotic_vs_peers",
+      "research_stage"
+    ],
+    "note": "Lead with the weighted average. Both percentages are inferences about the original scoresheet."
+  },
+  "certainty": {
+    "mean": 93,
+    "high_pct": 78,
+    "high": 42,
+    "medium": 7,
+    "low": 2,
+    "none": 3,
+    "coverage_scored": 4,
+    "coverage_in_scope": 6,
+    "method": "Plain mean over item certainties. high_pct is the share of items in the high band."
+  },
+  "holes": [
+    {
+      "hole_id": "HOLE-01",
+      "criterion": "rotic_vs_peers",
+      "item_id": "E-002",
+      "reason": "Peer XBRL (S-007) skipped: per-run budget reached before tier 2 finished."
+    },
+    {
+      "hole_id": "HOLE-02",
+      "criterion": "research_stage",
+      "item_id": "E-006",
+      "reason": "First review. No coverage history."
+    },
+    {
+      "hole_id": "HOLE-03",
+      "criterion": null,
+      "item_id": "C-009",
+      "reason": "Market-share claim failed verification twice. Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-04",
+      "criterion": null,
+      "item_id": null,
+      "reason": "Investor day presentation (S-004) returned HTTP 404."
+    }
+  ],
+  "disclaimer": "Not financial or legal advice. Scores under the BOFFIN framework only. Valuation is not scored. Fixture data: the company and every number are fictional.",
+  "markdown_path": "runs/run_20261108_fx0001/northwind-instruments/09-Analysis/agent-report.md",
+  "as_of_seq": 0
+}

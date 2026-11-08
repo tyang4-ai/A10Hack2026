@@ -1,5 +1,7 @@
 # Axelrod: design
 
+> **Written before the shared contract.** Where this differs from [CONTRACT.md](CONTRACT.md) and [BACKEND.md](BACKEND.md), those win: BOFFIN scores replace bull, base and bear, judges check each claim on its own, and the build runs on EC2 tonight with Step Functions as the production story. Adopted from this doc (BACKEND.md section 11): code-assigned tiers and tier rules, the context check from the per-source validators, the baseline evaluation against plain Claude, and the cross-source contradiction check.
+
 A harness for AI-written financial market reports. Every number has to trace back to an exact quote in an approved source, and every conclusion and forecast is checked before a person sees the report.
 
 Built for the A10 "Agent Harness" prompt at the SCU ACM AWS x A10 Hack (Nov 7-8, 2026). The required demo maps to the product like this:

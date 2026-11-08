@@ -1,0 +1,484 @@
+{
+  "needs": [
+    {
+      "need_id": "N-01",
+      "label": "Returns on tangible capital",
+      "dimension": "financials",
+      "question": "What are NOPAT and TICAP by year, using the framework's definitions?",
+      "data_types": [
+        "structured_financials",
+        "financial_filing"
+      ],
+      "criteria": [
+        "rotic_level"
+      ],
+      "rationale": "ROTIC level needs audited operating income, amortization, assets, cash, goodwill and non-interest-bearing current liabilities."
+    },
+    {
+      "need_id": "N-02",
+      "label": "Peer returns",
+      "dimension": "competition",
+      "question": "What is ROTIC for the closest listed peers, computed the same way?",
+      "data_types": [
+        "structured_financials"
+      ],
+      "criteria": [
+        "rotic_vs_peers"
+      ],
+      "rationale": "The framework compares like with like, so peers need the same inputs from the same kind of source."
+    },
+    {
+      "need_id": "N-03",
+      "label": "Industry growth",
+      "dimension": "market_share",
+      "question": "How fast is the end market growing, and is anything pointing to secular decline?",
+      "data_types": [
+        "market_report",
+        "financial_filing"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "rationale": "Secular growth scores -1 only on evidence of decline ahead."
+    },
+    {
+      "need_id": "N-04",
+      "label": "Revenue mix and demand drivers",
+      "dimension": "downstream",
+      "question": "Who buys, how recurring is revenue, and which customer groups are at risk?",
+      "data_types": [
+        "financial_filing",
+        "news_article",
+        "forum_post"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "rationale": "Mix shifts toward consumables and exposure to research funding change the growth picture."
+    },
+    {
+      "need_id": "N-05",
+      "label": "Debt and obligations",
+      "dimension": "financials",
+      "question": "How much debt, which maturities, and what other obligations?",
+      "data_types": [
+        "financial_filing"
+      ],
+      "criteria": [
+        "leverage",
+        "liquidity"
+      ],
+      "rationale": "Leverage and liquidity both start from the debt schedule."
+    },
+    {
+      "need_id": "N-06",
+      "label": "Cash generation",
+      "dimension": "financials",
+      "question": "What is free cash flow, and what must it fund over five years?",
+      "data_types": [
+        "financial_filing"
+      ],
+      "criteria": [
+        "liquidity"
+      ],
+      "rationale": "Liquidity scores FCF coverage of five-year maturities, facilities and dividends."
+    },
+    {
+      "need_id": "N-07",
+      "label": "Regulatory exposure",
+      "dimension": "regulation",
+      "question": "Are tariffs or rules pending that touch the company's inputs?",
+      "data_types": [
+        "government_regulation"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "rationale": "Pending rules can change cost or demand."
+    },
+    {
+      "need_id": "N-08",
+      "label": "Coverage history",
+      "dimension": "company",
+      "question": "Has this company been reviewed before?",
+      "data_types": [
+        "other"
+      ],
+      "criteria": [
+        "research_stage"
+      ],
+      "rationale": "Research stage depends on the analyst's own coverage history."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "S-001",
+      "title": "SEC XBRL company facts (NWI-X)",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0009999999.json",
+      "domain": "data.sec.gov",
+      "kind": "xbrl_facts",
+      "data_types": [
+        "structured_financials"
+      ],
+      "access": {
+        "method": "api",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 1,
+      "scores": {
+        "reliability": 0.98,
+        "relevance": 0.95
+      },
+      "rationale": "Audited figures, already tagged by filing and period. Code reads it, no agent.",
+      "need_ids": [
+        "N-01"
+      ],
+      "criteria": [
+        "rotic_level"
+      ],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-002",
+      "title": "Form 10-K, fiscal 2025",
+      "url": "https://www.sec.gov/Archives/edgar/data/9999999/000999999925000041/nwi-20250930.pdf",
+      "domain": "www.sec.gov",
+      "kind": "sec_filing",
+      "data_types": [
+        "financial_filing"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 2,
+      "scores": {
+        "reliability": 0.97,
+        "relevance": 0.95
+      },
+      "rationale": "Business description, risk factors, MD&A and the debt schedule.",
+      "need_ids": [
+        "N-01",
+        "N-03",
+        "N-04",
+        "N-05",
+        "N-06"
+      ],
+      "criteria": [
+        "rotic_level",
+        "secular_growth",
+        "leverage",
+        "liquidity"
+      ],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-003",
+      "title": "Proxy statement (DEF 14A), 2025",
+      "url": "https://www.sec.gov/Archives/edgar/data/9999999/000999999925000052/nwi-def14a.htm",
+      "domain": "www.sec.gov",
+      "kind": "sec_filing",
+      "data_types": [
+        "proxy_statement"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 3,
+      "scores": {
+        "reliability": 0.96,
+        "relevance": 0.3
+      },
+      "rationale": "Management criteria come from the proxy. Low relevance at screen depth.",
+      "need_ids": [
+        "N-08"
+      ],
+      "criteria": [
+        "research_stage"
+      ],
+      "vault_folder": "05-Regulatory-and-Legal",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-004",
+      "title": "Investor day presentation, 2025",
+      "url": "https://investors.northwind-instruments.example/investor-day-2025.pdf",
+      "domain": "investors.northwind-instruments.example",
+      "kind": "company_ir",
+      "data_types": [
+        "investor_presentation"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 4,
+      "scores": {
+        "reliability": 0.8,
+        "relevance": 0.7
+      },
+      "rationale": "Long-term targets and capital allocation framework.",
+      "need_ids": [
+        "N-03",
+        "N-05"
+      ],
+      "criteria": [
+        "secular_growth",
+        "leverage"
+      ],
+      "vault_folder": "03-Other-Company-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-005",
+      "title": "Lab instruments market outlook 2025",
+      "url": "https://market-reports.example/lab-analytical-instruments-2025",
+      "domain": "market-reports.example",
+      "kind": "market_report",
+      "data_types": [
+        "market_report"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 5,
+      "scores": {
+        "reliability": 0.75,
+        "relevance": 0.85
+      },
+      "rationale": "Third-party growth estimate for the end market.",
+      "need_ids": [
+        "N-03"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "10-Demand-Evidence",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-006",
+      "title": "Lab Business Weekly: consumables contract",
+      "url": "https://labbusinessweekly.example/2025/10/northwind-consumables-contract",
+      "domain": "labbusinessweekly.example",
+      "kind": "news",
+      "data_types": [
+        "news_article"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_2",
+      "rank": 1,
+      "scores": {
+        "reliability": 0.65,
+        "relevance": 0.6
+      },
+      "rationale": "Recent demand signal from a trade publication.",
+      "need_ids": [
+        "N-04"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "04-News-Coverage",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-007",
+      "title": "SEC XBRL company facts (peer: Harbor Scientific)",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0008888888.json",
+      "domain": "data.sec.gov",
+      "kind": "xbrl_facts",
+      "data_types": [
+        "structured_financials"
+      ],
+      "access": {
+        "method": "api",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_2",
+      "rank": 2,
+      "scores": {
+        "reliability": 0.98,
+        "relevance": 0.8
+      },
+      "rationale": "Peer inputs for ROTIC vs peers, same definitions.",
+      "need_ids": [
+        "N-02"
+      ],
+      "criteria": [
+        "rotic_vs_peers"
+      ],
+      "vault_folder": "08-Competitors",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-008",
+      "title": "Federal Register: lab equipment tariff notice",
+      "url": "https://federal-register.example/2025-18842",
+      "domain": "federal-register.example",
+      "kind": "gov",
+      "data_types": [
+        "government_regulation"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_3",
+      "rank": 1,
+      "scores": {
+        "reliability": 0.9,
+        "relevance": 0.35
+      },
+      "rationale": "Pending tariff comment period on components.",
+      "need_ids": [
+        "N-07"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "05-Regulatory-and-Legal",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-009",
+      "title": "r/labrats thread on Northwind service",
+      "url": "https://forum.example/r/labrats/comments/abc123/northwind_service_delays",
+      "domain": "forum.example",
+      "kind": "forum",
+      "data_types": [
+        "forum_post"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_3",
+      "rank": 2,
+      "scores": {
+        "reliability": 0.25,
+        "relevance": 0.4
+      },
+      "rationale": "Customer sentiment. Untrusted text, scanned before any agent reads it.",
+      "need_ids": [
+        "N-04"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "10-Demand-Evidence",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    }
+  ]
+}

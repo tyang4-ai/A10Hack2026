@@ -1,0 +1,870 @@
+{
+  "run_id": "run_20261108_fx0001",
+  "title": "Northwind Instruments (fixture): BOFFIN screen",
+  "company": "Northwind Instruments (fixture)",
+  "ticker": "NWI-X",
+  "as_of": "2026-11-08",
+  "status": "final",
+  "sections": [
+    {
+      "heading": "Bottom line",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "sentences": [
+            {
+              "id": "H-001",
+              "text": "Northwind Instruments scores +0.50 on the BOFFIN screen, with 4 of 6 screen criteria scored.",
+              "mode": "derived",
+              "derived_from": [
+                "rollup"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-001",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:12.500Z"
+              },
+              "certainty": {
+                "score": 65,
+                "band": "medium",
+                "strength": 0.6467,
+                "support": 1.0,
+                "inherited": 0.6467,
+                "completeness": 1.0,
+                "weakest_ref": "rollup",
+                "basis": "judges 3/3; weakest cited rollup (0.65)"
+              }
+            },
+            {
+              "id": "H-002",
+              "text": "Returns on tangible capital clear the framework's bar: ROTIC was 25.1% in fiscal 2025 and 23.3% in fiscal 2024, against a 15% threshold.",
+              "mode": "derived",
+              "derived_from": [
+                "C-001",
+                "E-001"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-002",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:13.000Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "C-001",
+                "basis": "judges 3/3; weakest cited C-001 (0.97)"
+              }
+            },
+            {
+              "id": "H-003",
+              "text": "Confidence in that score is low because only two years of data were available, against the ten the framework expects.",
+              "mode": "derived",
+              "derived_from": [
+                "E-001"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-003",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:13.500Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "E-001",
+                "basis": "judges 3/3; weakest cited E-001 (0.97)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Revenue and demand",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "sentences": [
+            {
+              "id": "H-004",
+              "text": "Consumables and services represented 61% of total revenue in fiscal 2025, compared with 58% in fiscal 2024.",
+              "mode": "copied",
+              "derived_from": [
+                "D-023"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "copy_exact",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Equals D-023 exactly",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:14.000Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "D-023",
+                "basis": "copied verbatim; weakest cited D-023 (0.97)"
+              }
+            },
+            {
+              "id": "H-005",
+              "text": "Revenue grew 9% to $2,412 million in fiscal 2025.",
+              "mode": "derived",
+              "derived_from": [
+                "D-034"
+              ],
+              "verification": {
+                "status": "fixed",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-005",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [
+                  {
+                    "attempt": 1,
+                    "status": "fail",
+                    "checks": [
+                      {
+                        "check": "numbers_traced",
+                        "method": "code",
+                        "result": "fail",
+                        "detail": "'10%' does not appear in D-034 (which says 9%)",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": []
+                      }
+                    ],
+                    "action": "recompute",
+                    "before": "Revenue grew 10% to $2,412 million in fiscal 2025.",
+                    "after": "Revenue grew 9% to $2,412 million in fiscal 2025.",
+                    "note": "Number replaced with the cited value.",
+                    "at": "2026-11-08T00:31:14.200Z"
+                  },
+                  {
+                    "attempt": 2,
+                    "status": "fixed",
+                    "checks": [],
+                    "action": null,
+                    "before": null,
+                    "after": null,
+                    "note": "All checks pass",
+                    "at": "2026-11-08T00:31:14.400Z"
+                  }
+                ],
+                "verified_at": "2026-11-08T00:31:14.500Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "D-034",
+                "basis": "judges 3/3; weakest cited D-034 (0.97)"
+              }
+            },
+            {
+              "id": "H-006",
+              "text": "Industry estimates put market growth at 5% to 6% a year, so the screen sees no secular decline and scores secular growth at 0.",
+              "mode": "derived",
+              "derived_from": [
+                "C-002",
+                "E-003"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-006",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:15.000Z"
+              },
+              "certainty": {
+                "score": 65,
+                "band": "medium",
+                "strength": 0.6467,
+                "support": 1.0,
+                "inherited": 0.6467,
+                "completeness": 1.0,
+                "weakest_ref": "E-003",
+                "basis": "judges 3/3; weakest cited E-003 (0.65)"
+              }
+            },
+            {
+              "id": "H-007",
+              "text": "Academic and government customers were 18% of revenue, and the company says research funding cuts could reduce demand.",
+              "mode": "derived",
+              "derived_from": [
+                "C-004"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-007",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:15.500Z"
+              },
+              "certainty": {
+                "score": 65,
+                "band": "medium",
+                "strength": 0.6467,
+                "support": 1.0,
+                "inherited": 0.6467,
+                "completeness": 1.0,
+                "weakest_ref": "C-004",
+                "basis": "judges 3/3; weakest cited C-004 (0.65)"
+              }
+            }
+          ]
+        },
+        {
+          "type": "chart",
+          "chart_id": "G-001",
+          "caption": {
+            "id": "H-008",
+            "text": "Revenue rose every year from $1,710 million in fiscal 2021 to $2,412 million in fiscal 2025.",
+            "mode": "derived",
+            "derived_from": [
+              "C-008",
+              "G-001"
+            ],
+            "verification": {
+              "status": "pass",
+              "checks": [
+                {
+                  "check": "numbers_traced",
+                  "method": "code",
+                  "result": "pass",
+                  "detail": "Every number traces to a cited item",
+                  "model_id": null,
+                  "agent_id": null,
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": []
+                },
+                {
+                  "check": "faithfulness",
+                  "method": "llm_judge",
+                  "result": "pass",
+                  "detail": "Says no more than the cited items",
+                  "model_id": "us.anthropic.claude-haiku-5-5",
+                  "agent_id": "verifier-H-008",
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": 3,
+                  "votes_total": 3
+                }
+              ],
+              "attempts": [],
+              "verified_at": "2026-11-08T00:31:16.000Z"
+            },
+            "certainty": {
+              "score": 98,
+              "band": "high",
+              "strength": 0.98,
+              "support": 1.0,
+              "inherited": 0.98,
+              "completeness": 1.0,
+              "weakest_ref": "C-008",
+              "basis": "judges 3/3; weakest cited C-008 (0.98)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "heading": "Balance sheet",
+      "blocks": [
+        {
+          "type": "bullets",
+          "sentences": [
+            {
+              "id": "H-009",
+              "text": "Total debt was $1,150 million at the end of fiscal 2025, 2.5 times that year's free cash flow.",
+              "mode": "derived",
+              "derived_from": [
+                "C-005"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-009",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:16.500Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "C-005",
+                "basis": "judges 3/3; weakest cited C-005 (0.97)"
+              }
+            },
+            {
+              "id": "H-010",
+              "text": "Five years of free cash flow at the fiscal 2025 rate would cover scheduled principal payments 5.9 times.",
+              "mode": "derived",
+              "derived_from": [
+                "C-006"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-010",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:17.000Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "C-006",
+                "basis": "judges 3/3; weakest cited C-006 (0.97)"
+              }
+            },
+            {
+              "id": "H-011",
+              "text": "The $500 million revolving credit facility was undrawn.",
+              "mode": "derived",
+              "derived_from": [
+                "C-007"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-011",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:17.500Z"
+              },
+              "certainty": {
+                "score": 97,
+                "band": "high",
+                "strength": 0.97,
+                "support": 1.0,
+                "inherited": 0.97,
+                "completeness": 1.0,
+                "weakest_ref": "C-007",
+                "basis": "judges 3/3; weakest cited C-007 (0.97)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Scorecard",
+      "blocks": [
+        {
+          "type": "scorecard"
+        }
+      ]
+    },
+    {
+      "heading": "What we could not determine",
+      "blocks": [
+        {
+          "type": "bullets",
+          "sentences": [
+            {
+              "id": "H-012",
+              "text": "ROTIC versus peers is unscored because peer financial data was not collected in this run.",
+              "mode": "derived",
+              "derived_from": [
+                "E-002",
+                "HOLE-01"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-012",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:18.000Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "E-002",
+                "basis": "judges 3/3; weakest cited E-002 (1.00)"
+              }
+            },
+            {
+              "id": "H-013",
+              "text": "Research stage is unscored on a first review.",
+              "mode": "derived",
+              "derived_from": [
+                "E-006"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-013",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:18.500Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "E-006",
+                "basis": "judges 3/3; weakest cited E-006 (1.00)"
+              }
+            },
+            {
+              "id": "H-014",
+              "text": "A claim about Northwind's market share failed verification twice and was left out of the scores.",
+              "mode": "derived",
+              "derived_from": [
+                "C-009",
+                "HOLE-03"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-014",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:19.000Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-03",
+                "basis": "judges 3/3; weakest cited HOLE-03 (1.00)"
+              }
+            },
+            {
+              "id": "H-015",
+              "text": "The investor day presentation could not be fetched.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-04"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number traces to a cited item",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": []
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "Says no more than the cited items",
+                    "model_id": "us.anthropic.claude-haiku-5-5",
+                    "agent_id": "verifier-H-015",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T00:31:19.500Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-04",
+                "basis": "judges 3/3; weakest cited HOLE-04 (1.00)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "holes": [
+    {
+      "hole_id": "HOLE-01",
+      "criterion": "rotic_vs_peers",
+      "item_id": "E-002",
+      "reason": "Peer XBRL (S-007) skipped: per-run budget reached before tier 2 finished."
+    },
+    {
+      "hole_id": "HOLE-02",
+      "criterion": "research_stage",
+      "item_id": "E-006",
+      "reason": "First review. No coverage history."
+    },
+    {
+      "hole_id": "HOLE-03",
+      "criterion": null,
+      "item_id": "C-009",
+      "reason": "Market-share claim failed verification twice. Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-04",
+      "criterion": null,
+      "item_id": null,
+      "reason": "Investor day presentation (S-004) returned HTTP 404."
+    }
+  ],
+  "disclaimer": "Not financial or legal advice. Scores under the BOFFIN framework only. Valuation is not scored. Fixture data: the company and every number are fictional.",
+  "stats": {
+    "sentences": 15,
+    "passed": 14,
+    "fixed": 1,
+    "failed": 0,
+    "words": 233,
+    "est_pages": 1.5
+  },
+  "markdown_path": "runs/run_20261108_fx0001/northwind-instruments/09-Analysis/human-report.md",
+  "as_of_seq": 0,
+  "certainty": {
+    "mean": 90,
+    "high_pct": 76,
+    "high": 12,
+    "medium": 3,
+    "low": 0,
+    "none": 0,
+    "coverage_scored": 4,
+    "coverage_in_scope": 6,
+    "method": "Word-weighted mean over sentence certainties. high_pct is the share of words in high-band sentences."
+  }
+}

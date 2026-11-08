@@ -1,0 +1,65 @@
+{
+  "name": "BOFFIN business-quality rubric (Axelrod edition)",
+  "version": "0.1.0",
+  "note": "Scores are -1, 0, +1, or null (N/A). Thresholds are one practitioner's calibration, so the UI should say 'score under this framework', never 'objective quality'. Valuation is deliberately not scored. Labels and anchors are paraphrased for this repo.",
+  "scale": [-1, 0, 1],
+  "framework_total": 27,
+  "categories": [
+    {"id": "dominant_business", "label": "Dominant Business", "weight": 2, "criteria": ["strategy", "demand_side", "supply_side", "flywheel", "rotic_vs_peers"]},
+    {"id": "compounder", "label": "Compounder", "weight": 2, "criteria": ["secular_growth", "rotic_level", "capital_allocation", "share_repo_record"]},
+    {"id": "management", "label": "Management", "weight": 2, "criteria": ["mgmt_fit", "mgmt_stability", "ceo_ownership", "ceo_pay", "incentive_comp_metrics", "incentive_comp_payout", "governance"]},
+    {"id": "control_of_destiny", "label": "Control of Destiny", "weight": 1, "criteria": ["competitor_behavior", "industry_cyclicality"]},
+    {"id": "financial_strength", "label": "Financial Strength", "weight": 1, "criteria": ["leverage", "liquidity", "hidden_risk_value"]},
+    {"id": "shared_value", "label": "Shared Value", "weight": 1, "criteria": ["shared_value"]},
+    {"id": "research_stage", "label": "Research Stage", "weight": 1, "criteria": ["research_stage"]},
+    {"id": "thesis_stability", "label": "Thesis Stability", "weight": 1, "criteria": ["fundamental_thesis", "non_gaap_adjustments", "rotic_trend", "rotic_estimate_trend"]}
+  ],
+  "depths": {
+    "screen": ["rotic_level", "rotic_vs_peers", "secular_growth", "leverage", "liquidity", "research_stage"],
+    "full": "all"
+  },
+  "criteria": {
+    "strategy": {"label": "Strategy", "category": "dominant_business", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Stated strategy in the 10-K business section and investor materials, and whether actions match it."},
+    "demand_side": {"label": "Demand side", "category": "dominant_business", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "A named mechanism for why customers stay (switching costs, network effects). A famous brand is not evidence."},
+    "supply_side": {"label": "Supply side", "category": "dominant_business", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "A named cost or scale advantage, supplier concentration, input risk."},
+    "flywheel": {"label": "Flywheel", "category": "dominant_business", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "A reinforcing loop with evidence for each link."},
+    "rotic_vs_peers": {"label": "ROTIC vs peers", "category": "dominant_business", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Company ROTIC against peer ROTICs computed the same way, from the same kind of source."},
+    "secular_growth": {"label": "Secular growth", "category": "compounder", "scoring": "judgment", "plus_one": null, "minus_one": "Secular decline ahead", "evidence_hint": "Industry growth evidence from market reports and filings."},
+    "rotic_level": {"label": "ROTIC level (10y)", "category": "compounder", "scoring": "threshold", "plus_one": "> 15%", "minus_one": "< 10%", "evidence_hint": "NOPAT / average TICAP, framework definitions below. Fewer than 10 years of data means confidence low."},
+    "capital_allocation": {"label": "Capital allocation", "category": "compounder", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Stated capital allocation framework and what was actually done with cash."},
+    "share_repo_record": {"label": "Share repurchase record", "category": "compounder", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Buybacks against share count and price over time."},
+    "mgmt_fit": {"label": "Management fit", "category": "management", "scoring": "threshold", "plus_one": "CEO in this role and industry for more than half their career", "minus_one": "Different role or industry for more than half their career", "evidence_hint": "Proxy statement biographies."},
+    "mgmt_stability": {"label": "Management stability", "category": "management", "scoring": "threshold", "plus_one": "Average tenure > 15y and trailing 3y turnover < 25%", "minus_one": "Average tenure < 10y or trailing 3y turnover > 50%", "evidence_hint": "Proxy statements across years."},
+    "ceo_ownership": {"label": "CEO ownership", "category": "management", "scoring": "threshold", "plus_one": "Stock held / average total annual comp > 3x", "minus_one": "< 1x", "evidence_hint": "Proxy beneficial ownership table and summary compensation table."},
+    "ceo_pay": {"label": "CEO pay", "category": "management", "scoring": "threshold", "plus_one": "Performance-based > 60% and long-term > 60% of total", "minus_one": "Performance-based < 30% or long-term < 30%", "evidence_hint": "Proxy compensation discussion."},
+    "incentive_comp_metrics": {"label": "Incentive comp metrics (ICMQ)", "category": "management", "scoring": "threshold", "plus_one": "ICMQ > 40%", "minus_one": "ICMQ < 15%", "evidence_hint": "Weights: ROIC 100%, relative TSR and FCF per share 50%, absolute TSR, FCF, margins and other per-share 25%."},
+    "incentive_comp_payout": {"label": "Incentive comp payout", "category": "management", "scoring": "threshold", "plus_one": "Payout < 100% with relative TSR positive, or < 80%", "minus_one": "Payout > 150%, or > 80% with relative TSR negative", "zero": "100% to 150% with relative TSR positive", "evidence_hint": "Proxy payout tables."},
+    "governance": {"label": "Governance", "category": "management", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Board independence, share classes, related-party items."},
+    "competitor_behavior": {"label": "Competitor behavior", "category": "control_of_destiny", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Price wars, capacity additions, rational or irrational rivals."},
+    "industry_cyclicality": {"label": "Industry cyclicality", "category": "control_of_destiny", "scoring": "judgment", "plus_one": "Demand and capital-supply cycles near trough", "minus_one": "Near peak", "evidence_hint": "Industry data and filings."},
+    "leverage": {"label": "Leverage", "category": "financial_strength", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Debt, leases and pension obligations against earnings power."},
+    "liquidity": {"label": "Liquidity", "category": "financial_strength", "scoring": "threshold", "plus_one": "FCF coverage of 5y maturities, facilities and dividends > 2x", "minus_one": "< 1x", "evidence_hint": "Debt maturity schedule and cash flow statement."},
+    "hidden_risk_value": {"label": "Hidden risk or value", "category": "financial_strength", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Commitments and contingencies, off-balance-sheet items."},
+    "shared_value": {"label": "Shared value", "category": "shared_value", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Whether customers, employees and society benefit alongside owners."},
+    "research_stage": {"label": "Research stage", "category": "research_stage", "scoring": "threshold", "plus_one": "Followed closely for more than a year", "minus_one": "Still under review, or too hard to forecast", "evidence_hint": "About the analyst's own coverage history, not the company."},
+    "fundamental_thesis": {"label": "Fundamental thesis", "category": "thesis_stability", "scoring": "judgment", "plus_one": "Original thesis playing out", "minus_one": "Thesis eroding", "evidence_hint": "Only meaningful against a prior review."},
+    "non_gaap_adjustments": {"label": "Non-GAAP adjustments", "category": "thesis_stability", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Size and direction of adjustments between GAAP and reported non-GAAP figures."},
+    "rotic_trend": {"label": "ROTIC trend", "category": "thesis_stability", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Direction of ROTIC over the window."},
+    "rotic_estimate_trend": {"label": "ROTIC estimate trend", "category": "thesis_stability", "scoring": "judgment", "plus_one": null, "minus_one": null, "evidence_hint": "Needs consensus estimates. Usually N/A without a data vendor."}
+  },
+  "metrics": {
+    "NOPAT": "GAAP EBIT + acquired intangible amortization + interest component of operating lease expense - taxes at a normalized rate + equity income after tax - income attributable to NCI after tax",
+    "TICAP": "Total assets - cash - goodwill - indefinite-lived intangibles - non-interest-bearing current liabilities",
+    "ROTIC": "NOPAT / average TICAP",
+    "ROIIC": "(sum NOPAT years 0-4 - sum NOPAT years 10-14) / (avg TICAP years 0-5 - avg TICAP years 10-15); thresholds > 15% good, < 5% bad",
+    "financials_note": "Banks and insurers use iROE (net income to common / tangible common equity excluding AOCI) instead of ROTIC. Say so in the report."
+  },
+  "rollup": {
+    "category_score": "Mean of the category's scored (non-null) criteria, 1 decimal",
+    "weighted_average": "Sum(weight x category score) / sum(weights of scored categories), 2 decimals. Lead with this number.",
+    "normalized_pct": "((weighted_average + 1) / 2) x 100. An inference about the original sheet, label it as such.",
+    "percent_of_max_pct": "max(weighted_average, 0) x 100. Also an inference. Show both percentages or neither.",
+    "coverage": "Always show scored / in scope and list the N/A criteria by name."
+  },
+  "disclaimer": "Not financial or legal advice. Scores under the BOFFIN framework only. Valuation is not scored."
+}

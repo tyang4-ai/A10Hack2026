@@ -1,5 +1,7 @@
 # API contract (dashboard ↔ backend)
 
+> **Superseded.** This was the first draft of the dashboard ↔ backend contract. The contract is now [CONTRACT.md](CONTRACT.md), with `contract/models.py` as the source of truth. How this draft maps onto it: [FRONTEND_TLDR.md](FRONTEND_TLDR.md), section "Moving the scaffold onto the contract". Kept for reference.
+
 Draft contract so the dashboard and backend can be built in parallel. The dashboard currently runs against an in-browser mock that follows this contract (`frontend/src/api/mock.ts`). Types live in `frontend/src/api/types.ts`; keep the two in sync.
 
 - Base URL: `VITE_API_URL` (e.g. the API Gateway stage URL). If unset, the dashboard uses the mock.
