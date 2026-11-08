@@ -610,8 +610,15 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `finalize.run` writes `09-Analysis/human-report.md` with `render_markdown` and sets `state.summary.markdown_path` (sent to B-reason).
 - est_pages = words/450 + 0.3 per chart + 0.35 for the scorecard + 0.04 per heading + 0.15 for the frame. The fixture brief has 18 sentences, 319 words and 2.0 pages.
 
-**2026-11-07 8:20 PM, B-cli REPORT (accepted).**
+**2026-11-07 8:18 PM, B-cli REPORT (accepted).**
 - Run the CLI as `python -m backend.axelrod.cli <cmd>`: `run` (add `--tail` to follow), `tail [--all]`, `approve --all | --reject S-00x [--wait s]`, `revoke`, `stop`, `status`, `runs`, `inject-errors`. `--api` defaults to `AXELROD_API`, then localhost, and adds `/api/v1` when missing. It uses stdlib urllib (accepted: it only talks to our own API).
 - `demo.inject_errors(ctx, req, *, repair_delay=None)` (default `REPAIR_DELAY_S = 2.0`, so the red row shows before the fix). `demo.patch_item(ctx, item_id, patch) -> m.Item`. Both raise `api.ApiError`. Helpers: `demo.dependents`, `demo.digit_slips`, `cli.build_app`, `cli.Client`, `cli.render_event`, `cli.tail_run`.
 - `patch_item` keeps the old judge votes, with a "From before the analyst edit" note, and doesn't update holes or the rollup.
 - `scripts/export_run.py <run_id> [--name] [--dest]` refuses unfinished runs, replays and an existing destination. It uses `Store._load_local` / `_load_aws`, because `load_all` marks unfinished runs failed.
+
+**2026-11-07 8:20 PM, B-extract REPORT.**
+- Live presmoke on S-001 pages 15, 138, 140, 141 and 162: 49/49 items pass, $0.0619 (the first run passed about 65% and led to three fixes). `scripts/presmoke.py --source S-001 --pages a,b|a-b [--until <stage>] [--budget 1.0] [--fake] [--data-dir] [--keep] [--plan]`.
+- The tool name is `record_data_items`. Unit and period headers come from the evidence's own page: the model's header line if it checks out there, else the nearest header above the row. Located quotes store the exact page text (cells joined by " \n").
+- Facts without a number are allowed when a need asks for one directly (value empty). Percentage-change table columns are skipped (see the known issue on `_period_text`). The tier rule runs once at the end of extract.
+- JSON sources S-007 and S-008: 9 ROTIC input concepts (us-gaap or ifrs-full), `extracted_by: "code"`. Period is `FYyyyy` for income lines and an ISO date for balances. The latest filing wins when a year is restated.
+- A failed extractor page records no Hole. finalize declares it (sent to B-reason). Items still failing after the code recite stay `fail` for repair.

@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-extract, B-reason, A-deploy, B-g2fix (W2). W1 is 5/5 done.
+- Running: B-reason, A-deploy, B-g2fix (W2). W1 is 5/5 done.
 - Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
 
 ## Plans
@@ -19,7 +19,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-verify | builder | W1 | done | 67 passed | planted 12/12 caught, clean 12/12 pass. Revoked source makes dependents blocked (E to C to D) |
 | B-ingest | builder | W1 | done | 24 passed | ingest_one S-001 live ok (230 pages). Untrusted = news/forum/other or tier_3, scanned, fail closed. S-010 404 until pushed |
 | B-shl-plan | builder | W1 | done | 31 passed, 1 skipped | 10 sources, 7 needs, 36 extract pages checked against PDFs. S-006 is the tier_2 revoke target, fetched 8th |
-| B-extract | builder | W2 | running | | |
+| B-extract | builder | W2 | done | 24 passed, live presmoke | 5 real S-001 pages: 49/49 items pass, $0.06. Total live spend so far about $0.13 |
 | B-reason | builder | W2 | running | | |
 | B-brief | builder | W2 | done | 23 passed | fixture brief 18 sentences, 2.0 pages. Unfaithful sentence 0/3 votes, one-word copy edit caught and restored |
 | B-cli | builder | W2 | done | 21 passed (suite 334) | tail colors traffic, inject-errors 3/3 caught then re-cited. CLI uses urllib (own API only) |
@@ -70,6 +70,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Known issues
 
+- `verify/checks.py` `_period_text`: in a mixed table row (amounts plus % change columns), % tokens are aligned to the year header, so a % change column reads as the prior year. For now the extractor skips % change columns. Growth rates written in a sentence are still extracted. Fix in W3 if time allows.
+
 - An analyst edit (`PATCH /items`) re-runs the code checks but keeps the old judge votes, marked "From before the analyst edit". It doesn't update holes or the rollup.
 
 - G2 minor, left as is: allow rules ignore scheme and port, and the path prefix has no segment boundary (same host only, low risk). Cost in event messages uses `:.4f` (not a report value).
@@ -83,7 +85,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
-- (8:20 PM, pass to Tong) The CLI prints a run link as `PUBLIC_UI_URL?run=<run_id>` (or `PUBLIC_UI_URL` with `{run_id}` replaced). The UI has no run deep link yet. If Tong adds one, tell me the URL shape and I'll set `PUBLIC_UI_URL`.
+- (8:18 PM, pass to Tong) The CLI prints a run link as `PUBLIC_UI_URL?run=<run_id>` (or `PUBLIC_UI_URL` with `{run_id}` replaced). The UI has no run deep link yet. If Tong adds one, tell me the URL shape and I'll set `PUBLIC_UI_URL`.
 
 - (8:17 PM, pass to Tong) Brief UI behavior: when a brief sentence is repaired, its new text arrives in the `summary.verified` event and the `/summary` refetch, not in a second `summary.sentence` event. A sentence that fails twice is removed, and it disappears at the `summary.ready` refetch. Blocked sentences stay, marked blocked.
 
