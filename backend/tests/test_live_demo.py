@@ -19,7 +19,7 @@ import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -470,15 +470,8 @@ def small_plan(tmp_path: Path) -> Path:
     return path
 
 
-@pytest.fixture
-def rehearsal_world(tmp_path, monkeypatch):
-    """Canned bodies for every planned URL except the planted page, which the API serves itself. A slow fake
-    extractor, so model calls are in flight when STOP lands."""
-    plan_file = small_plan(tmp_path)
-    monkeypatch.setattr(plan_stage, "PLAN_FILE", plan_file)
-    monkeypatch.setattr(plan_stage, "PACE_S", 0)
-    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
-    plan = json.loads(plan_file.read_text(encoding="utf-8"))
+def canned_bodies(plan: dict) -> dict[str, tuple[bytes, str]]:
+    """Simulated bodies for every planned URL except the planted page (the API serves that one itself)."""
     pdf = make_pdf(PAGES)
     bodies: dict[str, tuple[bytes, str]] = {}
     for s in plan["sources"]:
@@ -491,6 +484,19 @@ def rehearsal_world(tmp_path, monkeypatch):
             bodies[s["url"]] = (blog_html(), "text/html; charset=utf-8")
         elif s["url"].lower().endswith(".pdf") or s["kind"] in ("annual_report", "company_ir"):
             bodies[s["url"]] = (pdf, "application/pdf")
+    return bodies
+
+
+@pytest.fixture
+def rehearsal_world(tmp_path, monkeypatch):
+    """Canned bodies for every planned URL except the planted page, which the API serves itself. A slow fake
+    extractor, so model calls are in flight when STOP lands."""
+    plan_file = small_plan(tmp_path)
+    monkeypatch.setattr(plan_stage, "PLAN_FILE", plan_file)
+    monkeypatch.setattr(plan_stage, "PACE_S", 0)
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
+    plan = json.loads(plan_file.read_text(encoding="utf-8"))
+    bodies = canned_bodies(plan)
     real_get_once = fetch_http.get_once
     sent: list[str] = []
 
@@ -546,3 +552,294 @@ def test_demo_live_passes_every_beat_offline(settings, rehearsal_world, pacing_c
     sent = rehearsal_world
     assert not any("example." in u for u in sent)               # blocked links never left the gateway
     assert not any("euronext" in u for u in sent)               # S-006 revoked before its request
+
+
+# ---------------------------------------------------------------------------
+# demo_live --webapp (G6b): the webapp's calls, cache hits, one goon stopped, timing (simulated event streams)
+# ---------------------------------------------------------------------------
+
+T0 = datetime(2026, 11, 8, 11, 0, 0)
+PRIORITY = ["S-001", "S-002", "S-007", "S-008", "S-003", "S-004", "S-005", "S-011", "S-012", "S-013", "S-014",
+            "S-015", "S-016"]
+GOON = "extractor-04"
+
+
+class Stream:
+    """A webapp run's event stream, built in order. Seconds are from run.created, the way the server stamps."""
+
+    def __init__(self) -> None:
+        self.events: list[dict] = []
+
+    def add(self, t: float, type: str, data: dict, *, stage: str = "collect", agent_id: str | None = None) -> dict:
+        ts = (T0 + timedelta(seconds=t)).isoformat(timespec="milliseconds") + "Z"
+        e = {"seq": len(self.events) + 1, "ts": ts, "run_id": "run_x", "type": type, "stage": stage,
+             "agent_id": agent_id, "data": data}
+        self.events.append(e)
+        return e
+
+    def req(self, t: float, decision: str, *, action: str = "fetch", sid: str | None = None, rule: str | None = None,
+            reason: str = "approved source: allowed", cache: str | None = None, cached_at: str | None = None,
+            agent_id: str = "fetcher-01", stage: str = "collect", role: str = "fetcher") -> dict:
+        model = action == "model.invoke"
+        data = {"request_id": f"REQ-{len(self.events) + 1:04d}", "role": role, "action": action,
+                "target": "us.anthropic.claude-haiku-4-5" if model else f"https://example.test/{sid}",
+                "decision": decision, "rule_id": rule, "reason": reason, "source_id": sid, "latency_ms": 20,
+                "http_status": 200 if decision == "allowed" else None, "bytes": None if model else 1000,
+                "tokens_in": 900 if model else None, "tokens_out": 120 if model else None,
+                "cost_usd": 0.001 if model else (0.0 if cache == "hit" else None), "cache": cache,
+                "cached_at": cached_at}
+        return self.add(t, "gateway.request", data, stage=stage, agent_id=agent_id)
+
+
+def good_stream() -> tuple[Stream, list[dict], list[dict]]:
+    """Every webapp beat as it should go. Returns the stream, the documents and the plan's sources."""
+    s = Stream()
+    s.add(0, "run.created", {"run": {"created_via": "ui", "cache_mode": "documents"}}, stage="plan")
+    s.add(0.1, "agent.spawned", {"agent": {"agent_id": "bobby", "role": "orchestrator"}}, stage="plan",
+          agent_id="bobby")
+    s.add(4, "plan.ready", {"needs": 7, "sources": 16}, stage="plan")
+    s.add(8, "agent.decision", {"agent_id": "bobby", "stage": "plan", "decision": "proceed", "summary": "ok"},
+          stage="plan", agent_id="bobby")
+    approved = ["S-002", "S-001"] + PRIORITY[2:-1]
+    s.add(14, "approval.committed", {"approved": approved, "rejected": ["S-016"],
+                                     "auto_approved": ["S-006", "S-009", "S-010"]}, stage="approve")
+    s.add(14, "policy.updated", {"version": 2, "change": "Approval committed",
+                                 "rule_ids": ["R-sys-models"] + [f"R-allow-{x}" for x in approved] + ["R-reject-S-016"]},
+          stage="approve")
+    t = 15.0
+    for i, sid in enumerate(approved):
+        s.add(t, "agent.log", {"text": f"next: {sid} Some report (example.test)"}, agent_id="fetcher-01")
+        hit = i != 2                                         # one live miss, the rest from the cache
+        s.req(t + 1.0, "allowed", sid=sid, cache="hit" if hit else "miss",
+              cached_at="2026-08-01T09:00:00.000Z" if hit else None)
+        s.add(t + 1.2, "doc.stored", {"doc_id": f"DOC-{i + 1:03d}", "source_id": sid, "pages": 2,
+                                      "vault_path": "x", "scan": {"verdict": "not_scanned"}})
+        if i == 0:
+            s.add(t + 1.3, "policy.updated", {"version": 3, "change": "Revoked S-006",
+                                              "rule_ids": ["R-revoke-S-006"]})
+        t += 1.3
+    s.add(t, "agent.log", {"text": "next: S-006 Reuters via Euronext (live.euronext.com, revoked)"},
+          agent_id="fetcher-01")
+    s.req(t + 1.0, "blocked", sid="S-006", rule="R-revoke-S-006", reason="approved source: S-006 was revoked")
+    s.add(t + 1.1, "agent.log", {"text": "next: S-009 Blog (simplywall.st)"}, agent_id="fetcher-01")
+    s.req(t + 2.0, "allowed", sid="S-009", cache="hit", cached_at="2026-11-08T07:00:00.000Z")
+    s.add(t + 2.1, "agent.log", {"text": "next: link found in S-009, not a planned source: https://example.com/one"},
+          agent_id="fetcher-01")
+    s.req(t + 3.0, "blocked", reason="link found in page: No rule allows example.com/one. Default deny.")
+    s.req(t + 4.0, "allowed", sid="S-010", reason="approved source: R-allow-S-010")
+    s.req(t + 4.5, "flagged", sid="S-010", reason="Guardrails intervened on page 1")
+    s.add(t + 4.6, "doc.stored", {"doc_id": "DOC-099", "source_id": "S-010", "pages": 1, "vault_path": "x",
+                                  "scan": {"verdict": "flagged"}})
+    s.req(44, "allowed", action="model.invoke", agent_id="extractor-01", stage="extract", role="extractor",
+          reason="Role 'extractor' may call this model.")
+    s.add(45, "policy.updated", {"version": 4, "change": f"Stopped agent {GOON}", "rule_ids": [f"R-stop-{GOON}"]},
+          stage="extract")
+    s.add(45, "agent.status", {"agent_id": GOON, "status": "stopped", "task": "x", "usage": {},
+                               "reason": "Demo: the presenter stopped one goon"}, stage="extract", agent_id=GOON)
+    s.req(46, "blocked", action="model.invoke", agent_id=GOON, stage="extract", role="extractor",
+          rule=f"R-stop-{GOON}", reason="Stopped by the analyst: Demo")
+    s.req(47, "allowed", action="model.invoke", agent_id="extractor-02", stage="extract", role="extractor",
+          reason="Role 'extractor' may call this model.")
+    s.add(48, "run.stopped", {"reason": "Demo: the presenter pressed STOP"}, stage="extract")
+    s.req(49, "blocked", action="model.invoke", agent_id="extractor-03", stage="extract", role="extractor",
+          reason="Kill switch: run stopped while the call was in flight. Result discarded.")
+    docs = [{"doc_id": "DOC-099", "source_id": "S-010", "quarantined": True, "scan": {"verdict": "flagged"},
+             "origin": "fetched"},
+            {"doc_id": "DOC-001", "source_id": "S-002", "quarantined": False, "scan": {"verdict": "not_scanned"},
+             "origin": "archive"}]
+    sources = [{"source_id": sid, "tier": "priority", "rank": n} for n, sid in enumerate(PRIORITY, start=1)]
+    sources += [{"source_id": "S-006", "tier": "tier_2", "rank": 1}, {"source_id": "S-009", "tier": "tier_3", "rank": 1},
+                {"source_id": "S-010", "tier": "tier_3", "rank": 2}]
+    return s, docs, sources
+
+
+def good_acts(**kw):
+    base = dict(run_id="run_x", order=("S-002", "S-001"), goon_id=GOON, goon_was="queued", goon_after_seq=1,
+                stop_after_seq=1, marks={"stop": 48.3})
+    base.update(kw)
+    return demo_live.Actions(**base)
+
+
+def webapp_beats(events: list[dict], docs: list[dict], sources: list[dict], acts=None, **opts) -> dict:
+    o = demo_live.Options(webapp=True, **opts)
+    return {b.key: b for b in demo_live.check_webapp_beats(events, docs, sources, acts or good_acts(), o)}
+
+
+def test_webapp_beats_pass_on_a_good_stream():
+    s, docs, sources = good_stream()
+    beats = webapp_beats(s.events, docs, sources)
+    assert list(beats) == ["launch", "approval", "traffic", "cache", "link_blocked", "revoke", "flagged", "goon",
+                           "stop", "timing"]
+    assert all(b.ok and b.observed for b in beats.values()), {k: b.detail for k, b in beats.items() if not b.ok}
+    assert "12 hit, 1 miss" in beats["cache"].detail and "cache_mode documents" in beats["cache"].detail
+    assert "blocked by R-stop-extractor-04" in beats["goon"].detail
+    tl = demo_live.timeline(s.events, demo_live.Options(webapp=True))
+    assert tl["stop"] == 48 and tl["goon"] == 45 and tl["goon_blocked"] == 46 and tl["extract"] == 44
+
+
+def test_webapp_cache_beat_fails_without_a_hit():
+    s, docs, sources = good_stream()
+    for e in s.events:
+        if e["type"] == "gateway.request" and e["data"]["cache"] == "hit":
+            e["data"]["cache"], e["data"]["cached_at"] = "miss", None
+    beat = webapp_beats(s.events, docs, sources)["cache"]
+    assert not beat.ok and "no fetch was a cache hit" in beat.detail
+
+
+def test_webapp_goon_beat_fails_when_the_stopped_goon_gets_a_later_call():
+    s, docs, sources = good_stream()
+    s.req(47.5, "allowed", action="model.invoke", agent_id=GOON, stage="extract", role="extractor")
+    beat = webapp_beats(s.events, docs, sources)["goon"]
+    assert not beat.ok and "1 request(s) of it allowed afterwards" in beat.detail
+
+
+def test_webapp_goon_beat_not_observed_is_not_a_fail():
+    s, docs, sources = good_stream()
+    s.events = [e for e in s.events if not (e["type"] == "gateway.request" and e["agent_id"] == GOON)]
+    beat = webapp_beats(s.events, docs, sources)["goon"]
+    assert beat.ok and not beat.observed and beat.verdict == "N/OBS" and "made no further call" in beat.detail
+
+
+def test_webapp_goon_beat_fails_when_no_other_goon_keeps_going():
+    s, docs, sources = good_stream()
+    s.events = [e for e in s.events if e["agent_id"] != "extractor-02"]
+    beat = webapp_beats(s.events, docs, sources)["goon"]
+    assert not beat.ok and "no other goon got an allowed model call before STOP" in beat.detail
+
+
+def test_webapp_timing_fails_over_55_seconds():
+    s, docs, sources = good_stream()
+    assert webapp_beats(s.events, docs, sources)["timing"].ok
+    late = webapp_beats(s.events, docs, sources, good_acts(marks={"stop": 56.2}))["timing"]
+    assert not late.ok and "over the 55 s limit" in late.detail
+    # --check has no script clock: the server's run.created to run.stopped decides
+    server = webapp_beats(s.events, docs, sources, good_acts(marks={}), max_seconds=45)["timing"]
+    assert not server.ok and "48.0 s (server clock)" in server.detail
+
+
+def test_webapp_approval_beat_checks_order_and_rejection():
+    s, docs, sources = good_stream()
+    first = [e for e in s.events if e["type"] == "gateway.request"][:2]
+    first[0]["data"]["source_id"], first[1]["data"]["source_id"] = "S-001", "S-002"
+    beat = webapp_beats(s.events, docs, sources)["approval"]
+    assert not beat.ok and "S-002 was fetched after S-001" in beat.detail
+    s2, _, _ = good_stream()
+    s2.req(30, "blocked", sid="S-016", rule="R-reject-S-016")
+    beat = webapp_beats(s2.events, docs, sources)["approval"]
+    assert not beat.ok and "S-016 was requested 1 time(s)" in beat.detail
+
+
+def test_webapp_decisions_move_one_up_and_reject_one():
+    sources = [{"source_id": sid, "tier": "priority", "rank": n} for n, sid in enumerate(PRIORITY, start=1)]
+    sources += [{"source_id": "S-006", "tier": "tier_2", "rank": 1}]
+    decisions, order = demo_live.webapp_decisions(sources, demo_live.Options(webapp=True))
+    assert order == ("S-002", "S-001")
+    assert [d["source_id"] for d in decisions][:3] == ["S-002", "S-001", "S-007"]
+    assert [d["rank"] for d in decisions] == list(range(1, len(PRIORITY) + 1))
+    assert [d["source_id"] for d in decisions if d["approval"] == "rejected"] == ["S-016"]
+    assert not any(d["source_id"] in ("S-006", "S-009", "S-010") for d in decisions)   # left to auto-approval
+
+
+def test_the_shipped_plan_allows_the_presenters_approval():
+    sources = json.loads(demo_live.PLAN_FILE.read_text(encoding="utf-8"))["sources"]
+    decisions, order = demo_live.webapp_decisions(sources, demo_live.Options(webapp=True))
+    assert order == ("S-002", demo_live.plan_passed("S-002"))
+    assert sum(d["approval"] == "rejected" for d in decisions) == 1
+
+
+@pytest.mark.parametrize("sid", ["S-006", "S-009", "S-010"])
+def test_the_script_refuses_to_touch_the_block_sources(sid, capsys):
+    for kw in ({"reject": sid}, {"move_up": sid}):
+        with pytest.raises(ValueError, match="Refusing"):
+            demo_live.validate_webapp(demo_live.Options(webapp=True, **kw))
+    # Refused before any call: nothing listens on port 9, and nothing is sent to it.
+    assert demo_live.main(["--webapp", "--reject", sid.lower(), "--api", "http://127.0.0.1:9"]) == 2
+    assert f"REFUSED  Refusing to reject {sid}" in capsys.readouterr().out
+
+
+def test_pacing_advice_moves_stop_to_about_fifty_seconds():
+    s, _, _ = good_stream()
+    opts = demo_live.Options(webapp=True, pacing_hint=2.0)
+    advice = demo_live.advise_pacing(s.events, good_acts(marks={"stop": 60.0}), opts)
+    assert advice.used == pytest.approx(0.98, abs=0.01)          # 1.0 s announcement to request, minus 20 ms
+    assert advice.revoke_pos == 13 and advice.fetches == 16      # 12 priority (S-016 rejected), S-006, S-009, link, S-010
+    assert advice.suggested == pytest.approx(0.98 - 10 / 16, abs=0.01)
+    floor = demo_live.advise_pacing(s.events, good_acts(marks={"stop": 90.0}),
+                                    demo_live.Options(webapp=True, pacing_check=True, min_gap_s=1.0))
+    assert floor.suggested == 1.0 and "can't land" in floor.note
+
+
+def test_pick_goon_prefers_the_next_queued_extractor():
+    agents = [{"agent_id": "bobby", "role": "orchestrator", "model_id": "m", "status": "working"},
+              {"agent_id": "extractor-01", "role": "extractor", "model_id": "m", "status": "working",
+               "started_at": "2026-11-08T11:00:01.000Z"},
+              {"agent_id": "extractor-02", "role": "extractor", "model_id": None, "status": "queued"},
+              {"agent_id": "extractor-03", "role": "extractor", "model_id": "m", "status": "working",
+               "started_at": "2026-11-08T11:00:00.000Z"},
+              {"agent_id": "extractor-04", "role": "extractor", "model_id": "m", "status": "queued"},
+              {"agent_id": "extractor-05", "role": "extractor", "model_id": "m", "status": "done"}]
+    picks = [a["agent_id"] for a in demo_live.pick_goon(agents, {"extractor-01"})]
+    assert picks == ["extractor-04", "extractor-03"]
+
+
+def test_webapp_report_prints_the_table_pacing_and_steps():
+    s, docs, sources = good_stream()
+    opts = demo_live.Options(webapp=True, pacing_hint=2.0)
+    reh = demo_live.Rehearsal(actions=good_acts(), run={"run_id": "run_x", "status": "stopped", "stage": "extract",
+                                                       "usage": {"model_calls": 3, "cost_usd": 0.003}},
+                              events=s.events, documents=docs)
+    reh.beats = demo_live.check_webapp_beats(s.events, docs, sources, reh.actions, opts)
+    lines: list[str] = []
+    demo_live.report_webapp(reh, "https://api.example.com/api/v1", opts, say=lines.append)
+    out = "\n".join(lines)
+    assert "DEMO_PACING on the server: unknown" in out and "--pacing hint: 2 s" in out
+    assert "Suggested DEMO_PACING for STOP at about 50 s:" in out and "S-006 is fetch 13" in out
+    assert any(line.split()[:1] == ["STOP"] and line.split()[-2:] == ["50", "48.0"] for line in lines), out
+    assert "drag S-002 above S-001, reject S-016" in out and "R-stop-<agent id>" in out
+    assert out.rstrip().endswith("RESULT PASS")
+
+
+def test_demo_live_webapp_passes_every_beat_offline(settings, rehearsal_world):
+    """The webapp's calls against a real uvicorn: cached documents (simulated, prefilled), fake models."""
+    from backend.axelrod.cache import DocCache
+
+    pacing = 0.1
+    prices = {settings.model_small: {"in": 1.0, "out": 5.0}, settings.model_large: {"in": 3.0, "out": 15.0}}
+    plan = json.loads(plan_stage.PLAN_FILE.read_text(encoding="utf-8"))
+    cached = settings.model_copy(update={"cache_documents": True})
+    skip = {s["url"] for s in plan["sources"] if s["kind"] == "xbrl_facts"}     # these two stay live misses
+    for url, (body, ctype) in canned_bodies(plan).items():
+        if url not in skip:
+            DocCache(cached).put(url, body, ctype)
+
+    def settings_for(base: str) -> Settings:
+        return cached.model_copy(update={"demo_pacing": pacing, "test_page_url": base + ROUTE,
+                                         "max_concurrency_small": 2, "prices": prices})
+
+    opts = demo_live.Options(webapp=True, timeout_s=90, settle_s=30, poll_s=0.05, approve_wait_s=30,
+                             stop_gap_s=2.0, pacing_hint=pacing)
+    lines: list[str] = []
+    with live_api(settings_for) as base:
+        client = demo_live.Client(base + P, None, timeout=15)
+        reh = demo_live.rehearse_webapp(client, opts, say=lines.append)
+        demo_live.report_webapp(reh, base + P, opts, say=lines.append)
+        rescored = demo_live.check_run(client, reh.run["run_id"], opts)    # --webapp --check: score only
+    out = "\n".join(lines)
+    print(out)                                                    # pytest -rP shows the rehearsal's own report
+    beats = {b.key: b for b in reh.beats}
+    assert reh.passed, out
+    assert list(beats) == ["launch", "approval", "traffic", "cache", "link_blocked", "revoke", "flagged", "goon",
+                           "stop", "timing"]
+    assert rescored.passed, "\n".join(f"{b.verdict} {b.key}: {b.detail}" for b in rescored.beats)
+    # misses: the two SEC JSON sources and the planted page (served live by the API itself)
+    assert "created via ui" in beats["launch"].detail and " hit, 3 miss" in beats["cache"].detail
+    assert "hit, 0 miss" not in beats["cache"].detail and " 0 hit" not in beats["cache"].detail
+    assert reh.actions.goon_id and reh.actions.goon_id.startswith("extractor-")
+    assert reh.run["status"] == "stopped" and reh.run["stage"] == "extract"
+    assert "Webapp steps (for backend/DEMO.md):" in out and out.rstrip().endswith("RESULT PASS")
+    sent = rehearsal_world
+    s016 = next(s["url"] for s in plan["sources"] if s["source_id"] == "S-016")
+    assert s016 not in sent                                       # rejected: never requested
+    assert not any("example." in u for u in sent) and not any("euronext" in u for u in sent)
+    assert sum(u in skip for u in sent) == 2                      # the cached sources never went out
+    assert all(u in skip or u.startswith("http://127.0.0.1:") for u in sent)
