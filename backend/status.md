@@ -28,7 +28,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-g2fix | builder | W2 | done | suite 366 passed | skipped scan now quarantines, link-local blocked (metadata URL too), pre-approval policy shows system rules, fake runs labeled |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
 | B-fix-brief | builder | R0 fix | done | suite 415, 1 live | Sonnet wrapped its whole answer in an extra string. Runner now unwraps it safely. Both R0 outputs replay as valid |
-| B-fix-extract | builder | R0 fix | running | | value verbatim, unit and period context, table recite |
+| B-fix-extract | builder | R0 fix | done | suite 441 | live: plan pages 100/100, r0 failure pages 148/150. Replaying r0 outputs: 48 fails down to 6 (98.3% pass or fixed). $0.42 |
 | B-fix-draft | builder | R0 fix | running | | score ROTIC from available years, peers, declared computations |
 | B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
@@ -58,6 +58,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Invoke URL: not yet (A-deploy, W2).
 
 ## Decisions
+
+- Sat 8:55 PM: keep the extractor's skip of % change table columns. With the current `_period_text`, a % cell in a row of amounts passes for either year, so year claims there would go unchecked.
 
 - Sat 8:49 PM: for the live demo, set `DEMO_PACING=2` and `MAX_CONCURRENCY_SMALL=8` on the instance (fewer metered calls discarded at STOP). Keep 32 for the full SHL run.
 
@@ -96,7 +98,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
-- (8:55 PM, pitch wording) Baseline result (`backend/data/baseline/results.md`, labeled experiment): a plain Claude report's **quotes were all exact** (0 of 59 failed our quote check). Don't say "plain Claude makes up numbers". The honest line: on the same pages, the plain report's **reasoning and scores went unchecked**. It scored research_stage +1 from an invented coverage history and called €2.7bn of free cash flow enough to cover €6.2bn of maturities. 12 of its 59 claims also fail the period check. Our checks caught 24 of 25 planted errors in the harness report. There are also 20 key numbers in results.md for you to hand-check.
+- (8:52 PM, pitch wording) Baseline result (`backend/data/baseline/results.md`, labeled experiment): a plain Claude report's **quotes were all exact** (0 of 59 failed our quote check). Don't say "plain Claude makes up numbers". The honest line: on the same pages, the plain report's **reasoning and scores went unchecked**. It scored research_stage +1 from an invented coverage history and called €2.7bn of free cash flow enough to cover €6.2bn of maturities. 12 of its 59 claims also fail the period check. Our checks caught 24 of 25 planted errors in the harness report. There are also 20 key numbers in results.md for you to hand-check.
 
 - (8:49 PM, contract change, additive) Add `"source_revoked"` to `ItemUpdatedData.reason` in `contract/models.py` (it allows repair, comment, user_edit, demo_injection today). Why: when a source is revoked mid-run, the items citing it turn blocked, and the cascade should say why in an `item.updated` event. Until then it sends `item.verified` only, which already carries the blocked status and the detail "Source revoked: S-006". The backend switches over by itself once the reason exists. Say yes and I'll make the change on main at a gate (models.py, types.ts, mock, CHANGELOG, VERSION), then you tell Tong.
 
@@ -122,6 +124,6 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
 - Sat 8:26 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
 - Sat 8:32 PM: B-reason done (W2 6/7, only A-deploy left). G3: live presmoke ok through every stage, $0.80. Verifier on W2 running.
-- Sat 8:55 PM: B-baseline done ($0.56). Added S-002 p.6 to N-01 and N-06 in plan.json (FY2026 adjusted EBIT and free cash flow, found by the baseline).
+- Sat 8:52 PM: B-baseline done ($0.56). Added S-002 p.6 to N-01 and N-06 in plan.json (FY2026 adjusted EBIT and free cash flow, found by the baseline).
 - Sat 8:49 PM: B-live done. All demo beats pass live. DEMO.md written. Tail shows NEXT lines by default (orchestrator, cli.py), "Source revoked: S-006" capitalization fixed (checks.py).
 - Sat 8:38 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.

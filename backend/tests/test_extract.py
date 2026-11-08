@@ -610,6 +610,366 @@ def test_similarity_from_diff():
 
 
 # ---------------------------------------------------------------------------
+# R0 rehearsal failures (B-fix-extract). The page excerpts below are REAL SHL TEXT, copied short from the
+# stored pages of the rehearsal run run_20261108_0bsu0o (PDF text as extracted, thin spaces, BEL
+# characters and cell-per-line tables included). The extractor answers are fakes (simulated) that repeat
+# the slips the live model made in that run.
+# ---------------------------------------------------------------------------
+
+# Real SHL text: S-002 (Q4 FY2026 release) page 1, the bullet lists.
+SHL_RELEASE_P1 = (
+    "Siemens Healthineers ends 2026 fiscal year with strong \nfourth quarter \n \n"
+    "November 5, 2026 – Siemens Healthineers AG today announces its results for the fourth quarter of fiscal year "
+    "2026 ended \nSeptember 30, 2026, and the full fiscal year 2026. \n \nFiscal Year 2026 \n"
+    "• Comparable revenue growth of 4.0% \n•  Free cash flow of around €2.4 billion \n"
+    "•  Proposed dividend of €1.00 per share (prior year: €1.00) \nQ4 Fiscal Year 2026 \n"
+    "• Diagnostics comparable revenue decline of 4.2%; adjusted EBIT margin of 5.4% \n"
+    "• Free cash flow of €703 million \nOutlook for Fiscal Year 2027 \n"
+    "For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0% over fiscal year 2026. For "
+    "adjusted \nbasic earnings per share, we expect a range of between €2.20 and €2.40. \n")
+# Real SHL text: S-001 (FY2025 annual report) page 7, the R&D paragraph.
+SHL_RD_P7 = (
+    "Siemens Healthineers Annual Report 2025 \nCombined management report  –  Business principles \n 07 \n"
+    "In fiscal year 2025, we reported R&D expenses of €1,958 million (2024: €1,918 million). The resulting R&D "
+    "intensity, defined as \nthe ratio of R&D expenses to revenue, was 8% (2024: 9%). Additions to capitalized "
+    "development expenses amounted to \n€119 million (2024: €151 million). \n"
+    "As of September 30, 2025, we had more than 25,000 technical intellectual property rights. This figure "
+    "includes more than \n16,000 granted patents, slightly above the level of fiscal year 2024. \n")
+# Real SHL text: S-005 (FY2019 annual report) page 64, balance sheet with a two-line date header.
+SHL_BALANCE_2019 = (
+    "B.3  \x07Consolidated statements  \nof financial position \n(in millions of €)\nNote\nSept 30, 2019\n"
+    "Sept 30, 2018\n\t \t \t \x07Cash and cash equivalents\n25\n920\n519\n\t \t \t \x07Trade and other receivables"
+    "\n7, 25\n2,779\n2,419\n")
+# Real SHL text: S-005 page 62, income statement with thin-spaced minus signs.
+SHL_INCOME_2019 = (
+    "B.1  \x07Consolidated statements  \nof income\nFiscal year\n(in millions of €, earnings per share in €)\n"
+    "Note\n2019\n2018\n\t Income before income taxes\n2,193\n1,799\n\t \x07Income tax expenses\n5\n– 607\n"
+    "– 515\nNet income\n1,586\n1,284\n")
+# Real SHL text: S-001 page 182, the segment table (16 columns, two of its rows).
+SHL_SEGMENTS_P182 = (
+    "Note 29  Segment information \n \nAdjusted external  \nrevenue¹ \nIntersegment revenue \nTotal adjusted "
+    "revenue¹ \nAdjusted EBIT² \nAssets³ \nFree cash flow \n \nFiscal year \nFiscal year \nFiscal year \n"
+    "Fiscal year \nSept 30, \nFiscal year \nFiscal year \nFiscal year \n(in millions of €) \n"
+    + "2025 \n2024 \n" * 8
+    + "Imaging \n12,677 \n11,829 \n506 \n439 \n13,182 \n12,267 \n2,732 \n2,584 \n9,073 \n8,962 \n2,491 \n2,310 \n"
+      "504 \n338 \n204 \n183 \nDiagnostics \n4,346 \n4,417 \n1 \n‐ \n4,347 \n4,417 \n333 \n235 \n5,601 \n5,742 \n"
+      "79 \n81 \n513 \n446 \n387 \n341 \n")
+# Real SHL text: S-001 page 13 (market sizes) and S-006 (Reuters via Euronext) page 1.
+SHL_MARKETS_P13 = (
+    "Our addressable markets generally exhibited slight growth worldwide on a revenue basis in fiscal year 2025. "
+    "The global \naddressable market for the Imaging segment (equipment sales and product-related services) grew "
+    "to slightly more than \n€31 billion in fiscal year 2025 (excluding the Ultrasound market segments of "
+    "obstetrics and gynecology, point of care, special \napplications, and others). \n")
+SHL_NEWS = ("The separation process is expected to be completed by mid-2028.\nThe diagnostics unit performs more "
+            "than 16 billion tests annually and accounts for about 17% of group revenue and 20% of its workforce.\n")
+# Real SHL text: S-001 page 160 (credit facilities).
+SHL_CREDIT_P160 = (
+    "Credit facilities \nAs of September 30, 2025, financing arrangements with Siemens AG consisted of a "
+    "multicurrency revolving credit facility of up \nto €2.5 billion (September 30, 2024: €2.5 billion), which "
+    "serves to finance net working capital and as a short-term credit facility, \nas well as a multicurrency "
+    "revolving credit facility of up to €2.0 billion (September 30, 2024: €2.0 billion) as a backup facility. As "
+    "\nof the reporting date, an amount of €451 million (September 30, 2024: €0 million) was drawn from these "
+    "facilities. \n")
+# Real SHL text: S-002 page 15 (balance sheet) and page 16 (cash flows), which both have a "Trade payables" row.
+SHL_RELEASE_P15 = ("Consolidated statements of financial position \n \nSept 30, \nSept 30, \n(in millions of €) \n"
+                   "2026 \n2025 \nTotal assets \n46,707 \n44,370 \nTrade payables \n2,556 \n2,296 \n")
+SHL_RELEASE_P16 = ("Consolidated statements of cash flows \n \nQ4 \nQ4 \n(in millions of €) \n2026 \n2025 \n"
+                   "Trade payables \n229 \n197 \n")
+# Real SHL text: S-002 page 19, the Q4 EBITDA reconciliation (18 columns, its last row and footnote only).
+SHL_EBITDA_P19 = (
+    "Quarterly Statement \n Q4 Fiscal Year 2026 | Siemens Healthineers \n19 \nEBITDA reconciliation \n \n"
+    "Adjusted EBIT \nTherein adjusted for \namortization, depreciation \nand other effects from IFRS 3 \n"
+    "purchase price allocation \nadjustments \nTherein adjusted for \ntransaction, \nintegration, retention \n"
+    "and carve-out costs \nAmortization, \ndepreciation and \nimpairments \nEBITDA¹ \n \n" + "Q4 \n" * 18
+    + "(in millions of €) \n" + "2026 \n2025 \n" * 9
+    + "Siemens Healthineers \n1,077 \n1,098 \n−87 \n−86 \n−0 \n−25 \n‐ \n‐ \n−50 \n−24 \n‐ \n‐ \n−92 \n−81 \n325 \n"
+      "309 \n1,173 \n1,190 \n \n1 \nIncome before income taxes, interest income and expenses, other financial "
+      "income, net as well as amortization, depreciation & impairments. \n")
+
+
+def prose(quote: str, value: str, period: str, *, unit: str = "EUR", scale: str = "million",
+          statement: str | None = None, period_quote: str = "") -> dict:
+    return item(quote, value, statement=statement or quote, period=period, unit=unit, scale=scale,
+                unit_quote="", period_quote=period_quote)
+
+
+def bad_checks(it: m.DataItem) -> list[str]:
+    return [f"{c.check}: {c.detail}" for c in it.verification.checks if c.result != "pass"]
+
+
+def roles(it: m.DataItem) -> dict[str, str]:
+    return {c.role: c.quote for c in it.citations}
+
+
+async def test_release_bullets_take_the_period_of_their_heading(settings):
+    """Bullets name no year: code cites the nearest heading above, quarter included (real SHL text)."""
+    answers = [
+        prose("Comparable revenue growth of 4.0%", "4.0%", "FY2026", unit="%", scale="one"),
+        prose("Free cash flow of €703 million", "703", "Q4 FY2026"),
+        prose("Proposed dividend of €1.00 per share (prior year: €1.00)", "1.00", "FY2026", scale="one",
+              statement="The proposed dividend was €1.00 per share for fiscal year 2026."),
+        prose("For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0% over fiscal year 2026.",
+              "4.0% and 5.0%", "FY2027", unit="%", scale="one"),
+        # wrong claims: the heading above says otherwise, so they fail
+        prose("Free cash flow of around €2.4 billion", "2.4", "Q4 FY2026", scale="billion"),
+        prose("Comparable revenue growth of 4.0%", "4.0%", "FY2025", unit="%", scale="one",
+              statement="Comparable revenue growth was 4.0%."),
+    ]
+    ctx = make_ctx(settings, [(source("S-902", kind="company_ir"), [("DOC-902", [SHL_RELEASE_P1], "pdf", False)])])
+    register_fake(ex.TOOL, fake_items(*answers))
+    await st.run(ctx)
+    growth, fcf_q4, dividend, outlook, fcf_wrong, growth_wrong = data(ctx)
+    for it in (growth, fcf_q4, dividend, outlook):
+        assert it.verification.status == "pass", (it.statement, bad_checks(it))
+    assert roles(growth)["period_context"] == "Fiscal Year 2026"
+    assert roles(fcf_q4)["period_context"] == "Q4 Fiscal Year 2026"
+    assert roles(fcf_q4)["unit_context"] == "€703 million"             # the scale written next to the number
+    assert roles(dividend)["period_context"] == "Fiscal Year 2026"
+    assert roles(outlook)["period_context"] == "fiscal year 2027"      # the sentence's own leading period
+    for it in (fcf_wrong, growth_wrong):
+        assert it.verification.status == "fail"
+        assert any(c.check == "period_match" and c.result == "fail" for c in it.verification.checks)
+    assert "Q4" in next(c.detail for c in fcf_wrong.verification.checks if c.check == "period_match")
+
+
+async def test_decorated_values_are_restated_as_printed(settings):
+    """'(4.2%)' for a printed 'decline of 4.2%', '>31' for 'slightly more than €31 billion' and '–607' for a
+    thin-spaced '– 607': code restates the value as the page prints it, on the record (real SHL text)."""
+    answers = {
+        "Q4 Fiscal": [prose("Diagnostics comparable revenue decline of 4.2%", "(4.2%)", "Q4 FY2026", unit="%",
+                            scale="one", statement="Diagnostics comparable revenue declined by 4.2% in Q4.")],
+        "addressable": [prose("The global addressable market for the Imaging segment (equipment sales and "
+                              "product-related services) grew to slightly more than €31 billion in fiscal year 2025",
+                              ">31", "FY2025", scale="billion",
+                              statement="The Imaging market grew to more than €31 billion in fiscal year 2025.")],
+        "Income tax": [item("Income tax expenses 5 – 607 – 515", "–607", period="FY2019",
+                            unit_quote="(in millions of €, earnings per share in €)", period_quote="2019 2018",
+                            statement="Income tax expenses were €607 million in fiscal year 2019.")],
+    }
+
+    def by_page(system: str, user: str, schema: dict) -> dict:
+        return {"items": next((v for k, v in answers.items() if k in user), [])}
+
+    register_fake(ex.TOOL, by_page)
+    pages = [SHL_RELEASE_P1, SHL_MARKETS_P13, SHL_INCOME_2019]
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", pages, "pdf", False)])])
+    await st.run(ctx)
+    decline, market, tax = sorted(data(ctx), key=lambda i: i.citations[0].locator.page)
+    for it, before, after, number in ((decline, "(4.2%)", "4.2%", 4.2), (market, ">31", "31", 31),
+                                      (tax, "–607", "– 607", -607)):
+        v = it.verification
+        assert v.status == "fixed", (it.statement, bad_checks(it))
+        assert (it.value.as_reported, it.value.number) == (after, number)
+        assert v.attempts[0].action == "recite" and before in v.attempts[0].before and after in v.attempts[0].after
+        assert "restated" in v.attempts[0].note
+    assert roles(market)["unit_context"] == "€31 billion" and market.value.scale == "billion"
+    assert roles(decline)["period_context"] == "Q4 Fiscal Year 2026"
+
+
+async def test_a_dropped_minus_is_never_restated(settings):
+    """Code only removes what the page does not print. A minus the page prints and the agent left out
+    stays a fail (real SHL text, S-002 page 15; a spaced dash is the checker's known limit, so this
+    uses the unspaced U+2212 minus of that page)."""
+    page = SHL_RELEASE_P15 + "Other components of equity \n−1,098 \n−1,676 \n"
+    register_fake(ex.TOOL, fake_items(item("Other components of equity −1,098 −1,676", "1,098", period="FY2026",
+                                           period_quote="2026 2025", statement="Other components of equity were "
+                                           "€1,098 million at Sep 30, 2026.")))
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", [page], "pdf", False)])])
+    await st.run(ctx)
+    (it,) = data(ctx)
+    assert it.verification.status == "fail" and it.value.as_reported == "1,098"
+    assert any(c.check == "value_in_quote" and c.result == "fail" for c in it.verification.checks)
+
+
+async def test_prose_period_from_the_paragraph_but_not_for_comparatives(settings):
+    """'8% (2024: 9%)': the 8% takes the paragraph's 'fiscal year 2025', the 9% is checked against its own
+    '2024', so claiming it for FY2025 fails (real SHL text, S-001 page 7)."""
+    q = "The resulting R&D intensity, defined as the ratio of R&D expenses to revenue, was 8% (2024: 9%)."
+    register_fake(ex.TOOL, fake_items(
+        prose(q, "8%", "FY2025", unit="%", scale="one", statement="R&D intensity was 8% in fiscal year 2025."),
+        prose(q, "9%", "FY2024", unit="%", scale="one", statement="R&D intensity was 9% in fiscal year 2024."),
+        prose(q, "9%", "FY2025", unit="%", scale="one", statement="R&D intensity was 9% in fiscal year 2025."),
+        prose("Additions to capitalized development expenses amounted to €119 million (2024: €151 million).", "119",
+              "FY2025", statement="Capitalized development additions were €119 million in fiscal year 2025."),
+        prose("This figure includes more than 16,000 granted patents, slightly above the level of fiscal year 2024.",
+              "16,000", "FY2025", unit="count", scale="one", statement="More than 16,000 patents were granted."),
+    ))
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", [SHL_RD_P7], "pdf", False)])])
+    await st.run(ctx)
+    cur, prior, wrong, capex, patents = data(ctx)
+    for it in (cur, prior, capex, patents):
+        assert it.verification.status == "pass", (it.statement, bad_checks(it))
+    assert roles(cur)["period_context"] == "fiscal year 2025"
+    assert "period_context" not in roles(prior)                       # its own clause names 2024
+    assert roles(capex)["period_context"] == "fiscal year 2025" and roles(capex)["unit_context"] == "€119 million"
+    assert roles(patents)["period_context"] == "September 30, 2025"   # not the comparison 'level of fiscal year 2024'
+    assert wrong.verification.status == "fail" and "period_context" not in roles(wrong)
+    assert any(c.check == "period_match" and c.result == "fail" for c in wrong.verification.checks)
+
+
+async def test_two_line_date_header_is_the_period_context(settings):
+    """'Sept 30, 2019' and 'Sept 30, 2018' on two lines (real SHL text, S-005 page 64): code cites both
+    lines, and the column check still catches a wrong year."""
+    row = "Cash and cash equivalents 25 920 519"
+    register_fake(ex.TOOL, fake_items(
+        item(row, "920", period="FY2019", period_quote="", statement="Cash and cash equivalents were €920 million."),
+        item(row, "519", period="FY2018", period_quote="", statement="Cash and cash equivalents were €519 million."),
+        item(row, "920", period="FY2018", period_quote="", statement="Cash and cash equivalents were €920 million."),
+    ))
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", [SHL_BALANCE_2019], "pdf", False)])])
+    await st.run(ctx)
+    y19, y18, wrong = data(ctx)
+    for it in (y19, y18):
+        assert it.verification.status == "pass", (it.statement, bad_checks(it))
+        assert roles(it)["period_context"] == "Sept 30, 2019\nSept 30, 2018"
+        assert roles(it)["unit_context"] == "(in millions of €)"
+    assert wrong.verification.status == "fail"
+    assert "column" in next(c.detail for c in wrong.verification.checks if c.check == "period_match")
+
+
+async def test_wide_table_row_is_recited_whole(settings):
+    """The agent quoted the label with only the free cash flow cells of a 16-column row (real SHL text,
+    S-001 page 182). Code re-cites the whole row, and the column check then reads the year."""
+    register_fake(ex.TOOL, fake_items(
+        item("Imaging 2,491 2,310", "2,491", period="FY2025", period_quote="",
+             statement="Imaging free cash flow was €2,491 million in fiscal year 2025."),
+        item("Diagnostics 79 81", "81", period="FY2024", period_quote="",
+             statement="Diagnostics free cash flow was €81 million in fiscal year 2024."),
+        item("Imaging 2,491 2,310", "2,491", period="FY2024", period_quote="",
+             statement="Imaging free cash flow was €2,491 million in fiscal year 2024."),
+    ))
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", [SHL_SEGMENTS_P182], "pdf", False)])])
+    await st.run(ctx)
+    imaging, diag, wrong = data(ctx)
+    for it, label in ((imaging, "Imaging"), (diag, "Diagnostics")):
+        v = it.verification
+        assert v.status == "fixed", (it.statement, bad_checks(it))
+        ev = it.citations[0]
+        assert ev.quote.startswith(label + " \n") and ev.quote.count("\n") == 16
+        assert SHL_SEGMENTS_P182[ev.locator.char_start:ev.locator.char_end] == ev.quote
+        assert "whole table row" in v.attempts[0].note
+        assert roles(it)["period_context"].count("2025") == 8
+    assert wrong.verification.status == "fail"   # the re-cited row puts 2,491 under 2025
+    assert "column" in next(c.detail for c in wrong.verification.checks if c.check == "period_match")
+
+
+async def test_quarter_table_row_with_a_column_header_in_front(settings):
+    """The agent put a column header in front of the row label (real SHL text, S-002 page 19). Code
+    re-cites the real row, stops before the footnote marker under the table, and widens the year header
+    over the 'Q4' labels of its columns, so a Q4 claim can be checked."""
+    register_fake(ex.TOOL, fake_items(
+        item("Therein adjusted for amortization, depreciation and other effects from IFRS 3 purchase price allocation "
+             "adjustments Siemens Healthineers −87 −86", "−87", period="Q4 FY2026", period_quote="2026 2025",
+             statement="Siemens Healthineers PPA adjustments were −€87 million in Q4 FY2026."),
+        item("Siemens Healthineers 1,173 1,190", "1,173", period="Q4 FY2026", period_quote="2026 2025",
+             statement="Siemens Healthineers EBITDA was €1,173 million in Q4 FY2026."),
+    ))
+    ctx = make_ctx(settings, [(source("S-902", kind="company_ir"), [("DOC-902", [SHL_EBITDA_P19], "pdf", False)])])
+    await st.run(ctx)
+    ppa, ebitda = data(ctx)
+    for it in (ppa, ebitda):
+        assert it.verification.status in ("pass", "fixed"), (it.statement, bad_checks(it))
+        assert roles(it)["period_context"].startswith("Q4 \nQ4") and roles(it)["period_context"].endswith("2025")
+    assert ppa.verification.status == "fixed"
+    row = ppa.citations[0].quote
+    assert row.startswith("Siemens Healthineers \n1,077") and row.endswith("1,190")
+    assert ebitda.citations[0].quote.endswith("1,190")      # not the footnote "1" under the table
+
+
+async def test_recite_stays_on_the_page_the_extractor_read(settings):
+    """'Trade payables 2,296' is a cell-skipping quote of page 1's row. Page 2 has a 'Trade payables 229' row
+    that looks closer as text, but the extractor never saw page 2 (real SHL text, S-002 pages 15 and 16)."""
+    register_fake(ex.TOOL, fake_items(item("Trade payables 2,296", "2,296", period="FY2025", period_quote="2026 2025",
+                                           statement="Trade payables were €2,296 million at Sep 30, 2025.")))
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", [SHL_RELEASE_P15, SHL_RELEASE_P16], "pdf", False)])],
+                   extract_pages={"S-902": [[1, 1]]})
+    await st.run(ctx)
+    (it,) = data(ctx)
+    assert it.verification.status == "fixed", bad_checks(it)
+    assert {c.locator.page for c in it.citations} == {1}
+    assert it.citations[0].quote == "Trade payables \n2,556 \n2,296"
+
+
+async def test_scale_from_the_quote_and_no_period_for_a_general_fact(settings):
+    """'16 billion tests' with unit 'billion' and scale one: code reads the scale next to the number and
+    makes the unit a count. A news fact without a stated period carries none (real SHL text, S-006)."""
+    register_fake(ex.TOOL, fake_items(prose("The diagnostics unit performs more than 16 billion tests annually",
+                                            "16", "", unit="billion", scale="one",
+                                            statement="The diagnostics unit runs more than 16 billion tests a year.")))
+    ctx = make_ctx(settings, [(source("S-902", kind="news", tier="tier_2"), [("DOC-902", [SHL_NEWS], "html", False)])])
+    await st.run(ctx)
+    (it,) = data(ctx)
+    assert (it.value.number, it.value.unit, it.value.scale, it.value.period) == (16, "count", "billion", None)
+    assert roles(it)["unit_context"] == "16 billion"
+    assert it.verification.status == "pass", bad_checks(it)
+
+
+async def test_period_quote_without_a_year_falls_back_to_the_paragraph(settings):
+    """The agent's 'As of the reporting date' names no period. Code takes 'September 30, 2025' from the
+    paragraph's first line, skipping the '(September 30, 2024: ...)' comparatives (real SHL text, S-001 page 160)."""
+    register_fake(ex.TOOL, fake_items(prose(
+        "As of the reporting date, an amount of €451 million (September 30, 2024: €0 million) was drawn from these "
+        "facilities.", "451", "FY2025", period_quote="As of the reporting date",
+        statement="€451 million was drawn from the credit facilities as of September 30, 2025.")))
+    ctx = make_ctx(settings, [(source("S-902"), [("DOC-902", [SHL_CREDIT_P160], "pdf", False)])])
+    await st.run(ctx)
+    (it,) = data(ctx)
+    assert it.verification.status == "pass", bad_checks(it)
+    assert roles(it)["period_context"] == "September 30, 2025"
+
+
+def test_release_cover_page_period_and_heading_rules():
+    """A release page that names no period takes its cover page's (simulated page 2 after a real SHL cover)."""
+    cover = "Quarterly Statement \nQ4 Fiscal Year 2026 \nRevenue rose. \n"
+    page2 = "Orders \nBook-to-bill was 1.14 for the period.\n"
+    src = source("S-902", kind="company_ir")
+    ev = st.cite_on_page("DOC-902", [cover, page2], 2, "Book-to-bill was 1.14 for the period.", "evidence")
+    raw = ex.ExtractedItem(statement="Book-to-bill was 1.14.", quote=ev.quote, value_as_reported="1.14",
+                           unit="x", period="Q4 FY2026")
+    value = st.make_value(raw)
+    (pc,) = st.context_citations("DOC-902", [cover, page2], ev, raw, value, source=src)
+    assert (pc.locator.page, pc.quote) == (1, "Q4 Fiscal Year 2026")
+    annual = source("S-903", kind="annual_report", title="Annual report FY2025 (simulated)")
+    assert st.context_citations("DOC-902", [cover, page2], ev, raw, value, source=annual) == []
+    assert st._is_heading("Q4 Fiscal Year 2026 | Siemens Healthineers")
+    assert st._is_heading("Siemens Healthineers Annual Report 2025 ")
+    assert not st._is_heading("The separation process is expected to be completed by mid-2028.")
+    assert not st._is_heading("Revenue 2025 23,375")
+
+
+def test_restate_and_row_span_units():
+    def di(as_reported: str, number: float, quote: str, unit: str = "EUR") -> m.DataItem:
+        return m.DataItem(id="D-001", category="compounder", criteria=["rotic_level"], statement="s",
+                          value=m.Value(number=number, as_reported=as_reported, unit=unit, scale="million"),
+                          citations=[m.Citation(doc_id="DOC-1", locator=m.TextLocator(page=1, char_start=0,
+                                                char_end=len(quote)), quote=quote, role="evidence")],
+                          source_id="S-1", source_tier="priority", extracted_by="agent",
+                          verification=m.Verification(status="pending"))
+
+    def restated(as_reported: str, number: float, quote: str):
+        out = st.restate_value(di(as_reported, number, quote), [text.normalize(quote)])
+        return out and (out[0].value.as_reported, out[0].value.number)
+
+    assert restated("~37", 37, "was approximately €37 billion.") == ("37", 37)
+    assert restated("(4.2%)", -4.2, "revenue decline of 4.2%") == ("4.2%", 4.2)
+    assert restated("−4.2%", -4.2, "change of (4.2%)") == ("(4.2%)", -4.2)     # same number, printed form
+    assert restated("4.2%", 4.2, "change of (4.2%)") is None                 # never adds the sign
+    assert restated("23,375", 23375, "Revenue 23,375 22,363") is None          # nothing to restate
+    assert restated("7", 7, "between 7% and 9%") is None                     # a percentage is another token
+    v = m.Value(number=81, as_reported="81", unit="EUR", scale="million")
+    span = st.row_span(SHL_SEGMENTS_P182, "Diagnostics 79 81", v)
+    assert SHL_SEGMENTS_P182[span[0]:span[1]].startswith("Diagnostics \n4,346") and \
+        SHL_SEGMENTS_P182[span[0]:span[1]].endswith("341")
+    assert st.row_span(SHL_SEGMENTS_P182, "Diagnostics 79 99", v) is None   # 99 is no cell of that row
+    assert st.row_span(SHL_SEGMENTS_P182, "Varian 79 81", v) is None         # no row with that label
+    assert st.row_span(SHL_SEGMENTS_P182, "Diagnostics Note 29 79", v) is None   # 81 is not among the quoted cells
+    label, cells = st._label_and_cells("Loan (US$1,742 million) 2026 1.38% 1,484 ‐")
+    assert label == "Loan (US$1,742 million)" and [t.raw for t in cells] == ["2026", "1.38%", "1,484"]
+    label, cells = st._label_and_cells("Revenue 29, 30 23,375 22,363")
+    assert label == "Revenue" and len(cells) == 4
+
+
+# ---------------------------------------------------------------------------
 # Live: one real S-001 page through presmoke (AXELROD_LIVE=1, costs about a cent)
 # ---------------------------------------------------------------------------
 

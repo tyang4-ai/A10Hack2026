@@ -41,20 +41,23 @@ class ExtractedItem(BaseModel):
     statement: str = Field(description="One plain sentence stating the fact, its unit, scale and period, "
                                        "using only numbers that appear in the quote.")
     metric: str = Field(default="", description="Short name of what is measured, e.g. 'Revenue'.")
-    period: str = Field(default="", description="Fiscal year or date the value belongs to: 'FY2025', "
-                                                "'Q4 FY2026', '2025-09-30'. Empty if none.")
-    value_as_reported: str = Field(default="", description="The number exactly as printed in the quote, with its "
-                                                           "sign or parentheses, without currency or scale words: "
-                                                           "'23,375', '−14,345', '(1,204)', '5.9%'. Empty for a "
-                                                           "fact without a number.")
-    unit: str = Field(default="", description="EUR, USD, %, count, x or years.")
+    period: str = Field(default="", description="Fiscal year, quarter or date the page states for the value: "
+                                                "'FY2025', 'Q4 FY2026', '2025-09-30'. Empty if the page does not say.")
+    value_as_reported: str = Field(default="", description="The number copied character for character from the "
+                                                           "quote, with a sign or parentheses only if printed, "
+                                                           "without currency or scale words and never with an "
+                                                           "added '~', '>' or '<': '23,375', '−14,345', "
+                                                           "'(1,204)', '5.9%'. Empty for a fact without a number.")
+    unit: str = Field(default="", description="EUR, USD, %, count, x or years. Never a scale word.")
     scale: Scale = Field(default="one", description="one, thousand, million or billion, as the table header or "
                                                     "the text states it.")
-    quote: str = Field(description="Exact text from the page that holds the value: one table row or one sentence.")
+    quote: str = Field(description="Exact text from the page that holds the value: one whole table row or one "
+                                   "sentence.")
     unit_quote: str = Field(default="", description="Exact header line that states unit and scale, e.g. "
                                                     "'(in millions of €)'. Empty if the quote states the scale.")
-    period_quote: str = Field(default="", description="Exact column header line that names the years, e.g. "
-                                                      "'Note 2025 2024'. Empty if the quote names the period.")
+    period_quote: str = Field(default="", description="Exact column header line that names the years of a "
+                                                      "table, e.g. 'Note 2025 2024'. Empty for a sentence or "
+                                                      "bullet point.")
     need_ids: list[str] = Field(default_factory=list, description="Ids of the listed needs this item serves.")
 
     @model_validator(mode="before")
@@ -104,7 +107,8 @@ Rules:
 dashes, quotes and capital letters. Never fix, reformat, round, translate or reorder anything.
 2. Whitespace is the one thing you may simplify: line breaks and runs of spaces count as one space. A table \
 row printed one cell per line is quoted on one line, cells in printed order, joined by single spaces \
-(for example "Revenue 29, 30 23,375 22,363").
+(for example "Revenue 29, 30 23,375 22,363"). Quote the whole row: its label and every cell of it, \
+never the label with only the cells you need.
 3. Only extract numbers printed on this page that the listed needs ask for, for every year column shown. \
 When a need asks for a measure that is computed (free cash flow, returns on capital, net debt, a tax \
 rate), extract the printed lines it is computed from, such as cash flows from operating activities, \
@@ -114,18 +118,27 @@ growth rate written in a sentence is fine. Add a fact without a number (a stated
 only when a need asks about it directly, and leave value_as_reported empty for it. At most {MAX_ITEMS} \
 items, the most important first. If nothing on the page serves the needs, return an empty items list.
 4. Never write ids, page numbers or character offsets. Code computes those.
-5. value_as_reported is the number exactly as printed inside the quote, with its sign or parentheses but \
-without currency or scale words: "23,375", "−14,345", "(1,204)", "5.9%".
-6. unit is a currency code (EUR for €, USD for $), "%", "count", "x" or "years". scale is one, thousand, \
-million or billion, taken from the table header or the text. Per-share figures are in units (scale one).
+5. value_as_reported is the number copied character for character from the quote, exactly as printed \
+there, without currency or scale words: "23,375", "−14,345", "(1,204)", "5.9%". Keep every minus sign \
+and every pair of parentheses the page prints, expenses included ("Income tax expenses −646" gives \
+"−646"). Never add a sign, brackets, "~", ">" or "<" that the page does not print next to the number. \
+Words like "decline", "decrease", "about" or "more than" stay in the statement and the metric: \
+"Diagnostics comparable revenue decline of 4.2%" gives "4.2%", "slightly more than €31 billion" gives "31".
+6. unit is a currency code (EUR for €, USD for $), "%", "count", "x" or "years", never a scale word \
+("16 billion tests" is unit count, scale billion). scale is one, thousand, million or billion, taken \
+from the table header or the text. Per-share figures are in units (scale one).
 7. unit_quote is the exact header line that states the unit and scale, copied whole as printed, for \
 example "(in millions of €)" or "(in millions of €, earnings per share in €)". Give it for every table \
 value. Leave it empty only when the quote itself writes the scale next to the number ("€2,160 million") \
 or the value is a plain count or percentage.
 8. period_quote is the exact column header line that names the years of a table, for example \
-"Note 2025 2024" or "2025 2024". Give it for every table value. Leave it empty when the quote itself names \
-the period ("in fiscal year 2025").
-9. period is the fiscal year or date the value belongs to: "FY2025", "Q4 FY2026" or "2025-09-30".
+"Note 2025 2024" or "2025 2024". Give it for every table value. Leave it empty for a sentence or a \
+bullet point: code finds the heading or phrase on the page that names its period.
+9. period is the fiscal year, quarter or date the page states for the value: "FY2025", "Q4 FY2026" or \
+"2025-09-30", from the quote, the table header or the nearest heading above it (a bullet under \
+"Q4 Fiscal Year 2026" is "Q4 FY2026"). In "8% (2024: 9%)" the 8% belongs to the year the paragraph \
+reports on, and the 9% to 2024. Leave period empty when the page does not say which period the value \
+belongs to, for example a general fact in a news story.
 10. statement is one plain sentence with the value, its unit, scale and period, using only numbers that \
 appear in the quote, for example "Revenue was €23,375 million in fiscal year 2025."
 11. need_ids lists the ids of the needs below that the item serves.
