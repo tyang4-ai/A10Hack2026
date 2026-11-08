@@ -513,3 +513,28 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `finalize.finalize_report(ctx)` is sync. `demo.inject_errors` and `demo.patch_item` are async, `patch_item` returns `m.Item`. `verify/checks.py` takes `items: dict[str, m.Item]` and `sources: dict[str, m.Source]`.
 - PyMuPDF: use `import pymupdf` (`import fitz` warns now). Heavy packages (pymupdf, pypdf, trafilatura, typer, rich) are imported inside functions, never at module load.
 - Test data folders: `tests/data/planted/` (B-verify), `tests/data/store/` (B-store-api), `tests/data/ingest/` (B-ingest), `tests/data/plan/` (B-shl-plan) if needed.
+
+**2026-11-07 7:48 PM, B-ingest REPORT.**
+- `ingest(ctx, source, result, *, agent: m.Agent | None = None)`. With an agent, untrusted sources (kind news, forum or other, or tier_3) are scanned page by page through `ctx.gateway.scan`, and pages enter state only after the scan. Flagged or a scan error quarantines the document (fail closed). Without an agent, untrusted sources stay quarantined.
+- `document_page(state, doc_id, page)` raises KeyError (unknown doc) or IndexError (bad page). The API maps both to 404.
+- Public helpers: collect `collect_source(ctx, agent, source)`, `spawn_fetcher`, `finish_fetcher`, `follow_links`, `off_page_links`, `blocked_status`. ingest `parse_body`, `detect_type`, `doc_relpaths(source, content_type)`, `scan_pages`, `document_index`, `state_source`, `is_untrusted`, `IngestError`. html `html_text`, `split_pages`, `html_links`, `decode_html`. pdf `PdfError`.
+- Source status after collect: a block by an `R-revoke-*` rule stays `revoked`. A block with no rule and a reason starting "gateway error" becomes `failed`. Other blocks become `blocked`. Rejected sources are never requested.
+- One fetcher agent (`fetcher-01`) goes through sources in tier then rank order. Allowed off-page links are fetched and dropped, never ingested. collect also writes `00-Meta/_document-index.json`. Vault relpaths have no slug: the Vault adds `runs/<id>/<slug>/`.
+- Real sources: S-001 is 230 pages. The income statement (B.1) is file page 138 with the header "(in millions of €, earnings per share in €)", so unit checks must accept that longer header. S-006 (Euronext HTML) gives 2 pages, and page 1 starts with site-menu text. S-007 (SEC JSON) works with the default User-Agent and is one pretty-printed page.
+
+**2026-11-07 7:49 PM, B-gateway REPORT.**
+- `InvokeResult` gains `model_id` and `stop_reason` (defaulted). `Gateway.decide(agent, action, target, *, est_cost=0.0)`, `build_policy(*, emit=True)`. New: `kill_switch_on` property, `budget_usd()`, `register_fake` and `register_fake_scan` re-exported.
+- `Gateway.revoke` raises KeyError (unknown source) or ValueError (before approval, or already revoked). It sets `source.status` and `source.error` and emits `policy.updated` and `source.status` itself.
+- `AgentRunner(ctx, role, task, target_ids, size: "large" | "small" | None, *, agent_id=None)`. `size=None` means no model (fetchers). Use `agent_id` for judges (`verifier-D-001-1`). It is also a sync context manager that finishes as done, failed or stopped. `ask` raises `Blocked`, `AgentOutputError` (invalid twice) or `StopRequested`. The tool name is the output class name, or its `TOOL_NAME` ClassVar.
+- W2 agent modules register fakes with `from .base import register_fake, tool_name`, never by importing bedrock.py.
+- Budget: the check before a call assumes the worst case (prompt chars/4 + 64 in, the full `max_tokens` out) and holds that amount while the call runs, so pass a realistic `max_tokens`. A model with no `PRICES_JSON` entry is blocked when live. A result that lands after STOP, a revoke or a budget overrun is discarded and recorded as blocked, and its tokens are still metered.
+- Rule domain is the source URL's host (`www.` ignored, subdomains match). The path prefix is the full URL path. Bedrock calls run on bedrock.py's own thread pool (small + large + 4).
+
+**2026-11-07 7:53 PM, B-shl-plan REPORT and orchestrator decisions.**
+- Sources S-001 to S-010. PDFs with `extract_pages`: S-001 (FY2025 annual report, 19 pages), S-002 (Q4 FY2026 release PDF, 8 pages), S-003 to S-005 (earlier annual reports, 3 pages each), 36 pages in total. HTML sources S-006 (tier_2 Reuters story on live.euronext.com, the revoke target), S-009 (tier_3 Simply Wall St blog) and S-010 (planted test page) are read whole as pseudo-pages. S-007 and S-008 (SEC companyfacts JSON for the peers) are read by code. The default User-Agent works on data.sec.gov.
+- Fetch order: S-001, S-002, S-007, S-008, S-003, S-004, S-005, S-006, S-009, S-010. S-009's link-follow sends up to 3 off-site links to the gateway before S-010's example.org link.
+- research_stage: N-07 covers R&D spend and outlook. The analyst's coverage-history part stays a declared gap (a Hole).
+- PDF text quirks: BEL (U+0007), soft hyphens (U+00AD), and thin spaces between a minus sign and its digits ("–\u20098,722"). Decision sent to B-verify: `normalize` also drops U+00AD and C0/C1 control characters other than tab and newline, while offsets still map to the original text. `parse_number` allows whitespace (thin and no-break spaces included) between a minus sign (-, U+2212, U+2013) and the digits.
+- Decision: `check_plan.py` may use stdlib urllib. It is a dev check outside any run and stores nothing. The gateway rule covers runtime code (`backend/axelrod/`).
+- Decision: S-002 is the release PDF, not the HTML release page.
+- trafilatura drops `class="comment"` blocks and aria-hidden elements. The test page avoids both so the scan sees both injections.
