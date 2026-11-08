@@ -55,7 +55,8 @@ Set on EC2 in `/etc/axelrod.env` by the build machine. The laptop never changes 
 
 | Setting | Value | What it does |
 |---|---|---|
-| `STAGE_PACING` | 3 | A 3-second pause at the start of each stage (not at approve). STOP ends it at once |
+| `STAGE_PACING` | 1 (since 4:03 AM, was 3) | A pause of that many seconds at the start of each stage (not at approve). STOP ends it at once |
+| `MAX_CONCURRENCY_SMALL`, `MAX_CONCURRENCY_LARGE` | 48, 8 (since 4:03 AM) | More goons in parallel, so a full run aims for about 2:30. A run left going past STOP spends faster |
 | `DEMO_FAULTS` | fetch,judge | The planted faults, labeled simulated: S-017 is a broken download (503 twice, then a declared hole), and one judge verdict per run is malformed (flagged, the judge reruns) |
 | `CACHE_DOCUMENTS` | on | The gateway decides every fetch, then serves it from the S3 cache |
 | `CACHE_MODELS` | record | Model calls stay live and are recorded for the replay fallback. Runs say `cache_mode: documents` |
@@ -66,17 +67,17 @@ Check from the build machine: `bash backend/infra/remote.sh 'grep -E "^(STAGE_PA
 
 ## The live segment, click by click
 
-Times are seconds from the moment you click **Approve and run**. Measured with `STAGE_PACING=3` on the deployed URL (run_20261108_0ntqmj, 3:05 AM, a headless browser with all sources approved).
+Times are seconds from the moment you click **Approve and run**. Measured with `STAGE_PACING=3` and the old concurrency on the deployed URL (run_20261108_0ntqmj, 3:05 AM, a headless browser with all sources approved). With `STAGE_PACING=1` since 4:03 AM, expect every beat about 2 to 4 seconds earlier (two pauses of 1 s instead of 3 s). The order stays the same. Revoking S-006 right after approval still works, and the first rehearsal gives the real numbers.
 
 | When | What happens | What you do |
 |---|---|---|
 | before | `axelrod run ...` prints the link. The plan streams in. Bobby's plan call lands about 10 s after launch, then the approval gate opens | Open the run. At approval: drag S-002 above S-001, reject S-016. Never touch S-006, S-009, S-010 or S-017. Click **Approve and run** |
-| 0 s | Collect starts (3 s pause) | Click **Revoke** on S-006, then **Confirm revoke**, right away. Don't wait for the first fetches |
+| 0 s | Collect starts (a short stage pause) | Click **Revoke** on S-006, then **Confirm revoke**, right away. Don't wait for the first fetches |
 | 3 s | Fetches start. Each says `cache` and when the copy was collected | Talk through the traffic |
 | about 19 s | S-006's request turns red: `R-revoke-S-006` | Point at it |
 | about 20 s | S-009's off-site links go red on their own (default deny). S-010, our planted test page (simulated), comes back FLAGGED by Bedrock Guardrails | "Show only blocked and flagged" in Traffic |
 | about 21 s | S-017 fails, 503 twice (planted, simulated). It becomes a declared hole | Point at it |
-| about 22 s | Extract starts (3 s pause) | |
+| about 22 s | Extract starts (a short stage pause) | |
 | about 27 s | The first extractor calls | Stop one goon: click a working extractor in the Agents window (or Ctrl+K, type its id, Enter), then **Stop agent**, **Confirm stop**. Its next call is blocked, the rest keep going |
 | about 35 s | | **Stop run**, **Confirm stop**. The red banner counts the blocked requests |
 
@@ -95,7 +96,7 @@ If there isn't enough time between beats, ask the build machine to raise `STAGE_
 - [ ] The home page lists run_20261108_rzpoj7 and run_20261108_pin2ve.
 - [ ] Open the three tabs. Tab 2 on Read.
 - [ ] One warm-up run: `axelrod run ...`, approve, STOP at once (about $0.15). It warms Bedrock and checks the whole path. Then delete it from the home page (Delete on its row, then confirm).
-- [ ] The build machine confirms `STAGE_PACING=3` and `DEMO_FAULTS=fetch,judge` (command above).
+- [ ] The build machine confirms `STAGE_PACING=1` and `DEMO_FAULTS=fetch,judge` (command above).
 - [ ] Notifications off (Windows: Do not disturb). Slack and Discord closed.
 - [ ] Charger in. Phone hotspot ready.
 - [ ] Browser at 100% zoom, full screen (F11), at least 1600 px wide. The desk is a grid of windows.
