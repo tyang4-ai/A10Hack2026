@@ -604,8 +604,14 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `R-allow-S-010` covers the API host and the path prefix `/test-pages/injection.html` only. `/api/v1/*` on the same host stays default deny. Rules ignore the port.
 - The gateway does not refuse loopback, private or link-local hosts. Mitigation: EC2 requires IMDSv2 (sent to A-deploy). Possible hardening for B-live: deny 169.254.0.0/16 in `decide`.
 
-**2026-11-07 8:20 PM, B-brief REPORT.**
+**2026-11-07 8:17 PM, B-brief REPORT.**
 - The brief's judges and repairer live in `agents/summarizer.py` (tools `brief_draft`, `brief_faithfulness`, `brief_rewrite`). Judges are `verifier-<H id>-1..3`, asked again after a repair. Helpers: `summarize.estimate_pages`, `fit_pages`, `all_sentences`, `make_stats`, `word_budget`. `verify_summary.code_checks(state, s)`, `render_markdown(brief, *, rollup=None, items=None)`, `CHECKS_RELPATH` (writes `12-Verification/brief-checks.json`).
 - A sentence still failing after two repairs is removed and counted in `stats.failed`. Blocked sentences stay, marked blocked. A repaired sentence's new text comes in `summary.verified` and the `/summary` refetch, not in a second `summary.sentence`.
 - `finalize.run` writes `09-Analysis/human-report.md` with `render_markdown` and sets `state.summary.markdown_path` (sent to B-reason).
 - est_pages = words/450 + 0.3 per chart + 0.35 for the scorecard + 0.04 per heading + 0.15 for the frame. The fixture brief has 18 sentences, 319 words and 2.0 pages.
+
+**2026-11-07 8:20 PM, B-cli REPORT (accepted).**
+- Run the CLI as `python -m backend.axelrod.cli <cmd>`: `run` (add `--tail` to follow), `tail [--all]`, `approve --all | --reject S-00x [--wait s]`, `revoke`, `stop`, `status`, `runs`, `inject-errors`. `--api` defaults to `AXELROD_API`, then localhost, and adds `/api/v1` when missing. It uses stdlib urllib (accepted: it only talks to our own API).
+- `demo.inject_errors(ctx, req, *, repair_delay=None)` (default `REPAIR_DELAY_S = 2.0`, so the red row shows before the fix). `demo.patch_item(ctx, item_id, patch) -> m.Item`. Both raise `api.ApiError`. Helpers: `demo.dependents`, `demo.digit_slips`, `cli.build_app`, `cli.Client`, `cli.render_event`, `cli.tail_run`.
+- `patch_item` keeps the old judge votes, with a "From before the analyst edit" note, and doesn't update holes or the rollup.
+- `scripts/export_run.py <run_id> [--name] [--dest]` refuses unfinished runs, replays and an existing destination. It uses `Store._load_local` / `_load_aws`, because `load_all` marks unfinished runs failed.

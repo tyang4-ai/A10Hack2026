@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-extract, B-reason, B-cli, A-deploy, B-g2fix (W2). W1 is 5/5 done.
+- Running: B-extract, B-reason, A-deploy, B-g2fix (W2). W1 is 5/5 done.
 - Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
 
 ## Plans
@@ -22,7 +22,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-extract | builder | W2 | running | | |
 | B-reason | builder | W2 | running | | |
 | B-brief | builder | W2 | done | 23 passed | fixture brief 18 sentences, 2.0 pages. Unfaithful sentence 0/3 votes, one-word copy edit caught and restored |
-| B-cli | builder | W2 | running | | |
+| B-cli | builder | W2 | done | 21 passed (suite 334) | tail colors traffic, inject-errors 3/3 caught then re-cited. CLI uses urllib (own API only) |
 | A-deploy | aws-operator | W2 | running | | |
 | B-g2fix | builder | W2 | running | | G2 findings: fail closed on skipped scan, deny link-local, pre-approval policy view, label fake runs |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
@@ -70,6 +70,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Known issues
 
+- An analyst edit (`PATCH /items`) re-runs the code checks but keeps the old judge votes, marked "From before the analyst edit". It doesn't update holes or the rollup.
+
 - G2 minor, left as is: allow rules ignore scheme and port, and the path prefix has no segment boundary (same host only, low risk). Cost in event messages uses `:.4f` (not a report value).
 - The workshop account id is in RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md`. AWS doesn't treat account ids as secret, and the account goes away after the event, but scrub them before the repo goes public if there's time.
 
@@ -81,7 +83,9 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
-- (8:20 PM, pass to Tong) Brief UI behavior: when a brief sentence is repaired, its new text arrives in the `summary.verified` event and the `/summary` refetch, not in a second `summary.sentence` event. A sentence that fails twice is removed, and it disappears at the `summary.ready` refetch. Blocked sentences stay, marked blocked.
+- (8:20 PM, pass to Tong) The CLI prints a run link as `PUBLIC_UI_URL?run=<run_id>` (or `PUBLIC_UI_URL` with `{run_id}` replaced). The UI has no run deep link yet. If Tong adds one, tell me the URL shape and I'll set `PUBLIC_UI_URL`.
+
+- (8:17 PM, pass to Tong) Brief UI behavior: when a brief sentence is repaired, its new text arrives in the `summary.verified` event and the `/summary` refetch, not in a second `summary.sentence` event. A sentence that fails twice is removed, and it disappears at the `summary.ready` refetch. Blocked sentences stay, marked blocked.
 
 - (7:49 PM, not blocking) The reviser role gets the small model in PLANS.md but Sonnet in `mock/build_fixtures.py` ROLE_SCOPES. The real gateway follows PLANS.md. Either change the mock on main or say "reviser uses Sonnet" and I'll switch the backend. The reviser is P1 (W3), so this can wait.
 
