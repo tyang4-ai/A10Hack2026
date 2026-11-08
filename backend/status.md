@@ -17,6 +17,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 ## Now
 
+- **New work (asked for at 2:15 AM in this session, after the 1:45 freeze):** delete a finished run from the home page (its own data only, the shared caches stay, the demo run protected), real PDF pages in the source viewer, planted faults (a broken download S-017 and one malformed judge verdict, both simulated, behind `DEMO_FAULTS`), and `STAGE_PACING` (a pause per stage) replacing `DEMO_PACING`. Running: B-delete-pace, B-pdfpage, B-faults. Contract 0.3.1 (DELETE route, page image route) is ready in a main worktree. The guard won't let this session push main or edit frontend/, so both wait on the user. The EC2 role needs `s3:DeleteObject` on run vault folders before delete works on EC2.
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, origin/main 69b40fc merged at 1:24 AM). Gordon's 1 AM change: the integrator runs next to us and shares EC2 (it owns `axelrod-web` on port 3000 and the `$default` route, we own the `axelrod` service on 8000 and its env). No scripted rehearsal, no READY FOR INTEGRATION. Cutoff: R2 done and the `DEMO RUN:` line posted by 3:15 AM.
 - **R2 done** at 1:29 AM: run_20261108_rzpoj7. EC2 is free for runs again.
 - **Env changed at 1:33 AM** (restarted the `axelrod` service only, no deploy): demo values `DEMO_PACING=0.8`, `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`.
@@ -180,3 +181,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:47 AM: account id moved to backend/.env (AWS_EXPECTED_ACCOUNT). C-026 logged as a judge error. On call until the 5:30 freeze: DEMO_PACING after the first in-person rehearsal, then one replay-fallback test.
 - Sun 2:06 AM: typo-tolerant plan match (suite 927 passed). Deploy and BUDGET_USD=50 noted here first.
 - Sun 2:08 AM: deployed afd37aa, BUDGET_USD=50. Live check: run_20261108_7q87xb typed "siemens heathineers" reached approval as Siemens Healthineers (SHL), $0.004, stopped.
+- Sun 2:30 AM: new work started (delete runs, PDF page images, planted faults, STAGE_PACING). Route stubs committed (e3e3a4c). Contract 0.3.1 prepared, waiting on the user to push main.
