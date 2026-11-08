@@ -21,19 +21,20 @@ export function Traffic() {
     return r.slice(-600).reverse();
   }, [traffic, onlyBad]);
   return (
-    <div>
-      <div className="sticky top-0 z-10 flex items-center gap-3 bg-desk px-3 py-1.5">
-        <label className="flex items-center gap-1.5">
+    <div className="flex h-full flex-col">
+      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 border-b border-desk-line bg-desk px-3 py-1.5">
+        <label className="flex items-center gap-1.5 whitespace-nowrap">
           <input type="checkbox" checked={onlyBad} onChange={(e) => setOnlyBad(e.target.checked)} />
           Show only blocked and flagged
         </label>
         <span className="text-desk-muted">Every agent request goes through the gateway. Only approved sources are allowed; everything else is denied.</span>
       </div>
+      <div className="min-h-0 flex-1 overflow-auto">
       <table className="w-full border-collapse">
-        <thead className="sticky top-[30px] bg-desk text-left text-[11px] text-desk-muted">
+        <thead className="sticky top-0 z-10 bg-desk text-left text-[11px] text-desk-muted">
           <tr>
             {["Time", "Agent", "Role", "Action", "Target", "Decision", "Rule", "ms", "Tokens in/out", "Cost"].map((h, i) => (
-              <th key={h} className={`px-2 py-1 font-medium ${i >= 7 ? "text-right" : ""}`}>
+              <th key={h} className={`px-2 py-1 font-medium shadow-[inset_0_-1px_0_var(--color-desk-line)] ${i >= 7 ? "text-right" : ""}`}>
                 {h}
               </th>
             ))}
@@ -76,6 +77,7 @@ export function Traffic() {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
