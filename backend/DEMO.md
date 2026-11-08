@@ -26,7 +26,7 @@ Since 6:03 AM two full-run click paths are recorded and replay at about $0 in un
 - **Approve as planned:** click Approve on the priority sources, change nothing. 117 s from launch, Watch 17 s (run_20261108_cyfrac).
 - **Stage clicks:** drag S-002 above S-001, reject S-016, Approve, then revoke S-006 right away. 109 s from launch (run_20261108_9wvm74).
 
-**No goon stop in a full run** (the user's call): stopping a goon changes every later prompt, so those calls go live and Watch runs past 2 minutes. Show stop-one-agent on a separate run and press STOP right after it. Other clicks still finish, just slower. `FETCH_PACING` and `VERIFY_PACING` are the knobs. The click-by-click timings below were measured at STAGE_PACING=3 with live models, so expect fetching to be a little slower and everything after it faster.
+**No goon stop in a full run** (the user's call): stopping a goon changes every later prompt, so those calls go live and Watch runs past 2 minutes. Show stop-one-agent on a separate run and press STOP right after it. Other clicks still finish, just slower. `FETCH_PACING` and `VERIFY_PACING` are the knobs. **Talk to an agent at any time, fetching included:** Bobby answers live in about 4 s (chat always skips the recorded answers and never changes the run, so the replay and its timing stay the same). The fetcher has no model, so a message to it fails: the gateway blocks it ("Role 'fetcher' may not call models"). Talk to Bobby during fetching, and to an extractor, drafter or judge once Watch or Review shows them. The click-by-click timings below were measured at STAGE_PACING=3 with live models, so expect fetching to be a little slower and everything after it faster.
 
 ## On stage
 
