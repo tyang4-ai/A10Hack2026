@@ -389,7 +389,10 @@ function NewLayout() {
   };
 
   return (
-    <div className={`h-7 overflow-hidden rounded-[4px] border transition-[width,border-color] duration-200 ease-out ${naming ? "w-52 border-accent" : "w-7 border-desk-line-strong"}`}>
+    // A fixed 28px slot in the top bar; the field grows over its neighbours as an overlay,
+    // so nothing else in the bar moves or wraps (Safari reflowed the whole bar otherwise).
+    <div className="relative h-7 w-7 flex-none">
+    <div className={`absolute top-0 left-0 z-50 h-7 overflow-hidden rounded-[4px] border bg-desk transition-[width,border-color] duration-200 ease-out ${naming ? "w-52 border-accent" : "w-7 border-desk-line-strong"}`}>
       {naming ? (
         <form
           className="flex h-full animate-[snap-in_200ms_ease-out] items-center"
@@ -429,6 +432,7 @@ function NewLayout() {
           +
         </button>
       )}
+    </div>
     </div>
   );
 }
