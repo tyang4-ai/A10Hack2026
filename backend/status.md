@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-verify (W1), B-extract, B-reason, B-brief, B-cli, B-testpage, A-deploy (W2).
+- Running: B-extract, B-reason, B-brief, B-cli, B-testpage, A-deploy (W2), verifier (G2). W1 is 5/5 done.
 - Next: finish G2 when B-verify and the verifier report. Then G3 (presmoke with live Bedrock).
 
 ## Plans
@@ -16,7 +16,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | A-setup | aws-operator | S1 | done | models, guardrail, 50+8 parallel ok | 5.5 models denied by workshop allowlist, using Sonnet 5 + Haiku 4.5 |
 | B-store-api | builder | W1 | done | 51 passed, live S3/DynamoDB ok | contract_smoke passes vs real API and mock, restart keeps runs, 200 concurrent emits gapless |
 | B-gateway | builder | W1 | done | 46 passed, 3 live passed | Haiku and Sonnet forced tool via AgentRunner live ok, guardrail flags injection. Fail closed, budget held at worst case |
-| B-verify | builder | W1 | running | | |
+| B-verify | builder | W1 | done | 67 passed | planted 12/12 caught, clean 12/12 pass. Revoked source makes dependents blocked (E to C to D) |
 | B-ingest | builder | W1 | done | 24 passed | ingest_one S-001 live ok (230 pages). Untrusted = news/forum/other or tier_3, scanned, fail closed. S-010 404 until pushed |
 | B-shl-plan | builder | W1 | done | 31 passed, 1 skipped | 10 sources, 7 needs, 36 extract pages checked against PDFs. S-006 is the tier_2 revoke target, fetched 8th |
 | B-extract | builder | W2 | running | | |
@@ -35,7 +35,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 |---|---|---|---|
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
-| G2 Core | partial | Sat 8:10 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. Waiting on B-verify (planted test) and the verifier |
+| G2 Core | partial | Sat 8:01 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Waiting on the verifier |
 | G3 Pipeline and pre-smoke | | | |
 | G4 Deploy | | | |
 | G5 Full SHL run, demo-ok-1 | | | |
@@ -69,6 +69,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Known issues
 
+- Verify limit: a dash followed by a space before a number ("– 9,871") could be a minus or a range dash, so a dropped minus is not caught there. Negatives in parentheses are always strict.
+
 - Guard quirk: `git push origin backend 2>&1 | tail -1` is read as a push to "2>" and asks Gordon. Orchestrator pushes are plain `git push origin backend` from now on. The guard itself is unchanged (Gordon's file).
 
 ## Needs Gordon
@@ -86,4 +88,5 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:29 PM: P-scaffold done. G1 pass. Added 6 non-AWS default keys to .env (DATA_DIR, FAKE_MODELS, HTTP_USER_AGENT, AXELROD_API_KEY, PUBLIC_UI_URL, DEMO_PACING).
 - Sat 7:30 PM: W1 launched (5 builders).
 - Sat 7:53 PM: B-ingest, B-gateway, B-shl-plan done. Pushed plan.json and the planted test page so its raw URL answers.
-- Sat 8:10 PM: W2 launched early (6 agents). G2 checks 3 to 5 pass. Verifier running on the 4 finished W1 plans.
+- Sat 8:01 PM: W2 launched early (6 agents). G2 checks 3 to 5 pass. Verifier running on the 4 finished W1 plans.
+- Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.

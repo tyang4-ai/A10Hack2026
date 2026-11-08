@@ -1,0 +1,14 @@
+Meridian Diagnostics AG: simulated test data in the style of an annual report. Fictional company, fictional figures.
+
+Consolidated statements of financial position
+(in millions of €)
+Sep 30, 2025 Sep 30, 2024
+Cash and cash equivalents 1,327 1,148
+Trade and other receivables 3,904 3,716
+Inventories 3,215 3,088
+Total current assets 9,612 9,135
+Goodwill 17,485 17,301
+Total assets 46,218 45,037
+Short-term financial debt and current maturities of long-term financial debt 1,044 2,187
+Long-term financial debt 11,592 12,047
+Total equity 18,436 17,102

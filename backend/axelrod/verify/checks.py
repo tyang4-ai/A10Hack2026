@@ -1,38 +1,1111 @@
 """Code checks for every item kind and brief sentence. Each check function returns list[m.CheckResult].
 
 items is RunState.items (id -> item) and sources is RunState.sources_by_id() (id -> Source).
+
+Every check is a pure function over contract models. Nothing here mutates an item: a fix the checker
+finds (a quote found on another page) comes back in CheckResult.closest_locator, and
+with_fixed_locators() applies it. Every failure says why in CheckResult.detail, in plain words that
+the repair stage and the UI can show as they are.
+
+Checks per kind (in this order):
+  data           quote_exact (one per text citation, in citation order), json_value (one per json
+                 citation), value_in_quote, unit_context, period_match, numbers_traced (the statement),
+                 citations_resolve (the source)
+  conclusion     citations_resolve, computation (when it has computations), numbers_traced
+  extrapolation  citations_resolve, threshold_rule (numeric rubric thresholds only), numbers_traced
+  chart          citations_resolve, chart_values
+  sentence       citations_resolve, then copy_exact (copied) or numbers_traced (derived)
+  tier rules     check_tier_rule / check_tier_rules: tier 2 and tier 3 data items, tier-3-only conclusions
+
+What numbers_traced accepts: a cited data item's value (after scale, rounded half up to the shown
+decimals), a cited computation's display, the criterion's rubric numbers, the BOFFIN scale (-1, 0, +1)
+for scores, rollup numbers for "rollup", chart points for charts, and the numbers in the verified
+quote of a cited data item that has no value. A data item's own statement may also use any number in
+its evidence quote. Years, fiscal-year labels, dates and ids are never counted as numbers.
 """
 from __future__ import annotations
 
-from ..contract import m
+import json
+import re
+from dataclasses import dataclass
+from datetime import date, timedelta
+from decimal import Decimal
+
+from ..contract import RUBRIC, m
+from . import compute, text
+from .numbers import (SCALES, WORD_FACTOR, NumToken, half_up, period_key, period_mentions, scan_numbers,
+                      to_base)
+
+PASSING = ("pass", "fixed")
+_CURRENCIES = {"EUR", "USD", "GBP", "CHF", "JPY"}
+
+
+# ---------------------------------------------------------------------------
+# Small helpers
+# ---------------------------------------------------------------------------
+
+
+def _cr(check: str, result: str, detail: str, **kw) -> m.CheckResult:
+    return m.CheckResult(check=check, method="code", result=result, detail=detail, **kw)
+
+
+def _dec(x) -> Decimal:
+    """Contract floats go through repr, so 5.85 stays 5.85."""
+    if isinstance(x, Decimal):
+        return x
+    return Decimal(repr(x)) if isinstance(x, float) else Decimal(x)
+
+
+def _fmt(x: Decimal) -> str:
+    q = x.quantize(Decimal("0.000001")) if abs(x) < 1000 else x.quantize(Decimal(1))
+    return format(q.normalize(), "f")
+
+
+def _short(s: str, n: int = 90) -> str:
+    s = text.normalize(s).strip()
+    return s if len(s) <= n else s[: n - 3] + "..."
+
+
+def _and(parts: list[str]) -> str:
+    return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+def _score(s: int) -> str:
+    return f"{s:+d}" if s else "0"
+
+
+def base_value(item: m.DataItem) -> Decimal | None:
+    """A data item's value in base units, percentages as fractions. This is what expressions read."""
+    v = item.value
+    if v is None:
+        return None
+    b = to_base(_dec(v.number), v.scale)
+    return b / 100 if v.unit == "%" else b
+
+
+def status_from(checks: list[m.CheckResult]) -> str:
+    """Any fail: fail, any blocked: blocked, else pass. No checks at all: pending, never a pass."""
+    if not checks:
+        return "pending"
+    results = {c.result for c in checks}
+    if "fail" in results:
+        return "fail"
+    if "blocked" in results:
+        return "blocked"
+    return "pass"
+
+
+def json_pointer_get(doc, pointer: str):
+    """RFC 6901: "" is the whole document, "~1" is "/" and "~0" is "~". Raises KeyError, IndexError, ValueError."""
+    if pointer == "":
+        return doc
+    if not pointer.startswith("/"):
+        raise ValueError("a JSON pointer starts with '/'")
+    cur = doc
+    for raw in pointer[1:].split("/"):
+        tok = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(cur, list):
+            if not re.fullmatch(r"0|[1-9]\d*", tok):
+                raise ValueError(f"'{tok}' is not an array index")
+            if int(tok) >= len(cur):
+                raise IndexError(f"index {tok} is past the end of a list of {len(cur)}")
+            cur = cur[int(tok)]
+        elif isinstance(cur, dict):
+            if tok not in cur:
+                raise KeyError(f"no key '{tok}'")
+            cur = cur[tok]
+        else:
+            raise ValueError(f"cannot step into a {type(cur).__name__} with '{tok}'")
+    return cur
+
+
+def with_fixed_locators(item: m.DataItem, checks: list[m.CheckResult]) -> m.DataItem:
+    """A copy of item with the locators that passing quote_exact checks corrected (quote found on
+    another page or at other offsets). quote_exact results come one per text citation, in order."""
+    text_idx = [i for i, c in enumerate(item.citations) if isinstance(c.locator, m.TextLocator)]
+    qe = [c for c in checks if c.check == "quote_exact"]
+    if len(qe) != len(text_idx):
+        return item
+    new = item.model_copy(deep=True)
+    for i, c in zip(text_idx, qe):
+        if c.result == "pass" and c.closest_locator is not None:
+            new.citations[i] = new.citations[i].model_copy(update={"locator": c.closest_locator})
+    return new
+
+
+def _source_issue(src: m.Source | None) -> str | None:
+    if src is None:
+        return None
+    if src.status == "revoked":
+        return f"source revoked: {src.source_id}"
+    if src.status == "quarantined":
+        return f"source quarantined: {src.source_id}"
+    if src.approval == "rejected":
+        return f"source rejected: {src.source_id}"
+    return None
+
+
+def _issue_behind(it, items: dict, sources: dict | None, seen: set[str] | None = None) -> str | None:
+    """First revoked, quarantined or rejected source behind an item, walking E -> C -> D and G -> refs."""
+    if not sources:
+        return None
+    seen = set() if seen is None else seen
+    if it.id in seen:
+        return None
+    seen.add(it.id)
+    if it.kind == "data":
+        return _source_issue(sources.get(it.source_id))
+    refs = it.data_ids if it.kind == "conclusion" else it.conclusion_ids if it.kind == "extrapolation" else it.refs
+    for r in refs:
+        sub = items.get(r.split(":")[0])
+        if sub is not None:
+            issue = _issue_behind(sub, items, sources, seen)
+            if issue:
+                return issue
+    return None
+
+
+def _resolve(refs: list[str], items: dict, sources: dict | None, *, kinds: tuple[str, ...],
+             holes: list[m.Hole] = (), allow_rollup: bool = False) -> m.CheckResult:
+    """citations_resolve: every id exists, has the right kind, passed, and its sources still stand."""
+    if not refs:
+        return _cr("citations_resolve", "fail", "Cites nothing")
+    hole_items = {h.hole_id: h.item_id for h in holes}
+    about_gap = {hole_items[r] for r in refs if r in hole_items}
+    problems: list[str] = []
+    lost: list[str] = []
+    waiting: list[str] = []
+    for r in refs:
+        if (allow_rollup and r == "rollup") or r in hole_items:
+            continue
+        if r.startswith("HOLE-"):
+            problems.append(f"{r} is not a declared hole")
+            continue
+        base, _, name = r.partition(":")
+        it = items.get(base)
+        if it is None:
+            problems.append(f"{r} does not exist")
+            continue
+        if it.kind not in kinds:
+            problems.append(f"{r} is a {it.kind} item, not a {' or '.join(kinds)} item")
+            continue
+        if name and (it.kind != "conclusion" or name not in {c.name for c in it.computations}):
+            problems.append(f"{r} names no computation of {base}")
+            continue
+        issue = _issue_behind(it, items, sources)
+        if issue:
+            lost.append(f"{r}: {issue}")
+            continue
+        st = it.verification.status
+        if st in PASSING or (st == "fail" and base in about_gap):  # a sentence about a declared gap
+            continue
+        (problems if st == "fail" else waiting).append(f"{r} is {st}")
+    if problems:
+        return _cr("citations_resolve", "fail", "; ".join(problems))
+    if lost:
+        return _cr("citations_resolve", "blocked", "; ".join(lost))
+    if waiting:
+        return _cr("citations_resolve", "blocked", "Not verified yet: " + "; ".join(waiting))
+    return _cr("citations_resolve", "pass", f"All {len(refs)} cited id(s) exist and passed")
+
+
+# ---------------------------------------------------------------------------
+# numbers_traced
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class _Cand:
+    """A number a text may use: as shown or reported (number) and in base units when known (base)."""
+    number: Decimal
+    base: Decimal | None
+    pct: bool
+    label: str
+
+
+_SCORE_CANDS = [_Cand(Decimal(n), None, False, "BOFFIN scale") for n in (-1, 0, 1)]
+
+
+def _text_cands(label: str, s: str | None) -> list[_Cand]:
+    if not s:
+        return []
+    return [_Cand(t.number, t.value if t.word else None, t.pct, label) for t in scan_numbers(text.normalize(s))]
+
+
+def _value_cands(iid: str, v: m.Value) -> list[_Cand]:
+    n, pct = _dec(v.number), v.unit == "%"
+    return [_Cand(n, None if pct else to_base(n, v.scale), pct, iid)]
+
+
+def _data_cands(it: m.DataItem, *, quotes: bool) -> list[_Cand]:
+    out = _value_cands(it.id, it.value) if it.value is not None else []
+    if quotes or it.value is None:
+        for cit in it.citations:
+            if cit.role == "evidence" and isinstance(cit.locator, m.TextLocator):
+                out += _text_cands(f"{it.id} quote", cit.quote)
+    return out
+
+
+def _threshold_cands(criteria: list[str], rubric: dict) -> list[_Cand]:
+    out: list[_Cand] = []
+    for k in criteria:
+        crit = rubric.get("criteria", {}).get(k) or {}
+        for field in ("label", "plus_one", "minus_one", "zero"):
+            out += _text_cands(f"{k} rubric", crit.get(field))
+    return out
+
+
+def _chart_cands(g: m.Chart) -> list[_Cand]:
+    out = []
+    for s in g.series:
+        for p in s.points:
+            y = _dec(p.y)
+            out.append(_Cand(y, None, True, g.id) if g.unit == "%" else _Cand(y, y * SCALES[g.scale], False, g.id))
+    return out
+
+
+def _rollup_cands(r: m.Rollup) -> list[_Cand]:
+    out: list[_Cand] = []
+
+    def add(x, pct: bool = False) -> None:
+        if x is not None:
+            out.append(_Cand(_dec(x), None, pct, "rollup"))
+
+    add(r.weighted_average)
+    for cs in r.categories:
+        for x in (cs.score, cs.weight, cs.scored, cs.in_scope):
+            add(x)
+    for x in (r.normalized_pct, r.percent_of_max_pct):
+        add(x, True)
+        add(x)
+    for x in (r.scored, r.in_scope, r.framework_total, len(r.na_criteria)):
+        add(x)
+    return out
+
+
+def _pool(refs: list[str], items: dict, *, rubric: dict, rollup: m.Rollup | None = None,
+          seen: set[str] | None = None) -> list[_Cand]:
+    """Every number the cited refs vouch for, walking E -> C -> D and G -> refs."""
+    seen = set() if seen is None else seen
+    out: list[_Cand] = []
+    for r in refs:
+        if r == "rollup":
+            out += _rollup_cands(rollup) if rollup is not None else []
+            continue
+        base = r.split(":")[0]
+        if base in seen or base not in items:
+            continue
+        seen.add(base)
+        it = items[base]
+        if it.kind == "data":
+            out += _data_cands(it, quotes=False)
+        elif it.kind == "conclusion":
+            out += [c for comp in it.computations for c in _text_cands(f"{it.id}:{comp.name}", comp.display)]
+            out += _threshold_cands(it.criteria, rubric)
+            out += _pool(it.data_ids, items, rubric=rubric, seen=seen)
+        elif it.kind == "extrapolation":
+            out += _threshold_cands([it.criterion], rubric) + _SCORE_CANDS
+            out += _pool(it.conclusion_ids, items, rubric=rubric, seen=seen)
+        elif it.kind == "chart":
+            out += _chart_cands(it)
+            out += _pool(it.refs, items, rubric=rubric, seen=seen)
+    return out
+
+
+def _traced(t: NumToken, cands: list[_Cand]) -> str | None:
+    """The label of the candidate that shows this number at its precision, or None."""
+    shown = abs(t.number)
+    for c in cands:
+        if c.pct != t.pct:
+            continue
+        if t.word:
+            if c.base is None:
+                continue
+            x = abs(c.base) / WORD_FACTOR[t.word]
+        else:
+            x = abs(c.number)
+        if Decimal(half_up(x, t.places)) == shown:
+            return c.label
+    return None
+
+
+def _numbers_traced(s: str, cands: list[_Cand], *, what: str, blocked_reason: str | None = None) -> m.CheckResult:
+    toks = scan_numbers(text.normalize(s))
+    if not toks:
+        return _cr("numbers_traced", "pass", "No numbers to trace")
+    untraced = [t for t in toks if _traced(t, cands) is None]
+    if not untraced:
+        return _cr("numbers_traced", "pass",
+                   f"Every number in the {what} traces to a cited value or computation ({len(toks)} checked)")
+    if blocked_reason:
+        return _cr("numbers_traced", "blocked", blocked_reason)
+    shown = [f"'{t.raw}'" for t in untraced]
+    verb = "does" if len(shown) == 1 else "do"
+    return _cr("numbers_traced", "fail",
+               f"{_and(shown)} {verb} not match any cited value, computation display or rubric threshold",
+               unsupported_spans=[t.raw for t in untraced])
+
+
+# ---------------------------------------------------------------------------
+# Data items
+# ---------------------------------------------------------------------------
+
+
+def _quote_exact(cit: m.Citation, pages_by_doc: dict[str, list[str]]) -> m.CheckResult:
+    pages = pages_by_doc.get(cit.doc_id)
+    loc = cit.locator
+    if not pages:
+        return _cr("quote_exact", "blocked",
+                   f"No stored text for {cit.doc_id} (missing or quarantined), so the quote could not be checked")
+    nq = text.normalize(cit.quote)
+    if not nq.strip():
+        return _cr("quote_exact", "fail", "The quote is empty")
+    role = cit.role.replace("_", " ")
+    if 1 <= loc.page <= len(pages):
+        page = pages[loc.page - 1]
+        if 0 <= loc.char_start < loc.char_end <= len(page) and text.normalize(page[loc.char_start:loc.char_end]) == nq:
+            return _cr("quote_exact", "pass",
+                       f"{role.capitalize()} quote found verbatim at {cit.doc_id} page {loc.page}, "
+                       f"chars {loc.char_start}-{loc.char_end}")
+    hit = text.locate(pages, cit.quote, loc.page)
+    if hit is not None:
+        p, s, e = hit
+        fixed = m.TextLocator(page=p, char_start=s, char_end=e)
+        if p == loc.page:
+            detail = (f"Warning: {role} quote found verbatim on {cit.doc_id} page {p} at chars {s}-{e}, "
+                      f"not at the cited chars {loc.char_start}-{loc.char_end}. Offsets corrected.")
+        else:
+            detail = (f"Warning: {role} quote found verbatim on {cit.doc_id} page {p}, not the cited page "
+                      f"{loc.page}. Page corrected to {p}.")
+        return _cr("quote_exact", "pass", detail, closest_locator=fixed)
+    best = text.closest_span(pages, cit.quote, loc.page)
+    if best is None or best[3] == 0:
+        return _cr("quote_exact", "fail", f"Quote not found in {cit.doc_id}, and no similar text exists there")
+    p, diff, (s, e), _ = best
+    real = pages[p - 1][s:e]
+    return _cr("quote_exact", "fail",
+               f"Quote not found in {cit.doc_id}. The closest span is on page {p} (chars {s}-{e}) and differs by "
+               f"{text.changed_chars(diff)} character(s): '{_short(real)}'",
+               diff=diff, closest_locator=m.TextLocator(page=p, char_start=s, char_end=e))
+
+
+def _json_number(v) -> Decimal | None:
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return _dec(v)
+    if isinstance(v, str):
+        try:
+            return Decimal(v.strip())
+        except ArithmeticError:
+            return None
+    return None
+
+
+def _json_value(item: m.DataItem, cit: m.Citation, pages_by_doc: dict[str, list[str]]):
+    """(json_value result, parsed document or None)."""
+    pages = pages_by_doc.get(cit.doc_id)
+    ptr = cit.locator.pointer
+    if not pages:
+        return _cr("json_value", "blocked", f"No stored JSON for {cit.doc_id} (missing or quarantined)"), None
+    try:
+        doc = json.loads("".join(pages))
+    except ValueError:
+        return _cr("json_value", "blocked", f"{cit.doc_id} is not valid JSON, so the pointer could not be read"), None
+    try:
+        val = json_pointer_get(doc, ptr)
+    except (KeyError, IndexError, ValueError) as e:
+        return _cr("json_value", "fail", f"Pointer {ptr} does not resolve in {cit.doc_id}: {e}"), None
+    num, qnum = _json_number(val), _json_number(cit.quote)
+    quote_ok = str(val) == cit.quote or (num is not None and qnum is not None and num == qnum)
+    if item.value is not None:
+        want = _dec(item.value.number)
+        if num is None:
+            return _cr("json_value", "fail", f"{ptr} holds {val!r}, not a number"), doc
+        if num != want:
+            return _cr("json_value", "fail", f"{ptr} = {val}, but the value says {_fmt(want)}"), doc
+    if not quote_ok:
+        return _cr("json_value", "fail", f"The quote '{_short(cit.quote)}' differs from the value at {ptr} ({val})"), doc
+    return _cr("json_value", "pass", f"{ptr} = {val}"), doc
+
+
+_ISO = re.compile(r"(\d{4})-(\d{2})-(\d{2})(T00:00:00)?")
+
+
+def _end_date(s: str) -> date | None:
+    """Period end from "2025-09-30", an instant, or an xBRL-JSON "start/end" (a midnight end is exclusive)."""
+    mm = _ISO.match(s.split("/")[-1].strip())
+    if not mm:
+        return None
+    try:
+        d = date(int(mm.group(1)), int(mm.group(2)), int(mm.group(3)))
+    except ValueError:
+        return None
+    return d - timedelta(days=1) if mm.group(4) else d
+
+
+def _json_dates(obj) -> list[date]:
+    if not isinstance(obj, dict):
+        return []
+    found: list[date] = []
+    for key in ("end", "instant", "endDate", "period", "date"):
+        v = obj.get(key)
+        if isinstance(v, str):
+            d = _end_date(v)
+            if d:
+                found.append(d)
+        elif isinstance(v, dict):
+            found += _json_dates(v)
+    found += _json_dates(obj.get("dimensions"))
+    return found
+
+
+def _json_period(v: m.Value, doc, pointer: str) -> m.CheckResult | None:
+    if not v.period:
+        return None
+    years, _ = period_key(v.period)
+    if not years:
+        return _cr("period_match", "blocked", f"Period '{v.period}' names no year, so it could not be checked")
+    try:
+        parent = json_pointer_get(doc, pointer.rsplit("/", 1)[0])
+    except (KeyError, IndexError, ValueError):
+        parent = None
+    dates = _json_dates(parent)
+    if dates:
+        d = dates[0]
+        if d.year in years:
+            return _cr("period_match", "pass", f"The fact's period ends {d.isoformat()}, which matches {v.period}")
+        return _cr("period_match", "fail", f"The fact's period ends {d.isoformat()}, which does not match {v.period}")
+    fy = parent.get("fy") if isinstance(parent, dict) else None
+    if isinstance(fy, int):
+        result = "pass" if fy in years else "fail"
+        return _cr("period_match", result, f"The fact is labeled fy={fy}, the value says {v.period}")
+    return _cr("period_match", "blocked", f"No period field sits next to {pointer}, so the period could not be checked")
+
+
+def _value_hits(q: str, v: m.Value) -> list[NumToken]:
+    """Tokens in a normalized quote that show as_reported (same digits, the whole number)."""
+    a = text.normalize(v.as_reported).strip()
+    a_toks = scan_numbers(a, include_labels=True)
+    if not a_toks:
+        return []
+    at = a_toks[0]
+    return [t for t in scan_numbers(q, include_labels=True)
+            if t.core == at.core and t.core_start >= at.core_start and q.startswith(a, t.core_start - at.core_start)]
+
+
+def _value_in_quote(v: m.Value, ev: list[str]) -> m.CheckResult:
+    a = text.normalize(v.as_reported).strip()
+    a_toks = scan_numbers(a, include_labels=True)
+    if not a_toks:
+        return _cr("value_in_quote", "fail", f"as_reported '{v.as_reported}' holds no number")
+    want = _dec(v.number)
+    if abs(a_toks[0].number) != abs(want):
+        return _cr("value_in_quote", "fail",
+                   f"as_reported '{v.as_reported}' reads as {_fmt(a_toks[0].number)}, but value.number is {_fmt(want)}")
+    problems: list[str] = []
+    for q in ev:
+        for t in _value_hits(q, v):
+            if t.pct and v.unit != "%":
+                problems.append(f"The quote shows '{t.raw}', a percentage, but the unit is {v.unit}")
+            elif t.number == want:
+                return _cr("value_in_quote", "pass", f"'{v.as_reported}' appears in the quote and reads as {_fmt(want)}")
+            elif t.sign_ambiguous and abs(t.number) == abs(want):
+                return _cr("value_in_quote", "pass",
+                           f"'{v.as_reported}' appears in the quote. The spaced dash before it can be a minus or a "
+                           f"range dash, so {_fmt(want)} is accepted")
+            else:
+                problems.append(f"The quote shows '{t.raw}', which reads as {_fmt(t.number)}, "
+                                f"but the value is {_fmt(want)}")
+    if problems:
+        return _cr("value_in_quote", "fail", problems[0])
+    if any(a in q for q in ev):
+        return _cr("value_in_quote", "fail", f"'{v.as_reported}' appears in the quote only inside a longer number")
+    return _cr("value_in_quote", "fail", f"'{v.as_reported}' is not in the quote '{_short(ev[0])}'")
+
+
+_SCALE_RX = {
+    "thousand": re.compile(r"\bthousands?\b|\bTEUR\b|\bkEUR\b|\bT€|\bk€|€\s?k\b|'000", re.IGNORECASE),
+    "million": re.compile(r"\bmillions?\b|\bmn\b|\bmio\b|\bMEUR\b|\bEUR\s?m\b|€\s?m\b|\bm€|\$\s?m\b|\bUSD\s?m\b",
+                          re.IGNORECASE),
+    "billion": re.compile(r"\bbillions?\b|\bbn\b|\bmrd\b|€\s?bn\b|\bEUR\s?bn\b", re.IGNORECASE),
+}
+_CUR_RX = {"EUR": re.compile(r"€|\bEUR"), "USD": re.compile(r"\$|\bUSD"), "GBP": re.compile(r"£|\bGBP"),
+           "CHF": re.compile(r"\bCHF")}
+# "(in millions of €, earnings per share in €)": per-share figures in the same table are in units.
+_PER_SHARE_UNITS = re.compile(r"per[\s-]share(?:\s+\w+){0,2}\s+in\s+(?:€|\$|£|EUR|USD|GBP|CHF)(?!\s?(?:m|bn|k)\b)",
+                              re.IGNORECASE)
+
+
+def _scales_named(q: str, per_share_item: bool) -> set[str]:
+    """Scales a unit header names. A per-share qualifier makes the header name "one" for per-share items."""
+    if per_share_item and _PER_SHARE_UNITS.search(q):
+        return {"one"}
+    return {k for k, rx in _SCALE_RX.items() if rx.search(q)}
+
+
+def _unit_context(item: m.DataItem, uc: list[str], ev: list[str]) -> m.CheckResult:
+    v = item.value
+    hits = [t for q in ev for t in _value_hits(q, v)]
+    word = next((t.word for t in hits if t.word), None)
+    if word:  # "€2,160 million": the scale is written next to the number itself
+        if word == v.scale:
+            return _cr("unit_context", "pass", f"Scale '{v.scale}' written next to the number in the quote")
+        return _cr("unit_context", "fail", f"The quote writes '{word}' next to the number, but the value says {v.scale}")
+    if not uc:
+        if v.scale == "one":
+            return _cr("unit_context", "pass", "No scale needed: the value is stated in units")
+        return _cr("unit_context", "fail", f"The value has scale '{v.scale}', but no unit_context citation names it")
+    per_share = bool(re.search(r"per[\s-]share", item.statement, re.IGNORECASE))
+    named = set().union(*(_scales_named(q, per_share) for q in uc))
+    header = " / ".join(f"'{_short(q, 60)}'" for q in uc)
+    if not named:
+        if v.scale != "one":
+            return _cr("unit_context", "fail", f"The unit_context quote {header} names no scale, but the value says {v.scale}")
+    elif v.scale not in named:
+        return _cr("unit_context", "fail",
+                   f"The unit_context quote {header} names {_and(sorted(named))}, but the value says {v.scale}")
+    if v.unit in _CURRENCIES:
+        curs = {c for c, rx in _CUR_RX.items() if any(rx.search(q) for q in uc)}
+        if curs and v.unit not in curs:
+            return _cr("unit_context", "fail",
+                       f"The unit_context quote {header} names {_and(sorted(curs))}, but the unit is {v.unit}")
+    return _cr("unit_context", "pass", f"Scale '{v.scale}' from {header}")
+
+
+_ORD = {1: "first", 2: "second", 3: "third", 4: "fourth"}
+_CLAUSE = re.compile(r"[;()\[\]]|,\s|\s(?:compared\s+(?:with|to)|versus|vs\.?|against|from|to|while|whereas)\s",
+                     re.IGNORECASE)
+
+
+def _has_quarter(q: str, n: int) -> bool:
+    return bool(re.search(rf"\bQ{n}\b|\b{n}Q\b|\b{_ORD[n]}[\s-]quarter\b", q, re.IGNORECASE))
+
+
+def _ordered_years(mentions: list[tuple[int, int, int]]) -> list[int]:
+    out: list[int] = []
+    for y, _, _ in mentions:
+        if not out or out[-1] != y:
+            out.append(y)
+    return out
+
+
+def _columns(header: list[int], row: list[NumToken], hits: list[NumToken], year: int, label: str):
+    """True if a hit sits in the column the header labels with year, a failure detail if it sits in
+    another year's column, None when the row cannot be aligned. Columns align from the right, so a
+    leading note column does not shift them."""
+    if len(header) < 2 or len(row) < len(header):
+        return None
+    starts = [t.start for t in row[-len(header):]]
+    bad: list[str] = []
+    for h in hits:
+        if h.start in starts:
+            j = starts.index(h.start)
+            if header[j] == year:
+                return True
+            bad.append(f"'{h.raw}' sits in value column {j + 1} of the row, which the header labels "
+                       f"{header[j]}, not {label}")
+    return bad[0] if bad else None
+
+
+def _period_style(q: str, s: int, e: int) -> bool:
+    """A mention that names a reporting period: "fiscal year 2025", "FY2025", "Sep 30, 2025", "2025/26" or a
+    comparative "(2024: ...". A bare year in prose ("due 2027", "expires in 2028") may be anything."""
+    seg = q[s:e]
+    if not re.fullmatch(r"\d{4}", seg):
+        return True
+    return bool(re.match(r"\)?\s?:", q[e:e + 3]))
+
+
+def _clauses(q: str, mentions: list[tuple[int, int, int]], hits: list[NumToken], year: int, label: str):
+    """True if a hit's clause names exactly year, a failure detail if it names one other year, else None."""
+    protected = [(t.start, t.end) for t in scan_numbers(q, include_labels=True)] + [(s, e) for _, s, e in mentions]
+    cuts = [mm.span() for mm in _CLAUSE.finditer(q) if not any(s <= mm.start() < e for s, e in protected)]
+    periods = [(y, s, e) for y, s, e in mentions if _period_style(q, s, e)]
+    bad: list[str] = []
+    for h in hits:
+        left = max([ce for cs, ce in cuts if ce <= h.start], default=0)
+        right = min([cs for cs, ce in cuts if cs >= h.end], default=len(q))
+        ys = {y for y, s, e in periods if s >= left and e <= right}
+        if len(ys) == 1:
+            y = next(iter(ys))
+            if y == year:
+                return True
+            bad.append(f"'{h.raw}' sits next to {y} in the quote, not {label}")
+    return bad[0] if bad else None
+
+
+def _merge(a, b):
+    if a is True or b is True:
+        return True
+    return a if isinstance(a, str) else b
+
+
+def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | None:
+    if not v.period:
+        return None
+    years, quarter = period_key(v.period)
+    label = v.period
+    if not years:
+        return _cr("period_match", "blocked", f"Period '{label}' names no year, so it could not be checked")
+    ctx = pc or ev
+    where = "period_context quote" if pc else "evidence quote"
+    found = {y for q in ctx for y, _, _ in period_mentions(q)}
+    if not years <= found:
+        named = f" (it names {_and([str(y) for y in sorted(found)])})" if found else ""
+        return _cr("period_match", "fail", f"The {where} does not mention {label}{named}")
+    if quarter and not any(_has_quarter(q, quarter) for q in ctx):
+        return _cr("period_match", "fail", f"The {where} does not mention Q{quarter}")
+    if len(years) > 1:
+        return _cr("period_match", "pass", f"The {where} names every year of {label}")
+    year = next(iter(years))
+    pct = v.unit == "%"
+    verdict = None
+    for q in ev:
+        hits = _value_hits(q, v)
+        row = [t for t in scan_numbers(q) if t.pct == pct]
+        if pc:
+            header = _ordered_years([mm for p in pc for mm in period_mentions(p)])
+            verdict = _merge(verdict, _columns(header, row, hits, year, label))
+            continue
+        ments = period_mentions(q)
+        if len({y for y, _, _ in ments}) < 2:
+            continue
+        if row and max(e for _, _, e in ments) <= row[0].start:  # a header line, then a row
+            verdict = _merge(verdict, _columns(_ordered_years(ments), row, hits, year, label))
+        else:
+            verdict = _merge(verdict, _clauses(q, ments, hits, year, label))
+    if isinstance(verdict, str):
+        return _cr("period_match", "fail", verdict)
+    tail = " and the value sits in that year's column or clause" if verdict is True else ""
+    return _cr("period_match", "pass", f"The {where} names {label}{tail}")
+
+
+def _source_resolves(item: m.DataItem, sources: dict[str, m.Source]) -> m.CheckResult:
+    src = sources.get(item.source_id)
+    if src is None:
+        return _cr("citations_resolve", "fail", f"Source {item.source_id} is not in this run's plan")
+    issue = _source_issue(src)
+    if issue:
+        return _cr("citations_resolve", "blocked", issue.capitalize())
+    foreign = sorted({c.doc_id for c in item.citations if src.doc_ids and c.doc_id not in src.doc_ids})
+    if foreign:
+        return _cr("citations_resolve", "fail", f"{_and(foreign)} does not belong to {src.source_id}")
+    return _cr("citations_resolve", "pass", f"Source {src.source_id} is {src.approval.replace('_', ' ')} and not revoked")
 
 
 def check_data_item(item: m.DataItem, pages_by_doc: dict[str, list[str]],
                     sources: dict[str, m.Source]) -> list[m.CheckResult]:
-    raise NotImplementedError("B-verify")
+    """pages_by_doc maps doc_id to page texts (page n at index n-1). Leave quarantined documents out."""
+    out: list[m.CheckResult] = []
+    roles: dict[str, list[str]] = {"evidence": [], "unit_context": [], "period_context": []}
+    json_docs: list[tuple[m.Citation, object]] = []
+    for cit in item.citations:
+        if isinstance(cit.locator, m.TextLocator):
+            out.append(_quote_exact(cit, pages_by_doc))
+            roles[cit.role].append(text.normalize(cit.quote))
+        else:
+            res, doc = _json_value(item, cit, pages_by_doc)
+            out.append(res)
+            if doc is not None and cit.role == "evidence":
+                json_docs.append((cit, doc))
+    ev, uc, pc = roles["evidence"], roles["unit_context"], roles["period_context"]
+    v = item.value
+    if v is not None:
+        if ev:
+            out.append(_value_in_quote(v, ev))
+            out.append(_unit_context(item, uc, ev))
+            p = _period_text(v, ev, pc)
+            if p is not None:
+                out.append(p)
+        elif not json_docs:
+            out.append(_cr("value_in_quote", "fail", "No evidence citation holds the value"))
+        if json_docs and not ev:
+            cit, doc = json_docs[0]
+            p = _json_period(v, doc, cit.locator.pointer)
+            if p is not None:
+                out.append(p)
+    out.append(_numbers_traced(item.statement, _data_cands(item, quotes=True), what="statement"))
+    out.append(_source_resolves(item, sources))
+    return out
 
 
-def check_conclusion(c: m.Conclusion, items: dict[str, m.Item],
-                     sources: dict[str, m.Source]) -> list[m.CheckResult]:
-    raise NotImplementedError("B-verify")
+# ---------------------------------------------------------------------------
+# Conclusions and computations
+# ---------------------------------------------------------------------------
 
 
-def check_extrapolation(e: m.Extrapolation, items: dict[str, m.Item], rubric: dict) -> list[m.CheckResult]:
-    raise NotImplementedError("B-verify")
+def _data_env(c: m.Conclusion, items: dict) -> dict[str, Decimal]:
+    env: dict[str, Decimal] = {}
+    for did in c.data_ids:
+        it = items.get(did)
+        if it is not None and it.kind == "data" and it.value is not None:
+            env[did] = base_value(it)
+    return env
+
+
+def conclusion_env(c: m.Conclusion, items: dict) -> dict[str, Decimal]:
+    """Base values of the cited data plus every computation, in order. Raises compute.ComputeError."""
+    env = _data_env(c, items)
+    for comp in c.computations:
+        env[comp.name] = compute.safe_eval(comp.expr, env)
+    return env
+
+
+def display_of(value: Decimal, display: str) -> tuple[bool, str]:
+    """Whether display shows value after half up at its own decimals, and what it should show.
+    "38.2%" reads the value as a fraction, "€1.2 billion" divides by the word, "2.5" is as is."""
+    toks = scan_numbers(text.normalize(display), include_labels=True)
+    if not toks:
+        return False, "a number"
+    t = toks[0]
+    x = value * 100 if t.pct else value / WORD_FACTOR[t.word] if t.word else value
+    shown = half_up(x, t.places)
+    expect = f"{Decimal(shown):,}" + ("%" if t.pct else "") + (f" {t.word}" if t.word else "")
+    return Decimal(shown) == t.number, expect
+
+
+def _computations(c: m.Conclusion, items: dict) -> m.CheckResult | None:
+    if not c.computations:
+        return None
+    env = _data_env(c, items)
+    problems: list[str] = []
+    for comp in c.computations:
+        used = compute.ids_in(comp.expr)
+        stray = [r for r in used if r not in c.data_ids]
+        if stray:
+            problems.append(f"{comp.name} uses {_and(stray)}, which the conclusion does not cite")
+            continue
+        no_value = [r for r in used if r not in env]
+        if no_value:
+            problems.append(f"{comp.name} uses {_and(no_value)}, which has no value")
+            continue
+        try:
+            val = compute.safe_eval(comp.expr, env)
+        except compute.ComputeError as e:
+            problems.append(f"{comp.name}: {e}")
+            continue
+        env[comp.name] = val
+        if abs(val - _dec(comp.result)) > max(Decimal("1e-6"), abs(val) * Decimal("1e-9")):
+            problems.append(f"{comp.name}: the stored result is {comp.result}, but it recomputes to {_fmt(val)}")
+        ok, expect = display_of(val, comp.display)
+        if not ok:
+            problems.append(f"{comp.name} = {_fmt(val)}, which rounds half up to {expect}, "
+                            f"but the display says {comp.display}")
+    if problems:
+        return _cr("computation", "fail", "; ".join(problems))
+    return _cr("computation", "pass", f"{len(c.computations)} computation(s) re-evaluated from data values")
+
+
+def check_conclusion(c: m.Conclusion, items: dict[str, m.Item], sources: dict[str, m.Source], *,
+                     rubric: dict | None = None) -> list[m.CheckResult]:
+    rub = rubric or RUBRIC
+    out = [_resolve(c.data_ids, items, sources, kinds=("data",))]
+    comp = _computations(c, items)
+    if comp is not None:
+        out.append(comp)
+    cands = [x for cp in c.computations for x in _text_cands(f"{c.id}:{cp.name}", cp.display)]
+    cands += _threshold_cands(c.criteria, rub) + _pool(c.data_ids, items, rubric=rub)
+    out.append(_numbers_traced(c.text, cands, what="conclusion"))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Extrapolations (BOFFIN scores)
+# ---------------------------------------------------------------------------
+
+_CMP = re.compile(r"(>=|<=|≥|≤|>|<)\s*(\d+(?:\.\d+)?)\s*(%|x|y)?")
+
+
+def _threshold(s: str | None) -> tuple[str, Decimal, str] | None:
+    """A rubric bar with exactly one comparison ("> 15%", "... dividends > 2x"). Worded bars give None."""
+    found = _CMP.findall(s or "")
+    if len(found) != 1:
+        return None
+    op, num, unit = found[0]
+    return op, Decimal(num), unit
+
+
+def _meets(x: Decimal, thr: tuple[str, Decimal, str]) -> bool:
+    op, num, unit = thr
+    t = num / 100 if unit == "%" else num
+    return {">": x > t, "<": x < t, ">=": x >= t, "≥": x >= t, "<=": x <= t, "≤": x <= t}[op]
+
+
+def _bar(thr: tuple[str, Decimal, str]) -> str:
+    return f"{thr[0]} {thr[1]}{thr[2]}"
+
+
+def _threshold_rule(e: m.Extrapolation, items: dict, crit: dict) -> m.CheckResult | None:
+    if e.score is None or crit.get("scoring") != "threshold":
+        return None
+    plus, minus = _threshold(crit.get("plus_one")), _threshold(crit.get("minus_one"))
+    if plus is None or minus is None:
+        return None  # a worded bar: the judges check it, code cannot
+    if not e.rule.input:
+        return _cr("threshold_rule", "fail",
+                   f"{e.criterion} is scored by a threshold, so rule.input must name a computation (C-###:name)")
+    cid, _, name = e.rule.input.partition(":")
+    c = items.get(cid)
+    if cid not in e.conclusion_ids:
+        return _cr("threshold_rule", "fail", f"The rule input {e.rule.input} is not among the cited conclusions")
+    if c is None or c.kind != "conclusion" or name not in {cp.name for cp in c.computations}:
+        return _cr("threshold_rule", "fail", f"The rule input {e.rule.input} names no computation")
+    try:
+        x = conclusion_env(c, items)[name]
+    except compute.ComputeError as err:
+        return _cr("threshold_rule", "fail", f"Could not recompute {e.rule.input}: {err}")
+    unit = plus[2]
+    shown = f"{half_up(x * 100, 1)}%" if unit == "%" else f"{half_up(x, 2)}{unit}"
+    if _meets(x, plus):
+        expected, why = 1, f"meets the +1 bar ({_bar(plus)})"
+    elif _meets(x, minus):
+        expected, why = -1, f"meets the -1 bar ({_bar(minus)})"
+    else:
+        expected, why = 0, f"sits between the bars ({_bar(minus)} and {_bar(plus)})"
+    if expected == e.score:
+        return _cr("threshold_rule", "pass", f"Recomputed {e.rule.input} = {shown}, which {why}: score {_score(expected)}")
+    return _cr("threshold_rule", "fail", f"Recomputed {e.rule.input} = {shown}, which {why}, so the score is "
+                                         f"{_score(expected)}, not {_score(e.score)}")
+
+
+def check_extrapolation(e: m.Extrapolation, items: dict[str, m.Item], rubric: dict | None, *,
+                        sources: dict[str, m.Source] | None = None) -> list[m.CheckResult]:
+    rub = rubric or RUBRIC
+    crit = rub.get("criteria", {}).get(e.criterion)
+    if crit is None:
+        res = _cr("citations_resolve", "fail", f"{e.criterion} is not a criterion in the rubric")
+    elif crit.get("category") != e.category:
+        res = _cr("citations_resolve", "fail", f"{e.criterion} belongs to {crit.get('category')}, not {e.category}")
+    elif e.score is None:
+        if not (e.na_reason or "").strip():
+            res = _cr("citations_resolve", "fail", "N/A without a stated reason")
+        elif e.conclusion_ids:
+            res = _resolve(e.conclusion_ids, items, sources, kinds=("conclusion",))
+            if res.result == "pass":
+                res = _cr("citations_resolve", "pass", "N/A with a stated reason, and the cited conclusions resolve")
+        else:
+            res = _cr("citations_resolve", "pass", "N/A with a stated reason")
+    elif not e.conclusion_ids:
+        res = _cr("citations_resolve", "fail", "A score must cite at least one conclusion")
+    else:
+        res = _resolve(e.conclusion_ids, items, sources, kinds=("conclusion",))
+    out = [res]
+    thr = _threshold_rule(e, items, crit) if crit else None
+    if thr is not None:
+        out.append(thr)
+    cands = _threshold_cands([e.criterion], rub) + _SCORE_CANDS + _pool(e.conclusion_ids, items, rubric=rub)
+    out.append(_numbers_traced(e.text, cands, what="score text"))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Charts
+# ---------------------------------------------------------------------------
+
+
+def _places(y: float) -> int:
+    exp = _dec(y).as_tuple().exponent
+    return max(0, -exp) if isinstance(exp, int) else 0
+
+
+def _chart_expected(g: m.Chart, ref: str, items: dict, envs: dict) -> tuple[Decimal | None, str | None]:
+    base, _, name = ref.partition(":")
+    it = items.get(base)
+    if it is None:
+        return None, f"{ref} does not exist"
+    if it.kind == "data":
+        v = it.value
+        if name or v is None:
+            return None, f"{ref} has no single value to plot"
+        if g.unit == "%":
+            return (_dec(v.number), None) if v.unit == "%" else (None, f"{base} is in {v.unit}, the chart is in %")
+        if v.unit != g.unit:
+            return None, f"{base} is in {v.unit}, the chart is in {g.unit}"
+        return to_base(_dec(v.number), v.scale) / SCALES[g.scale], None
+    if it.kind == "conclusion":
+        if not name:
+            return None, f"{ref} must name a computation (C-###:name)"
+        if base not in envs:
+            try:
+                envs[base] = conclusion_env(it, items)
+            except compute.ComputeError as e:
+                return None, f"{base} could not be recomputed: {e}"
+        if name not in envs[base]:
+            return None, f"{ref} names no computation"
+        x = envs[base][name]
+        return (x * 100 if g.unit == "%" else x / SCALES[g.scale]), None
+    return None, f"{ref} is a {it.kind} item; charts read data values and computations"
 
 
 def check_chart(g: m.Chart, items: dict[str, m.Item]) -> list[m.CheckResult]:
-    raise NotImplementedError("B-verify")
+    out = [_resolve(g.refs, items, None, kinds=("data", "conclusion"))]
+    problems: list[str] = []
+    envs: dict[str, dict[str, Decimal]] = {}
+    n = 0
+    for s in g.series:
+        for p in s.points:
+            n += 1
+            if p.ref.split(":")[0] not in g.refs:
+                problems.append(f"{s.name} {p.x}: {p.ref} is not listed in refs")
+                continue
+            exp, err = _chart_expected(g, p.ref, items, envs)
+            if err:
+                problems.append(f"{s.name} {p.x}: {err}")
+                continue
+            shown = half_up(exp, _places(p.y))
+            if Decimal(shown) != _dec(p.y):
+                problems.append(f"{s.name} {p.x}: plotted {p.y}, but {p.ref} gives {shown}")
+    if n == 0:
+        problems.append("The chart has no points")
+    if problems:
+        out.append(_cr("chart_values", "fail", "; ".join(problems)))
+    else:
+        out.append(_cr("chart_values", "pass", f"{n} of {n} points equal their data items or computations"))
+    return out
 
 
-def check_sentence(s: m.SummarySentence, items: dict[str, m.Item], holes: list[m.Hole]) -> list[m.CheckResult]:
-    raise NotImplementedError("B-verify")
+# ---------------------------------------------------------------------------
+# Brief sentences
+# ---------------------------------------------------------------------------
 
 
-def check_tier_rules(items: dict[str, m.Item], sources: dict[str, m.Source]) -> list[m.CheckResult]:
-    raise NotImplementedError("B-verify")
+def _item_text(it) -> str:
+    if it.kind == "data":
+        return it.statement
+    return it.title if it.kind == "chart" else it.text
 
 
-def status_from(checks: list[m.CheckResult]) -> str:
-    """Any fail: fail, any blocked: blocked, else pass."""
-    raise NotImplementedError("B-verify")
+def _copy_exact(s: m.SummarySentence, items: dict) -> m.CheckResult:
+    if len(s.derived_from) != 1:
+        return _cr("copy_exact", "fail", "A copied sentence must cite exactly one item")
+    ref = s.derived_from[0]
+    it = items.get(ref)
+    if it is None:
+        return _cr("copy_exact", "fail", f"{ref} does not exist")
+    a, b = text.normalize(s.text).strip(), text.normalize(_item_text(it)).strip()
+    if a == b:
+        return _cr("copy_exact", "pass", f"Equals {ref} exactly")
+    diff = text.diff_segments(a, b)
+    return _cr("copy_exact", "fail", f"Differs from the text of {ref} in {text.changed_chars(diff)} character(s)",
+               diff=diff)
+
+
+def check_sentence(s: m.SummarySentence, items: dict[str, m.Item], holes: list[m.Hole], *,
+                   rollup: m.Rollup | None = None, rubric: dict | None = None,
+                   sources: dict[str, m.Source] | None = None) -> list[m.CheckResult]:
+    """Pass rollup when a sentence cites "rollup", or its scorecard numbers come back blocked."""
+    out = [_resolve(s.derived_from, items, sources, kinds=("data", "conclusion", "extrapolation", "chart"),
+                    holes=holes, allow_rollup=True)]
+    if s.mode == "copied":
+        out.append(_copy_exact(s, items))
+        return out
+    blocked = None
+    if "rollup" in s.derived_from and rollup is None:
+        blocked = "The rollup was not given, so the scorecard numbers could not be traced"
+    cands = _pool(s.derived_from, items, rubric=rubric or RUBRIC, rollup=rollup)
+    out.append(_numbers_traced(s.text, cands, what="sentence", blocked_reason=blocked))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Tier rules
+# ---------------------------------------------------------------------------
+
+_STOP = set("the a an of in for and at on to was were is are by with as its their our fiscal year fy million "
+            "billion thousand eur usd per from than that this which be been has had have end total".split())
+
+
+def _tier(it, sources: dict) -> str:
+    src = sources.get(it.source_id) if sources else None
+    return src.tier if src is not None else it.source_tier
+
+
+def _words(s: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z]+", s.lower()) if w not in _STOP and len(w) > 1}
+
+
+def _same_metric(a: m.DataItem, b: m.DataItem) -> bool:
+    """Same unit, same period years, and the statements share most of their content words."""
+    va, vb = a.value, b.value
+    if va.unit != vb.unit or period_key(va.period or "")[0] != period_key(vb.period or "")[0]:
+        return False
+    wa, wb = _words(a.statement), _words(b.statement)
+    return bool(wa and wb) and len(wa & wb) / min(len(wa), len(wb)) >= 0.6
+
+
+def _agrees(ref: m.DataItem, shown: m.DataItem) -> bool:
+    """shown's number equals ref's value at shown's scale and decimals ("18.7 billion" vs 18,742 million)."""
+    toks = scan_numbers(text.normalize(shown.value.as_reported), include_labels=True)
+    places = toks[0].places if toks else _places(shown.value.number)
+    if ref.value.unit == "%":
+        x = _dec(ref.value.number)
+    else:
+        x = to_base(_dec(ref.value.number), ref.value.scale) / SCALES[shown.value.scale]
+    return Decimal(half_up(x, places)) == _dec(shown.value.number)
+
+
+def _shown(it: m.DataItem) -> str:
+    v = it.value
+    return f"{v.as_reported}" + ("" if v.scale == "one" else f" {v.scale}") + ("" if v.unit == "%" else f" {v.unit}")
+
+
+def check_tier_rule(item, items: dict[str, m.Item], sources: dict[str, m.Source]) -> list[m.CheckResult]:
+    """tier_rule for one item: a tier 3 number needs priority or tier 2 support, a tier 2 number must
+    not contradict tier 1, and a conclusion may not rest on tier 3 data alone. [] when it does not apply."""
+    if item.kind == "conclusion":
+        data = [items[d] for d in item.data_ids if d in items and items[d].kind == "data"]
+        t3 = [d.id for d in data if _tier(d, sources) == "tier_3"]
+        if not t3:
+            return []
+        if len(t3) == len(data):
+            return [_cr("tier_rule", "fail", f"Every cited data item ({_and(t3)}) comes from a tier 3 source")]
+        return [_cr("tier_rule", "pass", f"Tier 3 items ({_and(t3)}) are not the only support")]
+    if item.kind != "data" or item.value is None:
+        return []
+    tier = _tier(item, sources)
+    if tier == "priority":
+        return []
+    others = [o for o in items.values()
+              if o.kind == "data" and o.id != item.id and o.value is not None
+              and o.verification.status not in ("fail", "blocked") and _same_metric(item, o)]
+    if tier == "tier_2":
+        t1 = [o for o in others if _tier(o, sources) == "priority"]
+        if not t1:
+            return [_cr("tier_rule", "pass", "No tier 1 figure for this metric and period, so the tier 2 value may stand")]
+        agree = [o for o in t1 if _agrees(o, item)]
+        if agree:
+            return [_cr("tier_rule", "pass", f"Agrees with {agree[0].id} (tier 1)")]
+        return [_cr("tier_rule", "fail", f"Contradicts {t1[0].id} (tier 1): {_shown(item)} here, "
+                                         f"{_shown(t1[0])} in the priority source")]
+    support = [o for o in others if _tier(o, sources) != "tier_3" and (_agrees(o, item) or _agrees(item, o))]
+    if support:
+        return [_cr("tier_rule", "pass", f"Corroborated by {support[0].id} ({_tier(support[0], sources)})")]
+    return [_cr("tier_rule", "fail", "Only a tier 3 source supports this number, and no priority or tier 2 item states it")]
+
+
+def check_tier_rules(items: dict[str, m.Item], sources: dict[str, m.Source]) -> dict[str, list[m.CheckResult]]:
+    """tier_rule results for every item they apply to, keyed by item id."""
+    out: dict[str, list[m.CheckResult]] = {}
+    for iid, it in items.items():
+        res = check_tier_rule(it, items, sources)
+        if res:
+            out[iid] = res
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Dispatcher
+# ---------------------------------------------------------------------------
+
+
+def check_item(item, *, items: dict[str, m.Item], sources: dict[str, m.Source],
+               pages_by_doc: dict[str, list[str]] | None = None, rubric: dict | None = None) -> list[m.CheckResult]:
+    """Every code check for one report item, by kind. Tier rules are separate (they read all items)."""
+    if item.kind == "data":
+        return check_data_item(item, pages_by_doc or {}, sources)
+    if item.kind == "conclusion":
+        return check_conclusion(item, items, sources, rubric=rubric)
+    if item.kind == "extrapolation":
+        return check_extrapolation(item, items, rubric, sources=sources)
+    return check_chart(item, items)

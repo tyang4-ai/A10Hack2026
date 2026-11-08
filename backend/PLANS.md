@@ -570,3 +570,15 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - An analyst-added source's api_key lives only in `store.get_secret(source.access.secret_ref)`, never on disk.
 - A stage that still raises NotImplementedError fails the run with "stage <x> is not built yet (<plan>)". On restart, runs left in progress become failed ("Interrupted").
 - Replay format: `backend/data/replay/<name>/{state.json, events.jsonl, vault/}` (text only), written by `Store.export_run`.
+
+**2026-11-07 8:05 PM, B-verify REPORT (accepted).**
+- `check_tier_rules(items, sources)` returns `dict[str, list[CheckResult]]` keyed by item id. There is also `check_tier_rule(item, items, sources)`.
+- `status_from([])` is `"pending"`: no checks run never counts as a pass.
+- `citations_resolve` on a revoked, quarantined or rejected source returns **blocked** (detail "source revoked: S-006"), not fail, and walks E to C to D, so one pass blocks every dependent. Repair must leave blocked items alone.
+- Extra keyword-only arguments: `check_conclusion(..., *, rubric=None)`, `check_extrapolation(e, items, rubric, *, sources=None)`, `check_sentence(s, items, holes, *, rollup=None, rubric=None, sources=None)`. Pass `rollup=` when a sentence cites "rollup", or it comes back blocked.
+- Helpers: checks `check_item` (dispatch by kind), `base_value`, `conclusion_env`, `display_of`, `json_pointer_get`, `with_fixed_locators`. text `closest_span`, `diff_segments`, `changed_chars`. numbers `scan_numbers`, `NumToken` (`sign_ambiguous`), `period_mentions`, `period_key`, `SCALES`, `WORD_FACTOR`. compute `ComputeError`, `ids_in`.
+- `quote_exact` gives one result per text citation. A pass with `closest_locator` means the page or offsets were corrected: apply it with `with_fixed_locators`. A fail carries `diff` and `closest_locator` for the recite repair.
+- A table-row data item needs `unit_context` and `period_context` citations (the header lines), or `period_match` fails.
+- `numbers_traced` accepts only a cited item's value or a computation's display. Other numbers in a cited item's quote don't count. Drafter and summarizer prompts must say so, and spell out small counts ("three years").
+- Check order: data items, then conclusions, then extrapolations and charts, then sentences (checks read the cited items' status).
+- Known limit: a dash followed by a space before a number is `sign_ambiguous`, so a dropped minus is not caught when the dash is spaced. Parenthesised negatives stay strict.

@@ -1,0 +1,18 @@
+Meridian Diagnostics AG: simulated test data in the style of an annual report. Fictional company, fictional figures.
+
+Consolidated statements of income
+(in millions of €)
+Fiscal year Note 2025 2024
+Revenue 4 18,742 17,906
+Cost of sales (10,233) (9,871)
+Gross profit 8,509 8,035
+Research and development expenses (1,688) (1,604)
+Selling and general administrative expenses (4,117) (3,982)
+Other operating income 63 48
+Other operating expenses (41) (57)
+Operating income 2,726 2,440
+Financial income, net (148) (171)
+Income before income taxes 2,578 2,269
+Income tax expenses (684) (602)
+Net income 1,894 1,667
+Basic earnings per share (in €) 1.69 1.49
