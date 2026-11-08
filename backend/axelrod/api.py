@@ -216,7 +216,7 @@ def _install_routes(app: FastAPI) -> None:
     app.get(f"{p}/runs/{{run_id}}/documents/{{doc_id}}/pages/{{page}}", response_model=m.DocumentPage)(read_page)
     app.get(f"{p}/runs/{{run_id}}/documents/{{doc_id}}/pages/{{page}}/image",
             response_class=Response)(read_page_image)                      # v0.3.1, image/png
-    app.delete(f"{p}/runs/{{run_id}}")(delete_run)                       # v0.3.1, RunDeleted
+    app.delete(f"{p}/runs/{{run_id}}", response_model=m.RunDeleted)(delete_run)   # v0.3.1
     app.get(f"{p}/runs/{{run_id}}/vault/tree", response_model=m.VaultNode)(vault_tree)
     app.get(f"{p}/runs/{{run_id}}/vault/file", response_model=m.VaultFile)(vault_file)
     app.get(f"{p}/runs/{{run_id}}/comments", response_model=m.CommentList)(list_comments)
