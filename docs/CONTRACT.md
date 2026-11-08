@@ -79,6 +79,8 @@ All paths below are relative to `NEXT_PUBLIC_API_BASE`.
 | P0 | `GET /runs/{run_id}/report` | | `AgentReport` | Partial while drafting. `rollup`, `certainty` and `holes` appear when `status` is `final` |
 | P0 | `GET /runs/{run_id}/summary` | | `HumanReport` | `not_started` until the summarize stage |
 | P0 | `GET /runs/{run_id}/documents/{doc_id}/pages/{page}` | | `DocumentPage` | Page text plus highlight spans for the citation viewer |
+| P1 | `GET /runs/{run_id}/documents/{doc_id}/pages/{page}/image?item_id={id}` | | `image/png` | v0.3.1. The stored PDF page as an image, with `item_id`'s quotes highlighted (all of the page's citations without it). 404 when no PDF is stored (HTML or JSON documents, replays, the mock): show the text page then |
+| P1 | `DELETE /runs/{run_id}` | | `RunDeleted` | v0.3.1. Deletes a finished run's own data: state, events, vault files. The shared document cache and recorded model answers stay. 409 while it runs, for replays, and for protected runs (the demo run) |
 | P1 | `POST /runs/{run_id}/sources` | `AddSourceRequest` | `Source` (201) | Only while awaiting approval. `api_key` is write-only and is never echoed |
 | P1 | `GET /runs/{run_id}/documents` | | `DocumentList` | Fetched documents |
 | P1 | `GET /runs/{run_id}/documents/{doc_id}` | | `Document` | Metadata, scan result, vault paths |
@@ -97,6 +99,8 @@ All paths below are relative to `NEXT_PUBLIC_API_BASE`.
 | P1 | `POST /runs/{run_id}/agents/{agent_id}/rerun` | `AgentRerunRequest` | `Agent` (201) | v0.3. Reruns one goon with instructions, in the same run. See section 14 |
 
 A stopped run rejects comments, edits, injections and agent chat (409, or a `rejected` comment) until it resumes.
+
+Binary routes (v0.3.1): the page image answers `image/png`, and errors use the usual JSON envelope.
 
 ## 4. Live updates: snapshot plus events
 

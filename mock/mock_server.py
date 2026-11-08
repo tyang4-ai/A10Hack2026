@@ -438,6 +438,18 @@ def read_events(run_id: str, after: int = Query(0, ge=0), limit: int = Query(500
             "run_status": r.status, "stage": r.stage}
 
 
+@app.delete(f"{PREFIX}/runs/{{run_id}}", response_model=m.RunDeleted)
+def delete_run(run_id: str):
+    """v0.3.1. Only a finished run (done, stopped, failed). Its events and vault files go, the shared caches stay."""
+    r = get_run(run_id)
+    if r.status not in ("done", "stopped", "failed"):
+        raise ApiError(409, "invalid_state", f"Run is {r.status}. Stop it before deleting it")
+    out = {"run_id": run_id, "events": len(r.released), "vault_files": len(_visible_paths(r)),
+           "note": "Run data removed. The shared document cache and recorded model answers stay."}
+    del RUNS[run_id]
+    return out
+
+
 @app.post(f"{PREFIX}/runs/{{run_id}}/stop", response_model=m.Run)
 def stop_run(run_id: str, req: m.StopRequest):
     r = get_run(run_id)
@@ -899,6 +911,16 @@ def read_page(run_id: str, doc_id: str, page: int):
                                    "status": it["verification"]["status"], "role": c["role"]})
     return {"doc_id": doc_id, "page": page, "pages": d["pages"], "content_type": d["content_type"],
             "text": FX["page_text"](doc_id, page), "highlights": highlights}
+
+
+@app.get(f"{PREFIX}/runs/{{run_id}}/documents/{{doc_id}}/pages/{{page}}/image")
+def read_page_image(run_id: str, doc_id: str, page: int, item_id: Optional[str] = None):
+    """v0.3.1. The real API returns the PDF page as a PNG with the item's quotes highlighted. The fixtures store
+    page text only, so the mock always answers 404 and the viewer falls back to the text page."""
+    r = get_run(run_id)
+    if doc_id not in r.docs:
+        raise ApiError(404, "not_found", f"{doc_id} has not been fetched in this run")
+    raise ApiError(404, "not_found", "No PDF page image in the mock: the fixtures store page text only")
 
 
 def _visible_paths(r: RunState) -> list[str]:
