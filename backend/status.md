@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V8-fork. Orchestrator: deploy and pre-R2 run on EC2 with the document cache on.
+- Running: V8-fork, B-fix-score, B-fix-s015.
 - Next: V6-resume (after V3 and V8). Then R2 on EC2 and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -21,6 +21,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V6-resume | 9 | builder | todo | | |
 | V7-chat | 10 | builder | done | 23 passed, 2 live | chat with any goon or Bobby through the gateway, read only, labeled not checked. About $0.003 (Haiku) and $0.006 (Sonnet), 2 to 4 s |
 | V8-fork | 11 | builder | running | | rerun from a step, model cache, orchestrator.start_from (cut first if late) |
+| pre-R2 | 12 | orchestrator | done | | run_20261108_5zqdvb on EC2, cache_mode documents, 16 sources (13 cache hits, 10 from the archive). 659 items (522 pass, 88 fixed, 49 fail = 92.6%), 52 holes, certainty 93, rollup +0.4 (4 of 6: rotic_level 0, rotic_vs_peers +1, secular_growth +1, leverage -1), brief 2.8 pages, $3.03, 6 min. Bobby: plan escalate, extract rework (S-015 extractors), repair proceed, brief proceed. **Bug: rotic_vs_peers +1 while its text says SHL trails both peers.** Fixes: B-fix-score, B-fix-s015 |
 | R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
 
 ## v1 plans (all done)
@@ -111,3 +112,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:20 AM: V2-gateway done and committed. V8-fork started.
 - Sun 12:28 AM: V3-rework done and committed. contract_smoke picks a goon with a model for the rerun check.
 - Sun 12:30 AM: deployed a4ab693. contract_smoke 76/76 on EC2. Pre-R2 run run_20261108_5zqdvb started (cache_mode documents, 16 sources).
+- Sun 12:37 AM: pre-R2 run done on EC2 ($3.03, 6 min, 4 of 6 scored). Found a judgment score whose sign contradicts its text. Launched B-fix-score and B-fix-s015.
