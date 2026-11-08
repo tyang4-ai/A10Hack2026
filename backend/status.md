@@ -5,8 +5,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, origin/main 69b40fc merged at 1:24 AM). Gordon's 1 AM change: the integrator runs next to us and shares EC2 (it owns `axelrod-web` on port 3000 and the `$default` route, we own the `axelrod` service on 8000 and its env). No scripted rehearsal, no READY FOR INTEGRATION. Cutoff: R2 done and the `DEMO RUN:` line posted by 3:15 AM.
-- **R2 running** on EC2 from 1:35 AM. Nobody else starts runs on EC2 until this line says "R2 done".
-- **Deploy at 1:34 AM:** this commit to EC2, `axelrod` service on port 8000 only. Then env for R2: `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`. `axelrod-web`, port 3000 and the `$default` route are not touched.
+- **R2 running** on EC2 from 1:26 AM: run_20261108_rzpoj7 (every source approved, budget $10). Nobody else starts runs on EC2 until this line says "R2 done".
+- **Deployed at 1:25 AM:** 4f10702 to EC2, `axelrod` service on port 8000 only. Then env for R2: `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`. `axelrod-web`, port 3000 and the `$default` route are not touched.
 - Next: note the deploy here, deploy, R2 on EC2 (`CACHE_MODELS=record`, `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`), marked "R2 running" here so nobody else starts runs on EC2. Compare it with demo-ok-1, pick, and make the first line `DEMO RUN: <run id> (picked <time>)` with the demo env under it.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -139,4 +139,5 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:13 AM: B-fix-s015 done and committed. B-fix-due started.
 - Sun 1:20 AM: scripted G6b rehearsals on EC2: four runs, the last three all PASS. DEMO_PACING=0.8 recommended. DEMO.md rewritten for the webapp.
 - Sun 1:24 AM: Gordon's 1 AM change of plan received. origin/main 69b40fc merged. G6b cut, B-rehearse cut (already committed). No READY FOR INTEGRATION: the DEMO RUN line instead.
-- Sun 1:33 AM: B-fix-due done and committed (S-014 maturity fails 8 to 0, S-012 7 to 1, one old false pass now fails). Offline suite 924 passed. Deploy and R2 noted here first.
+- Sun 1:24 AM: B-fix-due done and committed (S-014 maturity fails 8 to 0, S-012 7 to 1, one old false pass now fails). Offline suite 924 passed. Deploy and R2 noted here first.
+- Sun 1:26 AM: deployed 4f10702 (env for R2 set). R2 started: run_20261108_rzpoj7.
