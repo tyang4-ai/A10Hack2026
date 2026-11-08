@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2, waiting on the port approval). B-fix-checks (R0 fixes). Verifier (G3). W1 is 5/5 done.
+- Running: A-deploy (W2, waiting on the port approval). Rehearsal R0b (full SHL run, laptop, live). Verifier (G3). W1 is 5/5 done.
 - Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -32,7 +32,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-draft | builder | R0 fix | done | 35 passed (suite 442), 1 live | live on R0 data: 5 of 6 scored, ROTIC -1 at 9.8% (3 of 10 years, low confidence), all 12 conclusions pass or fixed. Tuning spend about $9 |
 | B-fix-repair | builder | R0 fix | done | 50 passed (suite 457) | code's threshold score wins (9.996% keeps -1), judgment scores only move toward 0 or N/A, blocked items never repaired |
 | B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
-| B-fix-checks | builder | R0 fix | running | | 3 period-check refinements from B-fix-extract (one false-pass risk) |
+| B-fix-checks | builder | R0 fix | done | 75 passed (suite 465) | planted 13/13 caught, clean 13/13. Own clause beats headers, comparison bases, nil cells, exact threshold, adjacent-year averages. Old vs new on stored runs: 9 fail-to-pass (all right), 0 pass-to-fail |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
 | B-p1 | builder | W3 | todo | | |
 
@@ -133,3 +133,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:52 PM: B-baseline done ($0.56). Added S-002 p.6 to N-01 and N-06 in plan.json (FY2026 adjusted EBIT and free cash flow, found by the baseline).
 - Sat 8:49 PM: B-live done. All demo beats pass live. DEMO.md written. Tail shows NEXT lines by default (orchestrator, cli.py), "Source revoked: S-006" capitalization fixed (checks.py).
 - Sat 8:38 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.
+- Sat 9:42 PM: all R0 fixes in (brief, extract, draft, repair, checks). Started rehearsal R0b.
