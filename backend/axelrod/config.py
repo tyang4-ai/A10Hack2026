@@ -38,6 +38,8 @@ ENV_VARS: dict[str, str] = {
     "api_key": "AXELROD_API_KEY",
     "public_ui_url": "PUBLIC_UI_URL",
     "stage_pacing": "STAGE_PACING",
+    "fetch_pacing": "FETCH_PACING",
+    "verify_pacing": "VERIFY_PACING",
     "protected_runs": "PROTECTED_RUNS",
     "demo_faults": "DEMO_FAULTS",
     "test_page_url": "TEST_PAGE_URL",
@@ -66,6 +68,8 @@ class Settings(BaseModel):
     api_key: str | None = None                               # AXELROD_API_KEY
     public_ui_url: str | None = None                         # PUBLIC_UI_URL (CLI prints run links)
     stage_pacing: float = 0.0                                # STAGE_PACING (seconds of pause at the start of each stage)
+    fetch_pacing: float = 0.0                                # FETCH_PACING (seconds before each fetch decision)
+    verify_pacing: float = 0.0                               # VERIFY_PACING (seconds per judge call, inside its model slot)
     protected_runs: list[str] = []                           # PROTECTED_RUNS comma-separated run ids DELETE refuses
     demo_faults: str = ""                                     # DEMO_FAULTS: planted faults (simulated), from fetch,judge
     test_page_url: str | None = None                         # TEST_PAGE_URL (planted page S-010, served by our own API)
