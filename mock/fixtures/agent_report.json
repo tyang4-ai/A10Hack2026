@@ -2832,6 +2832,17 @@
             "diff": null,
             "closest_locator": null,
             "unsupported_spans": []
+          },
+          {
+            "check": "tier_rule",
+            "method": "code",
+            "result": "pass",
+            "detail": "No tier 1 figure for this metric and period, so the tier 2 value may stand",
+            "model_id": null,
+            "agent_id": null,
+            "diff": null,
+            "closest_locator": null,
+            "unsupported_spans": []
           }
         ],
         "attempts": [],

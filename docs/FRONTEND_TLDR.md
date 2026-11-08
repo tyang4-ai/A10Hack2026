@@ -1,6 +1,8 @@
 # TLDR for the frontend Claude
 
-You are building the UI for **Axelrod**, a hackathon project (SCU ACM AWS x A10 Hack, Devpost deadline Sun Nov 8, 9:00 AM PT). Gordon builds the backend. You only touch `frontend/`. The API is fixed by `contract/` and `docs/CONTRACT.md`. Build against the mock server now, then switch the base URL to the real API.
+You are building the dashboard for **Axelrod**, a hackathon project (SCU ACM AWS x A10 Hack, Devpost deadline Sun Nov 8, 9:00 AM PT). You work on the `frontend` branch, in `frontend/` only. Gordon builds the backend on the `backend` branch. The shared contract lives on `main` in `contract/` and `docs/CONTRACT.md`. Pick up changes with `git fetch origin && git merge origin/main`.
+
+Tong's scaffold (Vite + React + TS, with the API behind one `Api` interface in `src/api/`) was built from an earlier draft, `docs/API.md`, before the contract existed. So the first job is moving `src/api/` onto the contract (section below). Then build against the mock server, and later switch `VITE_API_URL` to the real API.
 
 ## What Axelrod is, in four sentences
 
@@ -12,7 +14,7 @@ An analyst picks a company (the demo uses Siemens Healthineers), Axelrod plans w
 pip install -r mock/requirements.txt
 uvicorn mock.mock_server:app --reload --port 8000     # from the repo root
 # Swagger UI: http://localhost:8000/docs
-# .env: VITE_API_BASE=http://localhost:8000/api/v1
+# frontend/.env.local: VITE_API_URL=http://localhost:8000/api/v1   (unset = the scaffold's built-in mock)
 ```
 
 - `run_20261108_fx0001` is a finished run with data in every panel. Start here for layout work.
@@ -20,7 +22,44 @@ uvicorn mock.mock_server:app --reload --port 8000     # from the repo root
 - Stop, revoke, add source, comments, item edits and demo error injection all work.
 - The fixture company is fictional ("Northwind Instruments (fixture)", USD). The real demo company reports in EUR. Format from `value.unit`, never hardcode a currency.
 
+## Moving the scaffold onto the contract (do this first)
+
+Most of the change stays inside `src/api/`, because the rest of the app goes through the `Api` interface.
+
+1. **Types.** Vite won't serve files from outside `frontend/` by default, so copy the generated types in. Add a script to `package.json`: `"contract": "node -e \"require('fs').copyFileSync('../contract/types.ts','src/api/contract.ts')\""`. Run `npm run contract` after every merge from `main`, and have `src/api/types.ts` re-export what the app needs from `./contract`. Never edit `contract.ts` by hand.
+2. **Endpoints.** Map the draft calls in `http.ts` onto the contract:
+
+| Draft (`docs/API.md`) | Contract (`docs/CONTRACT.md`) |
+|---|---|
+| `POST /runs` returns `RunDetail` | `POST /runs` returns `Run`, which has `stage` instead of `steps` |
+| `GET /runs` returns `Run[]` | `GET /runs` returns `{runs}` |
+| `GET /runs/{id}/events?after=` returns `{events}` | Same path, returns `EventsPage`: `{events, last_seq, run_status, stage}` |
+| `GET /runs/{id}/sources` | `GET /runs/{id}/plan` returns `{needs, sources, ready}` |
+| `PATCH` tier, `PUT` order, `DELETE`, `POST sources/approve` | One `POST /runs/{id}/approval` with `decisions[]` (approved or rejected, plus tier and rank). Keep the edits local until "Approve & run" |
+| none | `POST /runs/{id}/sources/{sid}/revoke`, after approval |
+| `GET /runs/{id}/claims` | The items inside `GET /runs/{id}/report` |
+| `GET /runs/{id}/report` | `GET /runs/{id}/summary` for the brief, `GET /runs/{id}/report` for the agent report |
+
+3. **Field names.** Tiers `1`, `2`, `3` become `priority`, `tier_2`, `tier_3`. A `Claim` becomes one of `DataItem`, `Conclusion`, `Extrapolation` or `Chart` (field `kind`). `code_check` and `agent_check` become `verification.checks` (method `code` or `llm_judge`) plus `verification.status`. Event `decision: allow | deny` becomes `gateway.request` with `data.decision` (`allowed`, `blocked`, `flagged`), and event `summary` becomes `message`. Bull, base and bear become BOFFIN scores (`Extrapolation.score` of -1, 0 or +1). The `[S1]` markers in report text become `derived_from` on each brief sentence.
+4. **Pipeline view.** Keep the 12 steps if you like them, and drive them from `Run.stage`:
+
+| `Run.stage` | Draft steps |
+|---|---|
+| `plan` | 1 to 3 |
+| `approve` | 4 |
+| `collect` | 5 |
+| `extract` | 7, plus the data part of 6 (data is checked before anything is drafted) |
+| `draft` | 6 (conclusions and scores) |
+| `verify`, `repair` | 8 and 9 |
+| `summarize` | 10 |
+| `verify_summary` | 11 |
+| `complete` | 12 |
+
+5. **The built-in mock** (`src/api/mock.ts`). Use the Python mock server, because every one of its responses is validated against the contract. If you want an offline fallback, rebuild `mock.ts` from `mock/fixtures/*.json` instead of keeping hand-written data.
+
 ## Layout (think Adobe Lightroom panels plus a VS Code bottom drawer)
+
+The scaffold and `docs/DESIGN.md` may already settle the look, so keep what works. These are the pieces the demo needs.
 
 - **Top bar:** run picker, company and ticker, stage stepper (`Run.stage`), live cost meter (`usage.cost_usd`), counts, a mode badge (`FIXTURE` or `REPLAY` whenever `Run.mode` is not `live`, because simulated things must be labeled), and a big red **STOP** button (`POST /stop`, with a confirm).
 - **Left: three modules.** Sources, Agent report, Brief. Switch automatically as the stage advances, and let the analyst click back at any time.
@@ -69,8 +108,8 @@ uvicorn mock.mock_server:app --reload --port 8000     # from the repo root
 
 ## Rules
 
-- Import types from `contract/types.ts`. It's generated, so never edit it. Never edit `contract/`, `mock/` or `backend/`. If you need a shape change, ask Gordon and he changes `models.py` first.
-- Never call AWS from the browser. All calls go to `VITE_API_BASE`.
+- Types come from `contract/types.ts`, copied in by `npm run contract`. It's generated, so never edit it. Never edit `contract/`, `mock/` or `backend/`, and never edit the shared docs on the `frontend` branch. If you need a shape change, ask Gordon. He changes `models.py` on `main` first, then you merge `main`.
+- Never call AWS from the browser. All calls go to `VITE_API_URL`.
 - Label simulated things: fixture or replay mode, and the demo error-injection button (`POST /demo/inject-errors`).
 - Wording for certainty: "how well this is supported by checked evidence". Never "probability it's true".
 - Judges will ask you about your code, so keep it simple enough to explain.

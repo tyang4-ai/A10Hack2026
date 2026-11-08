@@ -1,6 +1,6 @@
 # Backend: pipeline, gateway, verification, AWS
 
-For Gordon's Claude. Read `CLAUDE.md` and `docs/CONTRACT.md` first. The API you serve must match `contract/models.py` exactly. `mock/mock_server.py` already implements every route against fixtures, so copy its routes and response shapes and replace the fixture logic with the real pipeline.
+For Gordon's Claude, working on the `backend` branch in `backend/`. Read `CLAUDE.md` and `docs/CONTRACT.md` first. The API you serve must match `contract/models.py` exactly. `mock/mock_server.py` already implements every route against fixtures, so copy its routes and response shapes and replace the fixture logic with the real pipeline.
 
 ## 1. Architecture
 
@@ -103,7 +103,7 @@ Call `contract/certainty.py` after every verification change and send the result
 5. Guardrail: Bedrock → Guardrails → create `axelrod-tripwire` with the prompt attacks filter set to High (Block) → create a version → note the id and version. Test it with the planted test page text.
 6. IAM role `axelrod-ec2` (trusted entity: EC2) with Bedrock InvokeModel and ApplyGuardrail, the S3 bucket and the two tables. If creating roles is blocked, ask an AWS mentor right away, since the whole deploy depends on it.
 7. EC2: Amazon Linux 2023, t3.medium, the role attached, inbound 8000 open (demo only), connect with EC2 Instance Connect. Install git and uv, clone the repo, run `uvicorn backend.axelrod.api:app --host 0.0.0.0 --port 8000` inside tmux.
-8. API Gateway → HTTP API → integration: HTTP URL `http://<ec2-public-dns>:8000/{proxy}` → route `ANY /{proxy+}` → enable CORS → `$default` stage. The frontend sets `VITE_API_BASE` to the invoke URL plus `/api/v1`.
+8. API Gateway → HTTP API → integration: HTTP URL `http://<ec2-public-dns>:8000/{proxy}` → route `ANY /{proxy+}` → enable CORS → `$default` stage. The frontend sets `VITE_API_URL` to the invoke URL plus `/api/v1`.
 9. Before each judging round: refresh the laptop credentials (only the CLI needs them), hit `/healthz`, and check that the instance is up.
 
 ## 9. The CLI (A10's "Launch a CLI agent")
@@ -120,7 +120,18 @@ Call `contract/certainty.py` after every verification change and send the result
 6. Deploy to EC2 behind API Gateway. Do the full SHL run, keep it, tag `demo-ok-1`.
 7. CLI, the planted injection test page, the live demo segment, then polish.
 
-## 11. Questions to prepare for
+## 11. Adopted from Tong's design draft (`docs/DESIGN.md`)
+
+- **Tiers by code.** A domain list in code assigns tiers. The planner can propose a lower tier, never a higher one. Only the analyst can promote a source.
+- **Tier rules** as the `tier_rule` check: a tier_3 source is never the only support for a number, and a tier_2 number must not contradict tier 1 for the same metric and period. A breaking claim fails, and it's another clear "blocked" moment in the demo.
+- **Context check on extracted data (P1).** An exact quote can still mislead when the qualifier sits just outside it ("excluding currency effects", "except Diagnostics"). For each agent-extracted data item, 3 small-model judges see the quote, the paragraph around it and the statement, and fail it if the statement drops a qualifier, flips a "not" or takes the quote out of context. This is the `context` check, and it's the "misleading" verdict from Tong's per-source validators.
+- **Quote on a different page** than the agent said: fix the page and keep a warning in the check detail. A quote found nowhere means the item fails.
+- **Baseline evaluation (P1, strong for judges).** Same SHL sources, one plain Claude report, the same checker on both. Plant the same errors in both and count what each catches. Hand-check about 20 key numbers. Track time and token cost for each.
+- **Cross-source contradictions (P2).** Compare data items for the same metric and period across sources, and flag disagreements.
+- **Revoke cascade (P1).** After a revoke, items citing that source turn `blocked` (`citations_resolve` fails with "source revoked"), so everything built on them loses that support. The mock does not simulate this cascade.
+- Not adopted: bull, base and bear scenarios. BOFFIN leaves valuation unscored on purpose, so scenarios would need their own labeled layer later. Also not adopted for tonight: Step Functions. It stays the production story, and EC2 runs the build.
+
+## 12. Questions to prepare for
 
 - *"What stops an agent from calling the network itself?"* Agents have no network client. A model can only ask for a tool call, and the harness executes it through the gateway, which denies by default. Production would add OS-level egress rules too.
 - *"Is LLM-verified really 100%?"* No. Code proves quotes, numbers and arithmetic. Wording is checked by 3 isolated judges, and their agreement goes straight into the certainty score.

@@ -507,6 +507,8 @@ def build_items() -> tuple[list[dict], dict]:
         if value:
             assert value["as_reported"] in quote, (iid, value["as_reported"])
             checks.append(check("value_in_quote", "code", "pass", f"'{value['as_reported']}' appears in the quote"))
+        if value and tier != "priority":
+            checks.append(check("tier_rule", "code", "pass", "No tier 1 figure for this metric and period, so the tier 2 value may stand"))
         if unit_ctx:
             cits.append(cite(doc_id, unit_ctx, role="unit_context"))
             checks.append(check("unit_context", "code", "pass", f"Scale '{value['scale']}' from '{unit_ctx}'"))

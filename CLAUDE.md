@@ -15,15 +15,22 @@ Axelrod is a self-verifying research harness for screening public companies. The
 
 ## Who owns what
 
-| Path | Owner | Notes |
-|---|---|---|
-| `backend/` | Gordon | FastAPI, pipeline, gateway, AWS |
-| `frontend/` | Teammate | React UI |
-| `contract/` | Gordon proposes, both agree | `models.py` is the source of truth |
-| `mock/` | Gordon | Must always match the contract |
-| `docs/` | Both | |
+| Path | Owner | Branch | Notes |
+|---|---|---|---|
+| `backend/` | Gordon | `backend` | FastAPI, pipeline, gateway, AWS |
+| `frontend/` | Tong | `frontend` | React dashboard (Vite + React + TS) |
+| `contract/` | Gordon proposes, both agree | `main` | `models.py` is the source of truth |
+| `mock/` | Gordon | `main` | Must always match the contract |
+| `docs/`, `CLAUDE.md`, `README.md` | Both | `main` | `docs/API.md` and `docs/DESIGN.md` are Tong's first drafts, superseded where they differ |
 
 Never edit the other person's folder. Ask them instead.
+
+## Branches
+
+- `main` holds the shared context only: `contract/`, `mock/`, `docs/`, `CLAUDE.md`, `README.md`. Contract changes are made here, by Gordon.
+- `backend` (Gordon) and `frontend` (Tong) branch off `main`. Each side only touches its own folder.
+- To pick up a contract change: `git fetch origin && git merge origin/main` on your branch. Never edit `contract/`, `mock/` or `docs/CONTRACT.md` on a feature branch, so these merges never conflict.
+- Final merge around 5:30 AM Sunday: merge `backend` and `frontend` into `main`, then tag `demo-ok-final`. Devpost links `main`, so make it the default branch on GitHub before submitting.
 
 ## Contract rules
 
@@ -43,7 +50,7 @@ python mock/build_fixtures.py                        # rebuild and re-validate t
 python contract/gen_types.py                         # regenerate contract/types.ts
 ```
 
-Frontend env: `VITE_API_BASE=http://localhost:8000/api/v1` for the mock, then the API Gateway invoke URL plus `/api/v1`.
+Frontend env: `VITE_API_URL=http://localhost:8000/api/v1` for the mock server, then the API Gateway invoke URL plus `/api/v1`. With `VITE_API_URL` unset, Tong's dashboard falls back to its built-in mock.
 
 ## Hackathon rules that bind the code
 

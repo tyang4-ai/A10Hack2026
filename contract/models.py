@@ -197,6 +197,8 @@ CheckName = Literal[
     "computation",       # computations re-evaluated from data values (code)
     "numbers_traced",    # every number in the text traces to a cited value (code)
     "threshold_rule",    # score recomputed from the rubric threshold (code)
+    "tier_rule",         # tier_3 never the only support for a number; tier_2 must not contradict tier 1 (code)
+    "context",           # statement keeps the meaning of the quote in its paragraph: no dropped "except" or "not" (llm_judge)
     "support",           # claim is directly supported by cited items (llm_judge)
     "faithfulness",      # summary sentence says no more than its items (llm_judge)
     "copy_exact",        # copied sentence equals the item text (code)

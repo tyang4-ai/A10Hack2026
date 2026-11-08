@@ -1,8 +1,12 @@
-.DS_Store
-__pycache__/
+!.env.example
 *.pyc
-.venv/
+.DS_Store
 .env
+.env.*
 .env.local
 .next/
+.pytest_cache/
+.venv/
+__pycache__/
 node_modules/
+venv/

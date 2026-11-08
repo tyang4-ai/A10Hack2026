@@ -8,7 +8,7 @@ Priorities: **P0** = the demo needs it, **P1** = should have, **P2** = stretch.
 
 | Thing | Rule |
 |---|---|
-| Base URL | `{API_BASE}` = `http://localhost:8000/api/v1` (mock), later the API Gateway invoke URL + `/api/v1` |
+| Base URL | `VITE_API_URL` in the frontend = `http://localhost:8000/api/v1` (mock), later the API Gateway invoke URL + `/api/v1`. Paths below are relative to it |
 | Health | `GET /healthz` (outside `/api/v1`) returns `Health` |
 | Auth | None for the hackathon. If `AXELROD_API_KEY` is set on the backend, send it as header `X-Axelrod-Key` |
 | CORS | Backend allows any origin |
@@ -63,7 +63,7 @@ any time: POST /stop → status stopped (kill switch). failed = backend error, s
 
 ## 3. Endpoints
 
-All paths below are under `{API_BASE}`.
+All paths below are relative to `VITE_API_URL`.
 
 | P | Method and path | Body | Returns | Notes |
 |---|---|---|---|---|
@@ -133,7 +133,9 @@ Every event has `seq`, `ts`, `run_id`, `type`, `stage`, `agent_id`, `level` and 
 
 ## 5. Plan and approval
 
-- `Source.tier` is `priority`, `tier_2` or `tier_3`. `rank` is the order inside a tier (1 = fetched first).
+- `Source.tier` is `priority`, `tier_2` or `tier_3` (Tong's draft called these 1, 2 and 3). `rank` is the order inside a tier (1 = fetched first).
+- Tiers come from a domain list kept in code: primary (filings, annual reports, IR, regulators, exchanges), reputable secondary (wire services, financial press, trade press), low trust (forums, blogs). The planner can propose a lower tier, never a higher one. Only the analyst can promote a source, by moving it at approval.
+- Tier rules, checked by code as `tier_rule`: a tier_3 source is never the only support for a number, and a tier_2 number must not contradict a tier 1 figure for the same metric and period.
 - `Source.scores.reliability` (0 to 1) feeds the certainty score of every data item from that source.
 - `Source.criteria` lists the BOFFIN criteria the source serves. The frontend can warn "if you reject this, rotic_vs_peers has no source left" by comparing the in-scope criteria (`contract/boffin_rubric.json` → `depths.screen`) against the criteria of sources that are still approved.
 - `ApprovalRequest.decisions` must include **every priority source** (approve or reject). Send `tier` and `rank` to record a drag reorder or a tier move. Non-priority sources you leave out become `auto_approved`. Analyst-added sources are approved unless you reject them.

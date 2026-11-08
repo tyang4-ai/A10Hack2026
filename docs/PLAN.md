@@ -10,9 +10,9 @@ Tracks: A10 Agent Harness (Prompt 2) and AWS. The whole team is undergrad, so th
 | 6:30 to 7:00 | Dinner, Heafey Atrium | Dinner |
 | 7:00 to 10:00 | Store, events and routes, gateway, SHL fetch and PDF text, extractor and data checker, pre-smoke | Sources module and approval, Traffic drawer, STOP, Revoke |
 | 10:00 to 1:00 | Draft, judges, repair, certainty, rollup, brief, verify_summary | Agent report module, inspector, document viewer with highlights, diffs |
-| 1:00 to 3:00 | Deploy to EC2 behind API Gateway. Full SHL run. Tag `demo-ok-1` | Brief with certainty highlighting. Switch `VITE_API_BASE` to the real API and fix integration bugs |
-| 3:00 to 5:30 | CLI, planted injection test page, live demo segment, prep for judge questions | Agent swarm, vault drawer, charts, scorecard, print layout |
-| 5:30 to 6:00 | Feature freeze. Tag `demo-ok-final` | Same |
+| 1:00 to 3:00 | Deploy to EC2 behind API Gateway. Full SHL run. Tag `demo-ok-1` | Brief with certainty highlighting. Switch `VITE_API_URL` to the real API and fix integration bugs |
+| 3:00 to 5:30 | CLI, planted injection test page, live demo segment, baseline comparison against plain Claude (`BACKEND.md` section 11), prep for judge questions | Agent swarm, vault drawer, charts, scorecard, print layout |
+| 5:30 to 6:00 | Feature freeze. Merge `backend` and `frontend` into `main`, check the demo from `main`, tag `demo-ok-final`, make `main` the default branch | Same |
 | 6:00 to 7:30 | Record the video while the AWS account still works. Slides. Devpost text in Gordon's voice. Submit early, since it stays editable | Same |
 | 7:30 to 8:30 | Two dry runs of the 4-minute pitch. Each person answers code questions about the other's half | Same |
 | 8:30 | Devpost Q&A (Bergin 116 per the website, the Atrium per the guide) | |
@@ -31,7 +31,7 @@ The doors lock around 8 PM. Stay in, or know who can let you back in.
 3. Block: a link to an unapproved domain gets blocked by default deny. Revoke a source mid-run, and the next request to it turns red. Our planted test page with a prompt injection gets flagged and quarantined (label it as our test page).
 4. Stop: hit STOP. The kill switch blocks the next model call.
 
-**1:40 to 3:00, the finished SHL run** (run earlier in the night):
+**1:40 to 3:00, the finished SHL run** (run earlier in the night). If the baseline comparison is done, open with its number: what our checker caught versus a plain Claude report.
 - The brief, highlighted by certainty, with the report gauge next to coverage.
 - Click a sentence, and follow it through the conclusion and the data item to the highlighted line on the annual report page.
 - A fixed item: an extractor's digit slip caught by code, shown as a diff.
