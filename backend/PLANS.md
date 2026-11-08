@@ -521,6 +521,50 @@ Stage W2. Agent: `builder`. Added 2026-11-07 8:15 PM from the G2 verifier's find
 
 ---
 
+## R0 fixes (from the full local rehearsal run)
+
+Added 2026-11-07 8:45 PM. The rehearsal `run_20261108_0bsu0o` (live models, STORE=local, all 10 sources) reached the report in about 5 minutes for $1.20, then failed at summarize. All the live gateway beats worked: 3 link-follows blocked, S-010 flagged PROMPT_ATTACK:HIGH and quarantined, the example.org link blocked. The report has 353 data items (289 pass, 16 fixed, 48 fail), 16 conclusions, 6 scores and 55 holes, but only 2 of 6 criteria are scored. The saved report is `backend/.data/r0_report.json`, and the run's state is under `backend/.data/r0/`. Read them for real examples, and never commit them. Three builders fix this in parallel, each on its own files.
+
+### B-fix-brief
+**Owns.** `axelrod/agents/base.py`, `axelrod/agents/summarizer.py`, `tests/test_agent_coerce.py` (new).
+**Problem.** `AgentOutputError: summarizer-01: brief_draft output failed validation twice: sections: Input should be a valid list`. Sonnet 5 sometimes returns a nested array or object field as a JSON-encoded string.
+**Tasks.**
+1. In `AgentRunner.ask`, before `output.model_validate`, walk the tool input against the output model's JSON schema. Wherever the schema expects an array or object but the value is a string, try `json.loads`, and keep the result only if it parses to the expected type. Do it recursively so nested fields are covered. Never coerce scalars. Log an `agent.log` line when a field was coerced.
+2. In the retry prompt after a validation error, say plainly that list and object fields must be real JSON arrays and objects, not strings.
+3. Check the summarizer's output model. If it nests deeper than the model can fill reliably, flatten it (code rebuilds the HumanReport anyway).
+4. Tests with fake outputs: a stringified list, a stringified nested object, a string that isn't JSON (still fails validation), and a scalar string field (left alone).
+**Acceptance.** Tests green. One live call (`AXELROD_LIVE=1`) of the summarizer on the mock fixture report validates. Under $0.30.
+
+### B-fix-extract
+**Owns.** `axelrod/agents/extractor.py`, `axelrod/stages/extract.py`, `tests/test_extract.py`.
+**Problem.** 48 data items fail: `period_match` 28, `value_in_quote` 18, `unit_context` 5, `quote_exact` 4, `tier_rule` 1 (correct behavior). Examples:
+- `'(4.2%)' is not in the quote 'Diagnostics comparable revenue decline of 4.2%'`
+- `'>31' is not in the quote 'The global addressable market for the Imaging segment ...'`
+- `The value has scale 'billion', but no unit_context citation names it`
+- `The evidence quote does not mention FY2026` (prose in S-002, the release)
+- `does not mention FY2019` and `FY2018` (S-005, the older report)
+- table rows quoted with the wrong cells (`'Imaging 6,461 6,60'`, 5 characters off)
+**Tasks.**
+1. Prompt: `value_as_reported` is copied character for character from the quote, exactly as printed. Direction words like "decline" or "decrease" go into the statement and metric, never into a sign or brackets the page doesn't print. No "~", ">" or "<" unless printed.
+2. Code: when the evidence quote itself names the scale next to the number ("€31 billion", "in millions of €"), cite that same span as the `unit_context` citation and take the scale from it (code, not the model).
+3. Code: when the model's period quote doesn't check out, look for the period on the same page in this order: the nearest line above the evidence that names the fiscal year or quarter, the page's heading lines, then (for releases) the document's cover-page period. Cite it as `period_context`.
+4. Tables: when a quote misses by a few characters because cells were joined differently, use the closest real span from `verify.text.closest_span`, but only when the difference is whitespace or cell order and the reported value is in that span.
+5. Use the failing examples in `backend/.data/r0_report.json` as test cases. Copy short excerpts of the page text into test fixtures, labeled as real SHL text.
+**Acceptance.** Tests green. A live presmoke on the pages behind the failing items (the S-002 and S-005 pages from plan.json, plus S-001 pages 15 and 155) shows at least 95% of data items pass or fixed. Under $0.50.
+
+### B-fix-draft
+**Owns.** `axelrod/agents/drafter.py`, `axelrod/stages/draft.py`, `tests/test_reason.py` (only add tests).
+**Problem.** rotic_level and rotic_vs_peers came out N/A because the drafter wanted a complete ten-year NOPAT and average-TICAP series and refused. The demo story (docs/PLAN.md) is the opposite: score ROTIC from the years we have, and let code lower the certainty because SHL has fewer than ten years of reports since listing (`finalize` already marks data coverage low). liquidity is N/A because C-015 failed `numbers_traced` (`'(€13,499 million)', '€4.5 billion' and '14.3%' do not match any cited value`), and C-001 failed the same way (`'€1,525 million'`).
+**Tasks.**
+1. Drafter prompt for 10-year criteria: compute the metric for every fiscal year where the inputs exist, as declared computations over D-ids (ROTIC = NOPAT / average TICAP, as the rubric defines them). Score against the rubric threshold on what is available, set confidence to match, and say how many years were used. Never refuse only because the series is shorter than ten years. Use N/A only when not even one year can be computed.
+2. rotic_vs_peers: compute the latest common fiscal year's ROTIC (or the closest proxy the rubric allows) for SHL and each peer from the cited D-ids (the SEC companyfacts items for GE HealthCare and Philips), then compare.
+3. numbers_traced: tell the drafter that every number in a conclusion's text must be a cited item's value as printed or a declared computation's display, and that any sum, difference, ratio or percentage it wants to state must be declared as a computation. Give one worked example in the prompt.
+4. Show the drafter enough data per group (check the row limit). The ROTIC group needs income statement and balance sheet rows for several years.
+5. Tests with fake models: a 3-year series gets a score (not N/A) with low coverage, and a conclusion stating an undeclared sum fails `numbers_traced` while the declared one passes.
+**Acceptance.** Tests green. A live check on the rehearsal run's verified data scores rotic_level and rotic_vs_peers (not N/A), with every conclusion pass or fixed. Load `backend/.data/r0` with `Store` and re-run only the draft, verify and repair stages on a copy. Under $1.
+
+---
+
 ## W3 plans
 
 Written loosely on purpose. The orchestrator sharpens them after G5 with what the full run showed.

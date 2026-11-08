@@ -5,8 +5,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2). B-live, B-baseline (W3, started early). Verifier (G3). W1 is 5/5 done.
-- Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run.
+- Running: A-deploy (W2). B-live, B-baseline (W3). B-fix-brief, B-fix-extract, B-fix-draft (R0 fixes). Verifier (G3). W1 is 5/5 done.
+- Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
+- Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
 ## Plans
 
@@ -26,6 +27,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | A-deploy | aws-operator | W2 | running | | |
 | B-g2fix | builder | W2 | done | suite 366 passed | skipped scan now quarantines, link-local blocked (metadata URL too), pre-approval policy shows system rules, fake runs labeled |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
+| B-fix-brief | builder | R0 fix | running | | summarizer output list-as-string crash |
+| B-fix-extract | builder | R0 fix | running | | value verbatim, unit and period context, table recite |
+| B-fix-draft | builder | R0 fix | running | | score ROTIC from available years, peers, declared computations |
 | B-live | builder | W3 | running | | revoke cascade, demo pacing, demo_live.py rehearsal, % column fix |
 | B-baseline | builder | W3 | running | | plain Claude report vs harness, same checks, labeled experiment |
 | B-p1 | builder | W3 | todo | | |
@@ -37,7 +41,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
 | G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
-| G3 Pipeline and pre-smoke | partial | Sat 8:36 PM | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
+| G3 Pipeline and pre-smoke | partial | Sat 8:32 PM | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
 | G4 Deploy | | | |
 | G5 Full SHL run, demo-ok-1 | | | |
 | G6 Demo rehearsal | | | |
@@ -109,4 +113,5 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
 - Sat 8:26 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
-- Sat 8:36 PM: B-reason done (W2 6/7, only A-deploy left). G3: live presmoke ok through every stage, $0.80. Verifier on W2 running.
+- Sat 8:32 PM: B-reason done (W2 6/7, only A-deploy left). G3: live presmoke ok through every stage, $0.80. Verifier on W2 running.
+- Sat 8:45 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.
