@@ -1,51 +1,55 @@
 # Live demo: the 3-minute webapp run
 
-This is the live part of the 3-minute demo (docs/PLAN.md, 0:15 to 1:20). The timings come from the scripted G6b rehearsals on EC2, Sun 2026-11-08 1:10 to 1:20 AM. Three runs passed every beat (`demo_live.py --webapp`, live Bedrock, the real guardrail, cached documents): run_20261108_h5suf7, run_20261108_vmhieu and run_20261108_5hddrr. A fourth, run_20261108_8c409b, passed everything but the time limit at the old 2 s pacing. Each live segment costs about $0.18.
+This is the live part of the 3-minute demo (docs/PLAN.md, 0:15 to 1:20). We demo in person and click it ourselves. Since 2:57 AM the server runs `STAGE_PACING=3` (a pause at the start of each stage) instead of the old per-fetch `DEMO_PACING`, which is gone from the code. The timings below were measured live by the integrator on run_20261108_0ntqmj at 3:10 AM. The live part costs about $0.10 to $0.20 up to STOP.
 
-Say these on stage: the plan is frozen (prepared before the event), the archive documents were collected before the event and are served from our S3 cache, and S-010 is our planted test page (simulated).
+Say these on stage: the plan is frozen (prepared before the event), the archive documents were collected before the event and are served from our S3 cache, and S-010 (the injection page), S-017 (the broken download) and the one malformed judge verdict are planted and simulated.
 
 ## Before the demo
 
-Server env on EC2 (`bash backend/infra/remote.sh --set-env KEY=VALUE ...` sets `/etc/axelrod.env` and restarts the service):
+Server env on EC2 (`bash backend/infra/remote.sh --set-env KEY=VALUE ...` sets `/etc/axelrod.env` and restarts only the `axelrod` service):
 
 ```
 CACHE_DOCUMENTS=on            # fetches are decided by the gateway, then served from the S3 cache
-CACHE_MODELS=off              # model calls stay live (replay is the Bedrock fallback, see below)
-DEMO_PACING=0.8               # seconds before each fetch. 0.8 lands STOP at about 52 s with a 10 s approval
+CACHE_MODELS=record           # model calls stay live, and each answer is also recorded for the replay fallback
+STAGE_PACING=3                # seconds of pause at the start of each stage (never at approve). STOP ends it at once
+DEMO_FAULTS=fetch,judge       # planted faults, labeled simulated: S-017 broken download, one malformed judge verdict
+PROTECTED_RUNS=run_20261108_rzpoj7,run_20261108_pin2ve    # DELETE refuses the demo run and its backup
 MAX_CONCURRENCY_SMALL=8       # fewer in-flight calls to discard at STOP (32 is for full runs)
-BUDGET_USD=1                  # cap per run. The live segment spends about $0.18
+BUDGET_USD=50                 # cap per run (a full run costs about $3)
 GUARDRAIL_ID=...              # already set: the tripwire must be live
 TEST_PAGE_URL=<invoke-url>/test-pages/injection.html
 ```
 
-We demo in person and click it ourselves (Gordon, 1 AM). Scripted rehearsals are cut. `DEMO_PACING` stays an env setting: raise it if the clicks need more time, and lower it if STOP comes late.
+`STAGE_PACING` is the knob: raise it if the clicks need more time.
 
 ## On stage
 
-Times are seconds from the launch command (rehearsal run_20261108_5hddrr, 10 s approval). With a 5 s approval everything comes about 5 s earlier.
+Times are seconds after clicking Approve (run_20261108_0ntqmj).
 
-| Time | Do | What appears |
+| When | Do | What appears |
 |---|---|---|
-| 0 s | In the terminal: `python -m backend.axelrod.cli run "Siemens Healthineers" --ticker SHL`. Switch to the webapp | The run is there. Bobby is the first agent |
-| 4 s | Nothing | The plan streams into Sources (frozen, say so). At 5 s Bobby's plan-gate call shows in the log: proceed |
-| 5 to 16 s | Approve every priority source, drag S-002 above S-001, reject S-016 (Philips 2023: one page, adds no data). Never touch S-006, S-009 or S-010. Click Approve | Approval committed. S-016 gets a reject rule |
-| 17 s | **Right away, click Revoke on S-006** in Sources. Don't wait for "next: S-006": at 0.8 s pacing it comes less than a second before the request | Traffic fills in, S-002 first. Each fetch says cache hit and when the copy was collected (2026-08-01 for the archive: say it was collected before the event) |
-| 39 s | Nothing | S-006's request turns red: R-revoke-S-006 |
-| 42 s | Nothing | S-009's off-site links turn red on their own: default deny, no rule allows them |
-| 45 s | Nothing | S-010, our planted test page (simulated), comes back flagged by Bedrock Guardrails (PROMPT_ATTACK) and is quarantined. No agent ever reads it |
-| 47 s | In the Agents window, stop one extractor that still shows queued, near the top of the list | Extract starts only after collect, and the first extractor calls go green. The stopped goon's next model call turns red (R-stop-<agent id>) while the other goons stay green |
-| 50 s | Press STOP | In-flight calls come back blocked ("Result discarded") and nothing is allowed afterwards. The run shows stopped |
+| Launch | In the terminal: `python -m backend.axelrod.cli run "Siemens Healthineers" --ticker SHL`. Switch to the webapp | The run is there. Bobby is the first agent. The plan streams into Sources (frozen, say so), then Bobby's plan-gate call shows in the log: proceed. A typo in the name still finds the plan, and the run notes say so |
+| Approval | Approve every priority source, drag S-002 above S-001, reject S-016 (Philips 2023: one page, adds no data). Never touch S-006, S-009, S-010 or S-017. Click Approve | Approval committed. S-016 gets a reject rule |
+| 0 to 3 s | **Right after Approve, click Revoke on S-006** in Sources, during the 3 s pause before collect | Policy updates with R-revoke-S-006 |
+| 3 to 19 s | Nothing | Traffic fills in, S-002 first. Each fetch says cache hit and when the copy was collected (2026-08-01 for the archive: say it was collected before the event) |
+| about 19 s | Nothing | S-006's request turns red: R-revoke-S-006 |
+| about 20 s | Nothing | S-009's off-site links turn red on their own (default deny, no rule allows them). S-010, our planted test page (simulated), comes back flagged by Bedrock Guardrails (PROMPT_ATTACK) and is quarantined |
+| about 21 s | Nothing | S-017, our planted broken download (simulated), answers HTTP 503 twice: the fetcher retries once, then marks it failed. It becomes a declared hole, not a silent gap |
+| about 22 to 27 s | In the Agents window, stop one extractor that still shows queued | Extract starts after the 3 s pause, and the first extractor calls go green at about 27 s. The stopped goon's next model call turns red (R-stop-<agent id>) while the other goons stay green |
+| a few seconds later | Press STOP | In-flight calls come back blocked ("Result discarded") and nothing is allowed afterwards. The run shows stopped |
 
-STOP landed at 42.5 to 51.7 s in the rehearsals, inside the 55 s budget.
+The malformed judge verdict (simulated) shows only in a run that reaches verify: one judge's answer has no verdict, code flags it in the log and reruns that judge. The live part stops in extract, so it isn't seen there. R2, the finished run, was made before the planted faults existed.
 
 CLI fallback for each click: `cli approve <run_id> --all`, `cli revoke <run_id> S-006 --reason "Analyst revoked mid-run"`, `cli stop <run_id> --reason "Presenter pressed STOP"`.
 
 ## After
 
-Open the finished SHL run for 1:20 to 2:35. Its id is the first line of `backend/status.md` ("DEMO RUN: ...").
+Open the finished SHL run for 1:20 to 2:35. Its id is the first line of `backend/status.md` ("DEMO RUN: ..."). In the source viewer, Page shows the real annual report page with the quote boxed (green pass, amber fixed, red fail). Text shows exactly what the checker matched.
+
+Test runs can go with "Delete other runs" on the home page. The demo run and its backup show "Demo" and the server refuses them.
 
 ## Fallbacks
 
-- **Bedrock is slow or throttles:** `bash backend/infra/remote.sh --set-env CACHE_MODELS=replay`. Model answers recorded in R2 are served at $0 (`cache_mode: documents_and_models`). Bobby's gate calls miss and go live. Say the model answers are recorded. Set it back to `off` afterwards.
+- **Bedrock is slow or throttles:** `bash backend/infra/remote.sh --set-env CACHE_MODELS=replay`. Recorded model answers (R2 and every run since, while `record` was on) are served at $0 (`cache_mode: documents_and_models`). Bobby's gate calls and the judge rerun miss and go live. Say the model answers are recorded. Set it back to `record` afterwards.
 - **The live run breaks:** open the finished run and walk the four steps through its recorded traffic. Say it's recorded.
 - **AWS is down:** on the laptop, the API serves the exported runs from `backend/data/replay/` as `mode: replay` (`STORE=local`). Say it's a replay.
