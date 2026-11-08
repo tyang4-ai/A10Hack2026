@@ -6,6 +6,8 @@ For the laptop we present from. Nothing on stage depends on the build machine. T
 
 The webapp is at the root. The API is under `/api/v1`, health at `/healthz`, Swagger at `/docs`.
 
+**Say on stage:** the documents come from our cache (collected before the event), and the agents' model answers are replayed from a recorded live run. Only agent chat is live. The plan is frozen, and S-010 (the test page) and S-017 (the broken download) are planted. All of these are labeled in the UI or here, and must be said out loud.
+
 ## Tabs to open
 
 1. The webapp home: `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com/`
@@ -59,7 +61,7 @@ Set on EC2 in `/etc/axelrod.env` by the build machine. The laptop never changes 
 | `MAX_CONCURRENCY_SMALL`, `MAX_CONCURRENCY_LARGE` | 48, 8 (since 4:03 AM) | More goons in parallel, so a full run aims for about 2:30. A run left going past STOP spends faster |
 | `DEMO_FAULTS` | fetch,judge | The planted faults, labeled simulated: S-017 is a broken download (503 twice, then a declared hole), and one judge verdict per run is malformed (flagged, the judge reruns) |
 | `CACHE_DOCUMENTS` | on | The gateway decides every fetch, then serves it from the S3 cache |
-| `CACHE_MODELS` | record | Model calls stay live and are recorded for the replay fallback. Runs say `cache_mode: documents` |
+| `CACHE_MODELS` | replay_only (since about 4:52 AM) | Every agent model call is served from a recorded run (run_20261108_5rzsat, a live recording run, $3.25). Only agent chat calls Bedrock live. A recorded answer that's missing is blocked and becomes a declared hole, never a live call. A full run takes about 63 s from Approve and costs $0. Runs show the CACHED badge and say `cache_mode: documents_and_models` |
 | `BUDGET_USD` | 50 | Per run |
 | `PROTECTED_RUNS` | rzpoj7, pin2ve | Delete refuses the demo run and its backup |
 
@@ -68,6 +70,8 @@ Check from the build machine: `bash backend/infra/remote.sh 'grep -E "^(STAGE_PA
 ## The live segment, click by click
 
 Times are seconds from the moment you click **Approve and run**. Measured with `STAGE_PACING=3` and the old concurrency on the deployed URL (run_20261108_0ntqmj, 3:05 AM, a headless browser with all sources approved). With `STAGE_PACING=1` since 4:03 AM, expect every beat about 2 to 4 seconds earlier (two pauses of 1 s instead of 3 s). The order stays the same. Revoking S-006 right after approval still works, and the first rehearsal gives the real numbers.
+
+**Under `replay_only` (since about 4:52 AM) model answers come back at once, so everything after collect is much faster: a whole run finishes about 63 s after Approve.** STOP before that, or the run completes on its own. If the beats come too fast, ask the build machine to raise `STAGE_PACING` (the user may set about 5). Approval changes (the drag, the reject, the revoke) are being checked against the recording: see the note at the end of this section.
 
 | When | What happens | What you do |
 |---|---|---|
@@ -88,6 +92,8 @@ Rehearsals (fill in with a stopwatch):
 | Rehearsal 1 | | | | |
 | Rehearsal 2 | | | | |
 
+**Open question (5:00 AM):** the recording approved every source in plan order, with nothing revoked. If the drag, the reject or the revoke change the prompts, those model calls miss the recording and show as BLOCKED, and their work becomes holes. The backend session is checking. Until it answers, rehearse once with the exact demo approval and watch Traffic for blocked `model.invoke` lines.
+
 If there isn't enough time between beats, ask the build machine to raise `STAGE_PACING` (`bash backend/infra/remote.sh --set-env STAGE_PACING=<seconds>`), and write the new value here.
 
 ## 10 minutes before
@@ -95,7 +101,7 @@ If there isn't enough time between beats, ask the build machine to raise `STAGE_
 - [ ] `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com/healthz` shows `{"ok":true,"version":"0.3.1","mode":"live"}`.
 - [ ] The home page lists run_20261108_rzpoj7 and run_20261108_pin2ve.
 - [ ] Open the three tabs. Tab 2 on Read.
-- [ ] One warm-up run: `axelrod run ...`, approve, STOP at once (about $0.15). It warms Bedrock and checks the whole path. Then delete it from the home page (Delete on its row, then confirm).
+- [ ] One warm-up run: `axelrod run ...`, approve, STOP at once ($0 under replay_only). It checks the whole path. Then delete it from the home page (Delete on its row, then confirm).
 - [ ] The build machine confirms `STAGE_PACING=1` and `DEMO_FAULTS=fetch,judge` (command above).
 - [ ] Notifications off (Windows: Do not disturb). Slack and Discord closed.
 - [ ] Charger in. Phone hotspot ready.
@@ -104,7 +110,7 @@ If there isn't enough time between beats, ask the build machine to raise `STAGE_
 
 ## If something breaks
 
-- **Bedrock slow or throttling.** The build machine sets `CACHE_MODELS=replay`: recorded model answers, labeled `documents_and_models`. Say so. It's untested on the live segment until a rehearsal has run with `record`.
+- **Bedrock slow or throttling.** Agent model calls already come from the recording (`replay_only`), so only agent chat depends on Bedrock. If chat is slow, skip it.
 - **The webapp breaks but the API answers.** Run the webapp on the laptop, pointed at the deployed API:
   ```
   cd frontend
