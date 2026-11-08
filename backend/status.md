@@ -5,8 +5,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-extract, B-reason, B-brief, B-cli, A-deploy (W2), verifier (G2). W1 is 5/5 done.
-- Next: finish G2 when B-verify and the verifier report. Then G3 (presmoke with live Bedrock).
+- Running: B-extract, B-reason, B-brief, B-cli, A-deploy, B-g2fix (W2). W1 is 5/5 done.
+- Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
 
 ## Plans
 
@@ -24,6 +24,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-brief | builder | W2 | running | | |
 | B-cli | builder | W2 | running | | |
 | A-deploy | aws-operator | W2 | running | | |
+| B-g2fix | builder | W2 | running | | G2 findings: fail closed on skipped scan, deny link-local, pre-approval policy view, label fake runs |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
 | B-live | builder | W3 | todo | | |
 | B-baseline | builder | W3 | todo | | |
@@ -35,7 +36,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 |---|---|---|---|
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
-| G2 Core | partial | Sat 8:01 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Waiting on the verifier |
+| G2 Core | pass | Sat 8:10 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
 | G3 Pipeline and pre-smoke | | | |
 | G4 Deploy | | | |
 | G5 Full SHL run, demo-ok-1 | | | |
@@ -69,6 +70,9 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Known issues
 
+- G2 minor, left as is: allow rules ignore scheme and port, and the path prefix has no segment boundary (same host only, low risk). Cost in event messages uses `:.4f` (not a report value).
+- The workshop account id is in RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md`. AWS doesn't treat account ids as secret, and the account goes away after the event, but scrub them before the repo goes public if there's time.
+
 - The gateway does not refuse link-local or private hosts, so an analyst-added source could point at instance metadata. EC2 requires IMDSv2 (A-deploy). Optional hardening in W3: deny 169.254.0.0/16 in the gateway.
 
 - Verify limit: a dash followed by a space before a number ("– 9,871") could be a minus or a range dash, so a dropped minus is not caught there. Negatives in parentheses are always strict.
@@ -92,3 +96,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:53 PM: B-ingest, B-gateway, B-shl-plan done. Pushed plan.json and the planted test page so its raw URL answers.
 - Sat 8:01 PM: W2 launched early (6 agents). G2 checks 3 to 5 pass. Verifier running on the 4 finished W1 plans.
 - Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.
+- Sat 8:10 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.

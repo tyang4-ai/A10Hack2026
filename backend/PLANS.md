@@ -505,6 +505,22 @@ Stage W2. Agent: `builder`. Added 2026-11-07 8:00 PM because the repo stays priv
 
 ---
 
+## B-g2fix
+
+Stage W2. Agent: `builder`. Added 2026-11-07 8:10 PM from the G2 verifier's findings. Small and surgical.
+
+**Owns.** `axelrod/fetch/ingest.py`, `axelrod/gateway.py`, `axelrod/store/state.py`, `axelrod/store/__init__.py`, `tests/test_ingest.py`, `tests/test_gateway.py`, `tests/test_store.py`. Change only what the tasks need. These are finished W1 files.
+
+**Tasks.**
+1. Fail closed on a skipped scan (verifier finding 1, major). In `fetch/ingest.py`, an untrusted source (kind news, forum or other, or tier_3) is quarantined unless the scan verdict is `clean`. `skipped` (no guardrail configured) and `error` both quarantine, with a plain reason ("no guardrail configured, untrusted source quarantined"). Trusted sources are never scanned and never quarantined. Update the B-ingest tests that expected skipped to release, and add one that proves the planted page is quarantined with `GUARDRAIL_ID` unset.
+2. Deny link-local hosts (finding 3). In `Gateway.decide`, a target whose host is an IPv4 address in 169.254.0.0/16, the IPv6 address fd00:ec2::254, or any IPv6 link-local address (fe80::/10) is blocked before any allow rule, with a readable reason ("link-local address, never fetched"). Loopback and private addresses stay as they are, because local runs serve the test page from 127.0.0.1. Add tests, including an analyst-added source at http://169.254.169.254/latest/meta-data/ that is approved and still blocked.
+3. Pre-approval policy view (finding 4). Before approval, `GET /policy` (`RunState.policy_view`) shows what the gateway already enforces: `R-sys-models` and the role scopes, plus default deny, as the mock does (see `mock/build_fixtures.py` `build_policy`). Version 0 is fine. Add a test.
+4. Label fake-model runs (finding 6). When `FAKE_MODELS=1`, `create_run` adds a `Run.notes` line "Simulated: model answers come from offline fakes (FAKE_MODELS=1)". `mode` stays `live` (the contract has no other value for it).
+
+**Acceptance.** `.venv/Scripts/python -m pytest -q backend/tests -m "not live"` is green, apart from failures in W2 test files you don't own. List any such failures in the REPORT, since W2 builders are mid-work.
+
+---
+
 ## W3 plans
 
 Written loosely on purpose. The orchestrator sharpens them after G5 with what the full run showed.
@@ -583,7 +599,7 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - Check order: data items, then conclusions, then extrapolations and charts, then sentences (checks read the cited items' status).
 - Known limit: a dash followed by a space before a number is `sign_ambiguous`, so a dropped minus is not caught when the dash is spaced. Parenthesised negatives stay strict.
 
-**2026-11-07 8:10 PM, B-testpage REPORT.**
+**2026-11-07 8:07 PM, B-testpage REPORT.**
 - `Settings.test_page_url` (`TEST_PAGE_URL`). `GET` and `HEAD /test-pages/{name}` serve `backend/data/test_pages/<name>.html` with `X-Axelrod-Simulated: true`, outside `/api/v1`, with no key needed. The plan stage swaps the planted page's URL, domain and rationale when `TEST_PAGE_URL` is set. It finds the page by its plan.json URL plus "(simulated)" in the title, not by the id.
 - `R-allow-S-010` covers the API host and the path prefix `/test-pages/injection.html` only. `/api/v1/*` on the same host stays default deny. Rules ignore the port.
 - The gateway does not refuse loopback, private or link-local hosts. Mitigation: EC2 requires IMDSv2 (sent to A-deploy). Possible hardening for B-live: deny 169.254.0.0/16 in `decide`.
