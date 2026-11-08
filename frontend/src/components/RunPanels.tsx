@@ -27,7 +27,6 @@ export function Traffic() {
           <input type="checkbox" checked={onlyBad} onChange={(e) => setOnlyBad(e.target.checked)} />
           Show only blocked and flagged
         </label>
-        <span className="text-desk-muted">Every agent request goes through the gateway. Only approved sources are allowed; everything else is denied.</span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
       <table className="w-full border-collapse">
@@ -61,7 +60,7 @@ export function Traffic() {
                   {d.target}
                 </td>
                 <td className="px-2 font-semibold">{d.decision.toUpperCase()}</td>
-                <td className="px-2 whitespace-nowrap text-desk-muted">{d.rule_id ?? (/kill|stop/i.test(d.reason) ? "kill switch" : "default deny")}</td>
+                <td className="px-2 whitespace-nowrap text-desk-muted">{d.rule_id ?? (/kill|stop/i.test(d.reason) ? "stopped" : "default deny")}</td>
                 <td className="px-2 text-right tabular-nums">{d.latency_ms}</td>
                 <td className="px-2 text-right tabular-nums">{d.tokens_in !== null ? `${count(d.tokens_in)} / ${count(d.tokens_out ?? 0)}` : ""}</td>
                 <td className="px-2 text-right tabular-nums">{d.cost_usd !== null ? usd(d.cost_usd) : ""}</td>
@@ -126,7 +125,6 @@ export function Agents() {
             {k}
           </span>
         ))}
-        <span className="ml-auto">Click an agent to open its chat, where you can also stop it.</span>
       </div>
     </div>
   );
@@ -163,7 +161,7 @@ export function Vault() {
             )}
           </>
         ) : (
-          <span className="text-desk-muted">Raw downloads, extracted text, agent transcripts and verification files. Pick a file to preview it.</span>
+          <span className="text-desk-muted">Pick a file to preview it.</span>
         )}
       </div>
     </div>

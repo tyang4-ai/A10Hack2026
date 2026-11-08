@@ -95,7 +95,7 @@ function Sentence({ s }: { s: SummarySentence }) {
               : "—"}
             <span className="text-desk-muted">. </span>
             <button onClick={() => follow(s.id)} className="text-desk-link underline-offset-2 hover:underline">
-              Follow the chain in the inspector
+              Show the chain
             </button>
           </span>
         </span>
@@ -150,7 +150,7 @@ export function BriefModule() {
     return (
       <div>
                 <h1 className="text-[22px] font-semibold">Brief</h1>
-        <p className="mt-1 max-w-[72ch] text-[14px] text-muted">The 3-page brief is written after the agent report is verified. Every sentence will cite the report.</p>
+        <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Written after the report is verified.</p>
         <div className="mt-6 max-w-[8.5in]"><Skeleton rows={8} /></div>
       </div>
     );
@@ -167,7 +167,7 @@ export function BriefModule() {
             </span>
           ))}
           <span className="text-muted" title={CERTAINTY_HELP}>
-            shading shows support by checked evidence
+            Shaded by evidence support
           </span>
           <button className={btn} onClick={() => window.print()}>
             Print or save PDF

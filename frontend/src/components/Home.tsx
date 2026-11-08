@@ -42,7 +42,7 @@ export function Home() {
         setErr(null);
         live = r.runs.some((x) => LIVE.has(x.status));
       } catch {
-        if (alive) setErr("Cannot reach the API. Is the mock running on port 8000?");
+        if (alive) setErr("Can't reach the Axelrod server. Reload to try again.");
       }
       if (alive) timer = setTimeout(tick, live ? 2000 : 10000);
     };
@@ -71,13 +71,12 @@ export function Home() {
       {/* Search-first, like a search engine: the wordmark, then one box to start researching a company. */}
       <header className="mx-auto flex max-w-2xl flex-col items-center px-4 pt-[14vh] pb-10 text-center">
         <h1 className="font-logo text-[64px] leading-none font-semibold tracking-[0.01em] text-ink">Axelrod</h1>
-        <p className="mt-3 text-[14px] text-muted">Self-verifying research harness</p>
+        <p className="mt-3 text-[14px] text-muted">Verified company research</p>
         <StartSearch />
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
-        <h2 className="text-[22px] font-semibold text-ink">Runs</h2>
-        <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Every run of the harness, grouped by company. Open one to see its sources, agents, gateway traffic, report and brief.</p>
+        <h2 className="text-[22px] font-semibold text-ink">Projects</h2>
 
         {runs && (
           <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
@@ -93,7 +92,7 @@ export function Home() {
               <dt className="text-muted">Live now</dt>
               <dd className="font-mono tabular-nums">{live}</dd>
             </div>
-            <div className="flex gap-1.5" title="AWS spend across all runs, from the gateway meter">
+            <div className="flex gap-1.5" title="Metered at the gateway">
               <dt className="text-muted">Total cost</dt>
               <dd className="font-mono tabular-nums">{usd(spend)}</dd>
             </div>
@@ -110,7 +109,7 @@ export function Home() {
             <Skeleton rows={6} />
           </div>
         )}
-        {runs && runs.length === 0 && <p className="mt-6 text-muted">No runs yet. Start one with New run above.</p>}
+        {runs && runs.length === 0 && <p className="mt-6 text-muted">No projects yet.</p>}
 
         {projects.map((p) => (
           <section key={p.company} aria-labelledby={`p-${p.company}`} className="mt-8">
@@ -199,7 +198,7 @@ function StartSearch() {
           autoFocus
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          placeholder="Research a company, for example Siemens Healthineers"
+          placeholder="Which company should we look into?"
           className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
         />
         <button disabled={busy || !company.trim()} className="h-9 flex-none rounded-full bg-ink px-4 text-[13px] font-semibold text-paper disabled:opacity-40">
@@ -211,7 +210,6 @@ function StartSearch() {
           {err}
         </p>
       )}
-      <p className="mt-3 text-[12px] text-muted">The planner proposes sources first. Nothing is fetched until you approve them.</p>
     </form>
   );
 }

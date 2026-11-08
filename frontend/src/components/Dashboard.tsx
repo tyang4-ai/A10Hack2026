@@ -18,7 +18,7 @@ export function Dashboard({ runId: urlRunId }: { runId: string }) {
 
   // Open the run named in the URL, and list runs for the run switcher.
   useEffect(() => {
-    loadRuns().catch(() => useRunStore.setState({ error: "Cannot reach the API. Is the mock running on port 8000?" }));
+    loadRuns().catch(() => useRunStore.setState({ error: "Can't reach the Axelrod server. Reload to try again." }));
   }, [loadRuns]);
   useEffect(() => {
     if (useRunStore.getState().runId !== urlRunId) void openRun(urlRunId);

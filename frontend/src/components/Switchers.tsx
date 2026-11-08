@@ -132,7 +132,7 @@ export function RunSwitcher() {
                   choose(list[active]);
                 }
               }}
-              placeholder="Find by company or run id"
+              placeholder="Find a run"
               aria-controls="run-list"
               aria-activedescendant={list[active] ? `run-opt-${list[active].run_id}` : undefined}
               className="h-8 w-full rounded-[4px] border border-desk-line bg-desk-raised px-2.5 text-[13px] outline-none placeholder:text-desk-muted focus:border-desk-muted"
@@ -205,7 +205,7 @@ export function ThemeSwitcher() {
       </button>
       {open && (
         <div role="menu" aria-label="Colour themes" className="absolute top-full right-0 z-50 mt-1 w-64 rounded-[6px] border border-desk-line-strong bg-desk p-1 text-desk-ink">
-          <div className="px-2.5 py-1.5 text-[11px] text-desk-muted">Colour theme. Hover to preview.</div>
+          <div className="px-2.5 py-1.5 text-[11px] text-desk-muted">Theme</div>
           {THEMES.map((t) => (
             <button
               key={t.id}

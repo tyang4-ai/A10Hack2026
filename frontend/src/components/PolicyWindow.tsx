@@ -69,9 +69,6 @@ export function PolicyWindow() {
 
   return (
     <div className="text-[12px] text-desk-ink">
-      <p className="px-3 pt-3 text-desk-muted">
-        Every agent request passes the gateway. A request is allowed only if a rule below allows it. Everything else is denied.
-      </p>
       {err && (
         <p role="alert" className="px-3 pt-2 text-desk-bad">
           {err}
@@ -79,7 +76,7 @@ export function PolicyWindow() {
       )}
       {policy?.kill_switch && (
         <p role="status" className="mx-3 mt-2 rounded-[4px] bg-desk-bad px-2.5 py-1.5 font-semibold text-desk">
-          Kill switch on. The gateway denies every request.
+          Run stopped. Every request is blocked.
         </p>
       )}
       <table className="mt-1 w-full border-collapse">
@@ -105,7 +102,7 @@ export function PolicyWindow() {
                   id={s.source_id}
                   action="fetch"
                   target={`${s.domain}${pathOf(s.url)}`}
-                  note={d === null ? "Blocked until you decide" : d === "rejected" ? "Rejected by you" : s.tier === "priority" ? null : "Approved automatically"}
+                  note={d === null ? "Undecided" : d === "rejected" ? "Rejected" : s.tier === "priority" ? null : "Auto-approved"}
                 />
               ))}
             </>
@@ -122,11 +119,11 @@ export function PolicyWindow() {
           {policy && policy.rules.length === 0 && (
             <tr>
               <td colSpan={4} className="px-3 py-1.5 text-desk-muted">
-                No rules yet. Nothing is fetched until you approve sources.
+                No rules yet.
               </td>
             </tr>
           )}
-          <Row effect="deny" id="default" action="any" target="Default deny, everything else" />
+          <Row effect="deny" id="default" action="any" target="Everything else" />
         </tbody>
       </table>
     </div>

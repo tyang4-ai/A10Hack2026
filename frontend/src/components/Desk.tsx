@@ -10,6 +10,9 @@ import { LAYOUTS, useWindows, type Win } from "@/lib/windows";
 import { Window } from "./Window";
 import { KIND_META, KIND_ORDER, winTitle } from "./WindowContent";
 
+// "A, B and C"
+const listAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
 const byKind = (a: Win, b: Win) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.id.localeCompare(b.id);
 
 // Bring the bottom-most visible window to the front, so repeated presses visit every window.
@@ -148,11 +151,11 @@ function InjectErrors() {
       {note && <span className="max-w-72 truncate text-desk-muted" title={note}>{note}</span>}
       <button
         className="h-8 rounded-[4px] border border-dashed border-desk-warn px-2.5 font-medium text-desk-warn hover:bg-desk-raised"
-        title="Corrupts one digit in a few quotes so the checker can catch them. Simulated."
+        title="Changes one digit in 3 quotes."
         onClick={async () => {
           try {
             const r = await api.injectErrors(run.run_id, 3);
-            setNote(`Corrupted one digit in ${r.item_ids.join(", ")}. Watch the checker catch it.`);
+            setNote(`Changed ${listAnd(r.item_ids)}.`);
           } catch (e) {
             setNote(e instanceof Error ? e.message : String(e));
           }
@@ -190,7 +193,7 @@ export function LayoutControl() {
     <div className="flex flex-wrap items-center gap-2">
       <div role="group" aria-label="Layout presets, one per pipeline phase" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
         {LAYOUTS.map((l, i) => (
-          <button key={l.id} aria-pressed={layout === l.id} title={l.help} onClick={() => applyLayout(l.id)} className={seg(layout === l.id, i === 0)}>
+          <button key={l.id} aria-pressed={layout === l.id} onClick={() => applyLayout(l.id)} className={seg(layout === l.id, i === 0)}>
             {l.label}
           </button>
         ))}
@@ -233,7 +236,7 @@ export function LayoutControl() {
           </button>
         </form>
       ) : (
-        <button onClick={() => setNaming(true)} title="Save the current windows as your own layout" className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white">
+        <button onClick={() => setNaming(true)} className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white">
           Save layout as…
         </button>
       )}
@@ -248,19 +251,19 @@ export function LayoutControl() {
       <button
         aria-pressed={auto}
         onClick={toggleAuto}
-        title="Auto tiling: windows never overlap and re-arrange when one opens, closes or minimizes. Drag a window onto another to swap them. Resizing by hand turns it off."
+        title="Windows never overlap. Drag one onto another to swap."
         className={`h-7 rounded-[4px] border px-2.5 text-[12px] ${auto ? "border-accent bg-accent font-semibold text-accent-ink" : "border-desk-line-strong text-desk-ink hover:bg-desk-raised"}`}
       >
         Auto tile
       </button>
       {dirty && !auto && (
-        <button onClick={() => applyLayout(layout, { reset: true })} className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white" title={`Put the ${label(layout)} windows back where they started`}>
+        <button onClick={() => applyLayout(layout, { reset: true })} className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white">
           Reset
         </button>
       )}
       {suggest && (
         <button onClick={() => applyLayout(suggest)} className="h-7 rounded-[4px] border border-accent px-2.5 text-[12px] font-medium text-accent hover:bg-desk-raised">
-          Switch to {label(suggest)} layout
+          Switch to {label(suggest)}
         </button>
       )}
     </div>

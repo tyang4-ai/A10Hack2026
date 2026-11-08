@@ -86,7 +86,7 @@ export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolea
 
       {!hideStop && (agent.status === "working" || agent.status === "queued") && runLive && (
         <Section title="Stop only this agent">
-          <p className="mb-2 text-desk-muted">The gateway denies this agent's next request. The rest of the run keeps going.</p>
+          <p className="mb-2 text-desk-muted">The rest of the run keeps going.</p>
           <StopAgentButton runId={runId} agentId={id} />
         </Section>
       )}
@@ -142,7 +142,7 @@ function Chat({
   return (
     <Section title={`Talk to ${agentId}`}>
       <div className="grid max-h-72 gap-2 overflow-y-auto" aria-live="polite">
-        {thread.length === 0 && <div className="text-desk-muted">Ask this agent about its task, for example why it chose a quote or a number.</div>}
+        {thread.length === 0 && <div className="text-desk-muted">Ask {agentId} about its work.</div>}
         {thread.map((m) => (
           <div key={m.message_id} className={`max-w-[85%] rounded-[6px] px-2.5 py-1.5 ${m.author === "analyst" ? "ml-auto bg-desk-ink text-desk" : "bg-desk-raised text-desk-ink"}`}>
             <div className="text-[13px] leading-snug whitespace-pre-wrap">{m.text}</div>
@@ -158,7 +158,7 @@ function Chat({
 
       {unsupported ? (
         <div role="status" className="mt-2 rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">
-          This backend can't talk to agents yet. The endpoint is proposed in frontend/CONTRACT_REQUESTS.md and needs Gordon to add it to the contract.
+          Agent chat isn't available yet (ERR backend issue).
         </div>
       ) : (
         <form
@@ -183,7 +183,7 @@ function Chat({
                 void send();
               }
             }}
-            placeholder={runStopped ? "The run is stopped." : `Message ${agentId}. Enter to send, Shift+Enter for a new line.`}
+            placeholder={runStopped ? "The run is stopped." : `Message ${agentId}`}
             className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink placeholder:text-desk-muted focus:border-desk-muted"
           />
           <button disabled={busy || !text.trim() || runStopped} className="mt-1.5 h-7 rounded-[4px] bg-desk-ink px-3 text-[12px] font-medium text-desk disabled:opacity-40">
@@ -211,8 +211,8 @@ export function StopAgentButton({ runId, agentId, compact }: { runId: string; ag
   }, [state]);
   if (state === "unsupported")
     return (
-      <span role="status" className="text-desk-warn" title="Proposed in frontend/CONTRACT_REQUESTS.md">
-        {compact ? "Stop not supported yet" : "This backend can't stop a single agent yet. It's proposed in frontend/CONTRACT_REQUESTS.md."}
+      <span role="status" className="text-desk-warn" >
+        {compact ? "Stop not available yet" : "Stopping one agent isn't available yet (ERR backend issue)."}
       </span>
     );
   return (

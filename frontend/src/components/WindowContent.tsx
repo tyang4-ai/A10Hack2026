@@ -111,7 +111,7 @@ export function WindowBody({ kind, wref }: { kind: WinKind; wref?: string }) {
 
 function FollowAgent() {
   const id = useFollowAgent();
-  if (!id) return <p className="p-3.5 text-[13px] text-desk-muted">No agents yet. This window follows the busiest agent once the run starts.</p>;
+  if (!id) return <p className="p-3.5 text-[13px] text-desk-muted">No agents yet.</p>;
   return <AgentInspector id={id} hideStop />;
 }
 
@@ -128,14 +128,13 @@ function ChainWindow() {
   }, [selected]);
   useEffect(() => setSid(null), [runId]);
   const s = sid ? allSentences(summary).find((x) => x.id === sid) : null;
-  if (!s) return <p className="p-3.5 text-[13px] text-desk-muted">Click a sentence in the brief to follow it down to the source quotes.</p>;
+  if (!s) return <p className="p-3.5 text-[13px] text-desk-muted">Select a sentence in the brief.</p>;
   return (
     <div className="text-[12px] text-desk-ink">
       <div className="border-b border-desk-line px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <span className="font-mono text-white">{s.id}</span>
           <CertaintyPill c={s.certainty} />
-          <span className="text-desk-muted">Click a step to open its source page.</span>
         </div>
         <div className="mt-1.5 font-serif text-[15px] text-white">{s.text}</div>
       </div>
@@ -165,9 +164,9 @@ export function WinSubtitle({ kind, wref }: { kind: WinKind; wref?: string }) {
     case "agent":
       return wref ? <AgentSub id={wref} /> : <FollowAgentSub />;
     case "page":
-      return <>{wref ? `${parsePageRef(wref).doc}, page ${parsePageRef(wref).page}` : "follows the selection"}</>;
+      return <>{wref ? `${parsePageRef(wref).doc}, page ${parsePageRef(wref).page}` : "following selection"}</>;
     case "chain":
-      return <>follows the selected sentence</>;
+      return <>following sentence</>;
     case "policy":
       return <PolicySub />;
     case "item":
@@ -194,7 +193,7 @@ function BriefSub() {
 }
 function InspectorSub() {
   const id = useRunStore((s) => s.selected?.id);
-  return <>{id ?? "follows the selection"}</>;
+  return <>{id ?? "following selection"}</>;
 }
 function TrafficSub() {
   const n = useRunStore((s) => s.traffic.length);
@@ -210,7 +209,7 @@ function AgentSub({ id }: { id: string }) {
 }
 function FollowAgentSub() {
   const id = useFollowAgent();
-  return <>{id ? `following ${id}` : "follows the busiest agent"}</>;
+  return <>{id ? `following ${id}` : "following busiest agent"}</>;
 }
 function PolicySub() {
   const p = useRunStore((s) => s.policy);

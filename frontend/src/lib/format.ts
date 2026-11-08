@@ -70,14 +70,14 @@ export const STATUS_TEXT: Record<VerificationStatus, string> = {
   blocked: "text-warn",
 };
 
-export const CERTAINTY_HELP = "How well this is supported by checked evidence. Not the probability it is true.";
+export const CERTAINTY_HELP = "Support from checked evidence. Not the chance it's true.";
 
 // Runs that are not live are labelled as simulated, in plain words (a hackathon rule too).
 export const MODE_LABEL = "SIMULATED";
 export const MODE_HELP: Record<"live" | "replay" | "fixture", string> = {
   live: "",
-  fixture: "Simulated: a recorded run played back from saved data. No live agents or AWS calls.",
-  replay: "Simulated: a recorded run replayed step by step as if live. No live agents or AWS calls.",
+  fixture: "Recorded run. No live agents or AWS calls.",
+  replay: "Recorded run, replayed at live speed. No live agents or AWS calls.",
 };
 
 export const human = (s: string) => s.replace(/_/g, " ");

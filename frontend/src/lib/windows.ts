@@ -35,13 +35,13 @@ export interface Win extends Geo {
 
 // The three module windows can be minimized but never closed.
 export const MODULE_KINDS: WinKind[] = ["sources", "report", "brief"];
-export const LAYOUTS: { id: BuiltIn; label: string; help: string }[] = [
-  { id: "approve", label: "Approve", help: "Plan and approve: sources, the gateway policy and the inspector" },
-  { id: "collect", label: "Collect", help: "Collect: sources being fetched, gateway traffic and the policy" },
-  { id: "watch", label: "Watch", help: "Extract and draft: traffic, agents, an agent chat, the inspector and a source page" },
-  { id: "review", label: "Review", help: "Verify and repair: the agent report, the inspector and a source page" },
-  { id: "read", label: "Read", help: "Summarize and check: the brief, its citation chain and a source page" },
-  { id: "audit", label: "Audit", help: "Audit: the gateway policy, traffic, the event log and the vault" },
+export const LAYOUTS: { id: BuiltIn; label: string }[] = [
+  { id: "approve", label: "Approve" },
+  { id: "collect", label: "Collect" },
+  { id: "watch", label: "Watch" },
+  { id: "review", label: "Review" },
+  { id: "read", label: "Read" },
+  { id: "audit", label: "Audit" },
 ];
 
 // Each pipeline step maps to the preset that shows what that step is doing.

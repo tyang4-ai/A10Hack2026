@@ -119,7 +119,7 @@ function PaletteDialog() {
               choose(results[at], e.metaKey || e.ctrlKey);
             }
           }}
-          placeholder="Search by id or text, for example D-028 or extractor-03"
+          placeholder="Search ids and text"
           className="h-11 flex-none border-b border-desk-line bg-transparent px-4 text-[14px] text-white outline-none placeholder:text-desk-muted"
         />
         <ul id="palette-list" role="listbox" aria-label="Results" ref={listRef} className="min-h-0 flex-1 overflow-y-auto py-1">
@@ -142,7 +142,7 @@ function PaletteDialog() {
           {results.length === 0 && <li className="px-4 py-3 text-desk-muted">Nothing matches.</li>}
         </ul>
         <div className="flex-none border-t border-desk-line px-4 py-1.5 text-[11px] text-desk-muted">
-          Enter opens in a window. ⌘ or Ctrl with Enter opens it beside the focused window. Esc closes.
+          ↵ open   ⌘↵ open beside   esc close
         </div>
       </div>
     </div>

@@ -80,18 +80,13 @@ export function SourcesModule() {
     }
   };
 
-  const intro = awaiting
-    ? "Nothing is fetched until you approve. Decide every priority source and drag them into the order you trust most. Tier 2 and 3 are approved automatically unless you reject them."
-    : run.status === "stopped"
-      ? "The run was stopped. The kill switch denies every request, so nothing more is fetched."
-      : run.stage === "plan"
-        ? "The planner is mapping BOFFIN criteria to data needs and proposing sources."
-        : "Approved sources form the gateway allowlist and everything else is denied. Revoke a source to cut it off mid-run.";
+  // Only say something when the screen can't: the run is stopped, or the planner hasn't proposed anything yet.
+  const intro = run.status === "stopped" ? "Run stopped. Nothing more will be fetched." : run.stage === "plan" ? "Planning sources…" : null;
 
   return (
     <div className="max-w-[920px]">
-      <h1 className="text-[22px] font-semibold">Sources</h1>
-      <p className="mt-1 max-w-[72ch] text-[14px] text-muted">{intro}</p>
+      <h1 className="text-[22px] font-semibold">{awaiting ? "Approve sources" : "Sources"}</h1>
+      {intro && <p className="mt-1 max-w-[72ch] text-[14px] text-muted">{intro}</p>}
 
       <details className="mt-5 border-y border-rule py-2" open={run.stage === "plan"}>
         <summary className="cursor-pointer text-[13px] font-semibold">
@@ -124,7 +119,7 @@ export function SourcesModule() {
             <div key={c.criterion}>
               {c.cause.length ? `Rejecting ${c.cause.join(", ")} leaves ` : "No source covers "}
               <strong>{human(c.criterion)}</strong>
-              {c.cause.length ? " with no source. It will become a hole." : ". It will become a hole."}
+              {c.cause.length ? " with no source." : "."}
             </div>
           ))}
         </div>
@@ -179,7 +174,7 @@ export function SourcesModule() {
         return (
           <section key={t} className="mt-6">
             <h2 className="mb-2 text-[15px] font-semibold">
-              {TIER_LABEL[t]} <span className="font-normal text-muted">approved automatically</span>
+              {TIER_LABEL[t]} <span className="font-normal text-muted">Auto-approved</span>
             </h2>
             <ul className="border-t border-ink">
               {list.map((s) => (
@@ -207,7 +202,7 @@ export function SourcesModule() {
             Approve and run
           </button>
           <span className="text-muted">
-            {undecided.length ? `Decide ${undecided.length} more priority source${undecided.length > 1 ? "s" : ""} first.` : "Sends every decision and your order in one approval."}
+            {undecided.length ? `${undecided.length} source${undecided.length > 1 ? "s" : ""} still need${undecided.length > 1 ? "" : "s"} a decision` : ""}
           </span>
           {err && (
             <span role="alert" className="text-bad">
@@ -266,7 +261,7 @@ function SourceRow({
           <span className="font-mono">{s.source_id}</span>
           <span className="font-mono">{s.domain}</span>
           <span>{human(s.kind)}</span>
-          <span title="Feeds the certainty of every item from this source">
+          <span>
             Reliability <span className="font-mono tabular-nums text-ink">{Math.round(s.scores.reliability * 100)}</span>
           </span>
           {s.criteria.map((c) => (
@@ -365,7 +360,7 @@ function AddSource({ runId }: { runId: string }) {
           </select>
         </label>
         <label className="flex flex-[1_1_180px] flex-col gap-1 text-[12px] text-muted">
-          API key (optional, kept on the server)
+          API key (optional)
           <input type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} className={field} />
         </label>
         <button className={btn}>Add source</button>
@@ -377,8 +372,7 @@ function AddSource({ runId }: { runId: string }) {
       )}
       {added && (
         <div className="mt-1.5 text-good">
-          Added {added.source_id} ({added.domain}) to {TIER_LABEL[added.tier]}
-          {added.access.auth === "api_key" ? ". The key is stored on the server and never shown again." : "."}
+          Added {added.source_id} to {TIER_LABEL[added.tier]}.{added.access.auth === "api_key" ? " The key won't be shown again." : ""}
         </div>
       )}
     </form>

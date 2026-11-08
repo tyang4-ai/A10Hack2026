@@ -9,7 +9,7 @@ const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"
 
 export const metadata: Metadata = {
   title: "Axelrod",
-  description: "Self-verifying research harness",
+  description: "Verified company research",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

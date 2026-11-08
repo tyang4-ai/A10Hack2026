@@ -11,27 +11,27 @@ import { STAGE_LABEL } from "@/lib/format";
 
 // What the new run keeps from this one when it reruns from each step.
 export const RERUN_KEEPS: Partial<Record<Stage, string>> = {
-  plan: "Nothing is kept. The planner starts over with your instructions.",
-  approve: "Keeps the plan and proposed sources. You decide the sources again.",
-  collect: "Keeps the plan and your approvals. Sources are fetched again.",
-  extract: "Keeps the stored documents. Data items are extracted and checked again.",
-  draft: "Keeps the verified data items. Conclusions and scores are drafted again.",
-  verify: "Keeps the draft. Every item is checked again.",
-  repair: "Keeps the checked draft. Failed items are repaired again.",
-  summarize: "Keeps the verified agent report. The brief is written again.",
-  verify_summary: "Keeps the brief. Every sentence is checked again.",
+  plan: "Starts from scratch.",
+  approve: "Keeps the plan. You approve sources again.",
+  collect: "Keeps your approvals. Fetches again.",
+  extract: "Keeps the documents. Extracts again.",
+  draft: "Keeps the verified data. Redrafts conclusions and scores.",
+  verify: "Keeps the draft. Checks again.",
+  repair: "Keeps the checks. Repairs again.",
+  summarize: "Keeps the report. Rewrites the brief.",
+  verify_summary: "Keeps the brief. Checks it again.",
 };
 
 const EXAMPLES: Partial<Record<Stage, string>> = {
-  plan: "For example: focus on leverage and liquidity, and skip news sources.",
-  approve: "For example: prefer primary filings over investor presentations.",
-  collect: "For example: also fetch the fiscal 2024 annual report.",
-  extract: "For example: take revenue from the income statement, not the press release.",
-  draft: "For example: be stricter on secular growth, and say why when data is thin.",
-  verify: "For example: treat rounding differences over 1% as failures.",
-  repair: "For example: downgrade rather than delete items you can't re-cite.",
-  summarize: "For example: lead with the leverage risk, and keep it to two pages.",
-  verify_summary: "For example: flag any sentence that only cites the scorecard.",
+  plan: "focus on leverage and liquidity, and skip news sources.",
+  approve: "prefer primary filings over investor presentations.",
+  collect: "also fetch the fiscal 2024 annual report.",
+  extract: "take revenue from the income statement, not the press release.",
+  draft: "be stricter on secular growth, and say why when data is thin.",
+  verify: "treat rounding differences over 1% as failures.",
+  repair: "downgrade rather than delete items you can't re-cite.",
+  summarize: "lead with the leverage risk, and keep it to two pages.",
+  verify_summary: "flag any sentence that only cites the scorecard.",
 };
 
 export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: Stage; onClose: () => void }) {
@@ -103,7 +103,7 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
         />
         {unsupported && (
           <div role="status" className="mt-2 rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">
-            This backend can&apos;t rerun from a step yet. The endpoint is proposed in frontend/CONTRACT_REQUESTS.md and needs Gordon to add it to the contract.
+            Rerun isn&apos;t available yet.
           </div>
         )}
         {err && (
@@ -122,7 +122,6 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
           <button onClick={onClose} className="h-8 rounded-[4px] px-2.5 text-desk-muted hover:text-white">
             Cancel
           </button>
-          <span className="ml-auto text-[11px] text-desk-muted">⌘ or Ctrl with Enter starts it</span>
         </div>
       </div>
     </div>

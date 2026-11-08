@@ -285,7 +285,6 @@ export const Window = memo(function Window({ id }: { id: string }) {
       <div
         data-titlebar
         tabIndex={0}
-        title="Drag to move. Double-click to maximize. Arrow keys move, Shift with arrows resizes."
         onPointerDown={(e) => start(e, "move")}
         onPointerMove={onMove}
         onPointerUp={onUp}

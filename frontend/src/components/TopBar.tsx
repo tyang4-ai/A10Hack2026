@@ -53,7 +53,7 @@ function StopButton() {
       ) : (
         <button
           onClick={() => setConfirm(true)}
-          title="Kill switch: the gateway denies every request after this"
+          title="Blocks every agent request. Can't be undone."
           className="flex h-8 items-center gap-2 rounded-[4px] border border-desk-bad px-3.5 text-[13px] font-semibold text-desk-bad transition-colors hover:bg-desk-bad hover:text-desk"
         >
           <span aria-hidden className="h-2.5 w-2.5 bg-current" />
@@ -161,7 +161,7 @@ export function TopBar() {
         <div className="ml-auto flex flex-wrap items-center gap-5">
           {run && c && (
             <dl className="flex items-center gap-4 text-desk-muted">
-              <div className="flex gap-1.5" title="AWS spend for this run, from the gateway meter">
+              <div className="flex gap-1.5" title="Metered at the gateway">
                 <dt>Cost</dt>
                 <dd className="font-mono text-white tabular-nums">
                   {usd(run.usage.cost_usd)}
@@ -217,7 +217,7 @@ export function TopBar() {
                 {canRerun ? (
                   <button
                     onClick={() => setRerun(s)}
-                    title={`Rerun from ${STAGE_LABEL[s]} with new instructions`}
+                    title="Rerun from here"
                     aria-label={`${STAGE_LABEL[s]}, done. Rerun from here`}
                     className="-mx-1 truncate rounded-[3px] px-1 text-left hover:bg-desk-raised hover:underline"
                   >
@@ -250,15 +250,14 @@ export function Banner() {
     return (
       <div role="alert" className="flex flex-none items-center gap-2 bg-desk-bad px-4 py-2 text-[13px] font-semibold text-desk">
         <span aria-hidden className="h-2.5 w-2.5 bg-desk" />
-        Kill switch on. The run was stopped{run.stop_reason ? ` (${run.stop_reason})` : ""} and the gateway now denies every request
-        {after > 0 ? `: ${after} blocked so far` : ""}.
+        Run stopped. Every agent request is blocked.{after > 0 ? ` ${after} so far.` : ""}
       </div>
     );
   }
   if (run.status === "failed")
     return (
       <div role="alert" className="flex-none bg-failed-bg px-4 py-2 text-[13px] text-white">
-        The run failed: {run.error ?? "the backend reported an error without details"}.
+        Run failed. {run.error ?? "No error details were returned."}
       </div>
     );
   return null;

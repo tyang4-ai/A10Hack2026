@@ -45,7 +45,7 @@ export function Gauge({ c, label }: { c: ReportCertainty | null; label: string }
 export function Scorecard({ rollup }: { rollup: Rollup | null }) {
   const items = useRunStore((s) => s.items);
   const select = useRunStore((s) => s.select);
-  if (!rollup) return <div className="text-muted">The scorecard appears when the report is final.</div>;
+  if (!rollup) return <div className="text-muted">Scorecard pending</div>;
   const scores = Object.values(items).filter((i) => i.kind === "extrapolation");
   const fmt = (n: number | null) => (n === null ? "N/A" : `${n > 0 ? "+" : ""}${roundHalfUp(n, 2).toFixed(2)}`);
   return (
@@ -56,7 +56,7 @@ export function Scorecard({ rollup }: { rollup: Rollup | null }) {
           <div className="font-mono text-[28px] font-medium tabular-nums">{fmt(rollup.weighted_average)}</div>
         </div>
         {(rollup.normalized_pct !== null || rollup.percent_of_max_pct !== null) && (
-          <div title="Both are inferences about the original scoresheet, so they are shown together">
+          <div>
             <Label>As a percentage (inferred)</Label>
             <div className="text-[13px]">
               <span className="font-mono tabular-nums">{rollup.normalized_pct}%</span> normalized, <span className="font-mono tabular-nums">{rollup.percent_of_max_pct}%</span> of the maximum
@@ -201,7 +201,7 @@ export function ReportModule() {
   return (
     <div className="">
             <h1 className="text-[22px] font-semibold">Agent report</h1>
-      <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Every number is quoted from a stored source and checked by code. Conclusions cite data, and scores cite conclusions. This report is written for the agents; the brief is the human version.</p>
+      <p className="mt-1 max-w-[72ch] text-[14px] text-muted">Every number is quoted from a stored source and checked by code.</p>
       <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px]">
         <div className="flex gap-1.5"><dt className="text-muted">Status</dt><dd className="font-medium capitalize">{report.status.replace("_", " ")}</dd></div>
         <div className="flex gap-1.5"><dt className="text-muted">Items</dt><dd className="font-mono tabular-nums">{list.length}</dd></div>
@@ -287,7 +287,7 @@ export function Holes() {
   const report = useRunStore((s) => s.report);
   const select = useRunStore((s) => s.select);
   const holes = report?.holes ?? [];
-  if (!holes.length) return <div className="text-muted">No declared gaps{report?.status === "final" ? "." : " yet."}</div>;
+  if (!holes.length) return <div className="text-muted">No gaps</div>;
   return (
     <ul className="border-y border-ink">
       {holes.map((h) => (

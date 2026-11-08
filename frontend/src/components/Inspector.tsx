@@ -19,7 +19,7 @@ export function Inspector() {
 export function InspectorBody({ sel }: { sel: Selection }) {
   return (
     <div className="text-[12px] text-desk-ink">
-      {!sel && <p className="p-3.5 text-[13px] text-desk-muted">Select a source, a report item, a brief sentence or an agent to see its evidence, checks and certainty, or to talk to it.</p>}
+      {!sel && <p className="p-3.5 text-[13px] text-desk-muted">Select anything to inspect it.</p>}
       {sel?.type === "item" && <ItemInspector id={sel.id} />}
       {sel?.type === "source" && <SourceInspector id={sel.id} />}
       {sel?.type === "sentence" && <SentenceInspector id={sel.id} />}
@@ -292,7 +292,7 @@ function SentenceInspector({ id }: { id: string }) {
         <div className="mt-2 font-serif text-[16px] text-white">{s.text}</div>
       </div>
       <CertaintyBlock c={s.certainty} />
-      <Block title="Derived from (follow it down)">
+      <Block title="Derived from">
         <ChainTree refs={s.derived_from} items={items} depth={0} />
       </Block>
       <Block title="Checks">
@@ -420,7 +420,7 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={status === "stopped"}
-          placeholder={targetType === "item" ? "Tell the agents what to change. The item is revised and re-checked." : "Note for the agents"}
+          placeholder={targetType === "item" ? "Tell the agents what to change" : "Note for the agents"}
           className="w-full resize-y rounded-[4px] border border-desk-line bg-desk-raised px-2 py-1.5 text-desk-ink placeholder:text-desk-muted focus:border-desk-muted"
         />
         <button disabled={!text.trim() || status === "stopped"} className="mt-1.5 h-7 rounded-[4px] bg-desk-ink px-3 text-[12px] font-medium text-desk disabled:opacity-40">

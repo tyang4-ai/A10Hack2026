@@ -52,14 +52,14 @@ export function FollowPage() {
   const selItem = useRunStore((s) => (s.selected?.type === "item" ? s.selected.id : null));
   const shown = ref ?? last;
   if (!runId) return null;
-  const noPage = selItem && !ref ? `${selItem} cites structured data, not a text page.` : null;
-  if (!shown) return <p className="p-4 text-[13px] text-muted">{noPage ?? "Select a report item or a brief sentence to see the source page its quote comes from."}</p>;
+  const noPage = selItem && !ref ? `${selItem} cites structured data. There's no page to show.` : null;
+  if (!shown) return <p className="p-4 text-[13px] text-muted">{noPage ?? "Select an item to see its source."}</p>;
   const p = parsePageRef(shown);
   return (
     <div className="flex h-full flex-col">
       {noPage && (
         <p role="status" className="flex-none border-b border-rule bg-warn-bg px-4 py-1.5 text-[12px] text-ink">
-          {noPage} Still showing the last page.
+          {noPage}
         </p>
       )}
       <div className="min-h-0 flex-1">
@@ -113,7 +113,7 @@ export function DocPage({ runId, docId, startPage, itemId }: { runId: string; do
         <button className={`${btnSm} w-7 px-0`} aria-label="Next page" disabled={!data || page >= data.pages} onClick={() => setPage((p) => p + 1)}>
           ▸
         </button>
-        <span className="ml-auto text-muted">The exact text the checker matched against</span>
+        <span className="ml-auto text-muted">Stored source text</span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto px-5 py-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap">
         {err && (
