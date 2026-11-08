@@ -56,6 +56,24 @@ PEER_MAX_PERIODS = 7
 # ---------------------------------------------------------------------------
 
 
+class Turns:
+    """B-replay reorder buffer: job k creates its items (D- ids, item.created, item.verified) only once every
+    earlier job in the plan's order has finished, failed or been stopped. Model calls still run in parallel,
+    items still stream, and the ids no longer depend on which page answered first, so a replayed run's
+    prompts match the recorded ones."""
+
+    def __init__(self, n: int) -> None:
+        self._done = [asyncio.Event() for _ in range(n)]
+
+    async def wait(self, k: int) -> None:
+        for e in self._done[:k]:
+            await e.wait()
+
+    def release(self, k: int) -> None:
+        if 0 <= k < len(self._done):
+            self._done[k].set()
+
+
 @dataclass
 class PageJob:
     source_id: str
@@ -63,6 +81,8 @@ class PageJob:
     page: int
     needs: list[m.DataNeed]
     runner: AgentRunner | None = None
+    turns: Turns | None = None      # B-replay: the stage's reorder buffer and this job's place in it
+    slot: int = -1
 
 
 @dataclass
@@ -70,6 +90,19 @@ class JsonJob:
     source_id: str
     doc_id: str
     runner: AgentRunner | None = None
+    turns: Turns | None = None
+    slot: int = -1
+
+
+async def _my_turn(job: PageJob | JsonJob) -> None:
+    """Wait until every earlier job has created its items (a job outside the stage's buffer never waits)."""
+    if job.turns is not None:
+        await job.turns.wait(job.slot)
+
+
+def _end_turn(job: PageJob | JsonJob) -> None:
+    if job.turns is not None:
+        job.turns.release(job.slot)
 
 
 @dataclass
@@ -138,6 +171,12 @@ async def run(ctx: RunContext) -> None:
                                    [j.source_id], None)
         for p in w.pages:
             p.runner = AgentRunner(ctx, "extractor", f"Extract {p.source_id} page {p.page}", [p.source_id], "small")
+    # B-replay: items are created in the plan's order (source, then its JSON documents, then page number),
+    # whatever order the pages answer in. extract_source runs JSON jobs first, so the slots follow that.
+    ordered = [j for w in work for j in [*w.json_docs, *w.pages]]
+    turns = Turns(len(ordered))
+    for k, j in enumerate(ordered):
+        j.turns, j.slot = turns, k
     sem = asyncio.Semaphore(max(1, ctx.settings.max_concurrency_small))
     results = await asyncio.gather(*(extract_source(ctx, w, pages_by_doc, sem) for w in work),
                                    return_exceptions=True)
@@ -181,7 +220,16 @@ async def extract_source(ctx: RunContext, w: SourceWork, pages_by_doc: dict[str,
 
 async def extract_page(ctx: RunContext, job: PageJob, pages_by_doc: dict[str, list[str]],
                        sem: asyncio.Semaphore) -> list[str]:
-    """Ask one extractor for one page, then build and check its items. Returns the new item ids."""
+    """Ask one extractor for one page, then build and check its items. Returns the new item ids.
+    However the page ends (items, none, failed, stopped), its turn ends, so later pages go on."""
+    try:
+        return await _extract_page(ctx, job, pages_by_doc, sem)
+    finally:
+        _end_turn(job)
+
+
+async def _extract_page(ctx: RunContext, job: PageJob, pages_by_doc: dict[str, list[str]],
+                        sem: asyncio.Semaphore) -> list[str]:
     runner = job.runner or AgentRunner(ctx, "extractor", f"Extract {job.source_id} page {job.page}",
                                        [job.source_id], "small")
     async with sem:
@@ -229,6 +277,7 @@ async def extract_page(ctx: RunContext, job: PageJob, pages_by_doc: dict[str, li
 async def add_agent_items(ctx: RunContext, job: PageJob, raw_items: list[ExtractedItem],
                           pages_by_doc: dict[str, list[str]], agent_id: str) -> list[str]:
     """Build, register and check each extracted item: item.created, then item.verified."""
+    await _my_turn(job)     # B-replay: D- ids in the plan's page order, not the order pages answered
     pages = pages_by_doc.get(job.doc_id) or ctx.state.agent_pages(job.doc_id)
     source = ctx.state.sources_by_id()[job.source_id]
     seen: set[tuple[str, str, str]] = set()
@@ -238,6 +287,7 @@ async def add_agent_items(ctx: RunContext, job: PageJob, raw_items: list[Extract
         if not key[0] or key in seen:
             continue
         seen.add(key)
+        await asyncio.sleep(0)  # let the API's polling in between items
         # locating a quote that is not on the page searches the whole document, so keep it off the loop
         item = await asyncio.to_thread(build_item, ctx, source, job, raw, pages, agent_id)
         register(ctx, item)
@@ -1412,7 +1462,15 @@ def build_code_item(ctx: RunContext, source: m.Source, doc_id: str, f: Fact, nam
 
 
 async def extract_json(ctx: RunContext, job: JsonJob, pages_by_doc: dict[str, list[str]]) -> list[str]:
-    """Code-only extraction from a stored JSON document. Returns the new item ids."""
+    """Code-only extraction from a stored JSON document. Returns the new item ids. Its turn ends however
+    it ends, so later jobs go on."""
+    try:
+        return await _extract_json(ctx, job, pages_by_doc)
+    finally:
+        _end_turn(job)
+
+
+async def _extract_json(ctx: RunContext, job: JsonJob, pages_by_doc: dict[str, list[str]]) -> list[str]:
     runner = job.runner or AgentRunner(ctx, "extractor", f"Read {job.source_id} structured facts by code (no model)",
                                        [job.source_id], None)
     try:
@@ -1435,6 +1493,7 @@ async def extract_json(ctx: RunContext, job: JsonJob, pages_by_doc: dict[str, li
             runner.finish("done")
             return []
         name = entity_name(source, doc)
+        await _my_turn(job)     # B-replay: D- ids in the plan's order
         items = [build_code_item(ctx, source, job.doc_id, f, name, runner.agent_id) for f in facts]
         sources = ctx.state.sources_by_id()
         verified = await asyncio.to_thread(lambda: [verify_item(it, pages_by_doc, sources) for it in items])

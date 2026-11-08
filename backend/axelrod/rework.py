@@ -438,6 +438,10 @@ async def _rerun_extractor(ctx: RunContext, runner: AgentRunner, plan: Plan) -> 
     pairs = await extract.reextract(ctx, runner, plan.job, plan.old)
     old = {i.id: i for i in plan.old}
     out = Outcome()
+    # B-replay: new D- ids are taken at once, in the order the page's items came back, before any await,
+    # so the checks below (which yield) can't let another task take an id in between.
+    pairs = [(item if old_id is not None else item.model_copy(update={"id": ctx.next_id("D")}), old_id)
+             for item, old_id in pairs]
     for item, old_id in pairs:
         if old_id is not None:
             pending = new_version(ctx, old[old_id], item, runner)
@@ -447,7 +451,7 @@ async def _rerun_extractor(ctx: RunContext, runner: AgentRunner, plan: Plan) -> 
             extract.record_verified(ctx, checked)
             out.updated.append(old_id)
         else:
-            fresh = item.model_copy(update={"id": ctx.next_id("D")})
+            fresh = item
             extract.register(ctx, fresh)
             extract.record_verified(ctx, await extract.check_reworked(ctx, fresh))
             out.created.append(fresh.id)

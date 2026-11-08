@@ -145,14 +145,19 @@ def local_path(settings: Settings, object_key: str) -> Path:
     return data_root(settings) / object_key
 
 
+REPLAY_MODES = frozenset({"replay", "replay_only"})     # CACHE_MODELS values that serve recorded answers
+MODEL_CACHE_MODES = frozenset({"record", "replay", "replay_only"})
+
+
 def run_cache_mode(settings: Settings) -> str:
     """Run.cache_mode for a new run (CONTRACT.md 13). "documents_and_models" when model answers may be
-    replayed (CACHE_MODELS=replay), "documents" when only fetch bodies come from the cache, else "off".
+    replayed (CACHE_MODELS=replay or replay_only), "documents" when only fetch bodies come from the cache,
+    else "off".
 
     CACHE_MODELS=record calls every model live (it only stores the answers), so it adds nothing to the label.
     The contract has no models-only value, so replay with CACHE_DOCUMENTS off still says
     "documents_and_models": a replayed answer is never left unlabeled."""
-    if getattr(settings, "cache_models", "off") == "replay":
+    if getattr(settings, "cache_models", "off") in REPLAY_MODES:
         return "documents_and_models"
     return "documents" if settings.cache_documents else "off"
 
@@ -374,7 +379,7 @@ def storable(http_status: int, location: str | None) -> bool:
 # after that. A replay then gives back the same set of answers, not one answer three times.
 
 MODEL_PREFIX = "cache/models/"
-MODEL_KEY_VERSION = 1
+MODEL_KEY_VERSION = 2    # v2 (B-replay): labeled spend and durations stripped too
 
 _RUN_ID = re.compile(r"\brun_\d{8}_[a-z0-9]{6}\b")
 _JUDGE_ID = re.compile(r"\bverifier-[A-Z]+-\d+-\d+(?:\.\d+)*\b")          # verifier-C-005-1
@@ -382,16 +387,34 @@ _AGENT_ID = re.compile(r"\b(?:%s)-\d+(?:\.\d+)*\b" % "|".join(get_args(m.AgentRo
 _REQ_ID = re.compile(r"\bREQ-\d{4,}\b")
 _ISO_TS = re.compile(r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?")
 _SEQ = re.compile(r"(\b(?:as_of_seq|last_seq|seq)\b[\"']?\s*[:=]?\s*)\d+")
+# B-replay (key v2): run-time money and durations. Only figures a label marks as spend or time ("spent $0.42",
+# "$1.20 left", "cost_usd: 0.03", "latency_ms: 812", "took 3.2 s", "812 ms"), never a bare number or a
+# currency amount from a source, so an item's value always stays in the key.
+_NUM = r"\d[\d,]*(?:\.\d+)?"
+_SPEND_LABEL = re.compile(r"(?i)(\b(?:spent|so far)\b\s*[:=]?\s*)\$" + _NUM)
+_SPEND_AFTER = re.compile(r"(?i)\$" + _NUM + r"(?=\s*(?:spent|left|so far|free)\b)")
+_USD_FIELD = re.compile(r"(?i)(\b(?:cost_usd|budget_usd|spent_usd)\b[\"']?\s*[:=]\s*)" + _NUM)
+_TIME_FIELD = re.compile(r"(?i)(\b(?:latency_ms|duration_ms|elapsed_ms|elapsed_s)\b[\"']?\s*[:=]\s*)" + _NUM)
+_TIME_LABEL = re.compile(r"(?i)(\b(?:elapsed|latency|took)\b\s*[:=]?\s*)" + _NUM
+                         + r"\s*(?:ms|s|sec|secs|seconds)\b")
+_MS = re.compile(r"\b" + _NUM + r"\s?ms\b")
 
 
 def strip_volatile(text: str) -> str:
-    """The prompt as the key sees it: run ids, agent ids, request ids, seq numbers and ISO timestamps
-    replaced by placeholders. Plain dates ("2026-11-07") and item ids are content and stay."""
+    """The prompt as the key sees it: run ids, agent ids, request ids, seq numbers, ISO timestamps and
+    labeled spend and durations replaced by placeholders. Plain dates ("2026-11-07"), item ids and item
+    values are content and stay."""
     text = _RUN_ID.sub("<run>", text)
     text = _JUDGE_ID.sub("<agent>", text)
     text = _AGENT_ID.sub("<agent>", text)
     text = _REQ_ID.sub("<req>", text)
     text = _ISO_TS.sub("<ts>", text)
+    text = _SPEND_LABEL.sub(r"\g<1><usd>", text)
+    text = _SPEND_AFTER.sub("<usd>", text)
+    text = _USD_FIELD.sub(r"\g<1><usd>", text)
+    text = _TIME_FIELD.sub(r"\g<1><dur>", text)
+    text = _TIME_LABEL.sub(r"\g<1><dur>", text)
+    text = _MS.sub("<dur>", text)
     return _SEQ.sub(r"\g<1><seq>", text)
 
 

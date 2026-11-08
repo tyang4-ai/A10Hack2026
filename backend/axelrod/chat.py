@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 
 from .agents.base import AgentOutputError, AgentRunner, register_fake
 from .contract import m
-from .gateway import ROLE_SIZES, Blocked
+from .gateway import ROLE_SIZES, Blocked, live_model_calls
 from .ids import now_iso
 from .runtime import InvalidState, StopRequested
 from .store.state import ORCHESTRATOR_ROLE
@@ -221,7 +221,8 @@ async def reply_text(ctx: RunContext, asked: m.AgentMessage) -> str:
     runner.agent = agent.model_copy(deep=True, update={"instructions": None})
     system = system_prompt(ctx.state, agent)
     user = await user_prompt(ctx, agent, asked)
-    out = await runner.ask(system, user, ChatReply, max_tokens=MAX_TOKENS)
+    with live_model_calls():    # B-replay: chat is always a live call, never served from the model cache
+        out = await runner.ask(system, user, ChatReply, max_tokens=MAX_TOKENS)
     return trim_words(out.text)
 
 

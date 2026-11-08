@@ -9,7 +9,9 @@ span so the repair stage can re-cite from the source, which always wins.
 from __future__ import annotations
 
 import difflib
+import re
 import unicodedata
+from array import array
 from collections import Counter
 from functools import lru_cache
 
@@ -33,9 +35,101 @@ def _dropped(ch: str) -> bool:
     return ch == "­" or (unicodedata.category(ch) == "Cc" and not ch.isspace())
 
 
-@lru_cache(maxsize=512)
-def _norm_map(s: str) -> tuple[str, tuple[int, ...], tuple[int, ...]]:
-    """Normalized text plus, for each output character, the original [start, end) it came from."""
+_IDENT, _SPACE, _DROP, _MAP, _COMPLEX = range(5)
+_KIND: dict[str, tuple[int, str]] = {}
+
+
+def _kind(ch: str) -> tuple[int, str]:
+    """How a lone character normalizes (memoized per character): itself, one collapsing space, nothing,
+    a fixed string with no space or dropped char, or something the general loop must handle."""
+    k = _KIND.get(ch)
+    if k is None:
+        nf = unicodedata.normalize("NFKC", ch)
+        if unicodedata.combining(ch) or any(unicodedata.combining(c) for c in nf):
+            k = (_COMPLEX, nf)
+        elif ch.isspace() and len(nf) == 1 and nf.isspace() and not _dropped(nf):
+            k = (_SPACE, " ")
+        elif nf == ch and not ch.isspace() and not _dropped(ch):
+            k = (_IDENT, ch)
+        elif all(_dropped(c) for c in nf):
+            k = (_DROP, "")
+        elif not any(c.isspace() or _dropped(c) for c in nf):
+            k = (_MAP, nf)
+        else:
+            k = (_COMPLEX, nf)
+        _KIND[ch] = k
+    return k
+
+
+def _norm_map_fast(s: str) -> tuple[str, array, array] | None:
+    """The same result as _norm_map_slow when every character is single-cluster and simple (no combining
+    marks anywhere), built from runs instead of per character. None means use the slow loop."""
+    kinds = {ch: _kind(ch) for ch in set(s)}
+    if any(k[0] == _COMPLEX for k in kinds.values()):
+        return None
+    special = "".join(ch for ch, k in kinds.items() if k[0] != _IDENT)
+    out: list[str] = []
+    starts, ends = array("i"), array("i")
+    last_space = False  # out[-1] == " "
+    pos = 0
+    if special:
+        rx = re.compile("[" + "".join(f"\\U{ord(c):08x}" for c in special) + "]")
+        hits = rx.finditer(s)
+    else:
+        hits = iter(())
+    for mt in hits:
+        i = mt.start()
+        if i > pos:
+            out.append(s[pos:i])
+            starts.extend(range(pos, i))
+            ends.extend(range(pos + 1, i + 1))
+            last_space = False
+        kind, nf = kinds[s[i]]
+        if kind == _SPACE:
+            if last_space:
+                ends[-1] = i + 1
+            else:
+                out.append(" ")
+                starts.append(i)
+                ends.append(i + 1)
+                last_space = True
+        elif kind == _MAP:
+            out.append(nf)
+            starts.extend([i] * len(nf))
+            ends.extend([i + 1] * len(nf))
+            last_space = False
+        pos = i + 1
+    if pos < len(s):
+        out.append(s[pos:])
+        starts.extend(range(pos, len(s)))
+        ends.extend(range(pos + 1, len(s) + 1))
+    return "".join(out), starts, ends
+
+
+_LONG = 600  # pages and long spans get their own cache, so a burst of short quotes never evicts a page
+
+
+def _norm_map(s: str) -> tuple[str, array, array]:
+    """Normalized text plus, for each output character, the original [start, end) it came from.
+    Cached: every page is normalized once per run instead of once per quote (offsets kept as compact
+    int arrays so a whole run's pages fit)."""
+    return _norm_map_long(s) if len(s) >= _LONG else _norm_map_short(s)
+
+
+def _norm_map_uncached(s: str) -> tuple[str, array, array]:
+    fast = _norm_map_fast(s)
+    if fast is not None:
+        return fast
+    text_, starts, ends = _norm_map_slow(s)
+    return text_, array("i", starts), array("i", ends)
+
+
+_norm_map_long = lru_cache(maxsize=4096)(_norm_map_uncached)
+_norm_map_short = lru_cache(maxsize=16384)(_norm_map_uncached)
+
+
+def _norm_map_slow(s: str) -> tuple[str, tuple[int, ...], tuple[int, ...]]:
+    """The reference loop: per character cluster NFKC, drops, whitespace collapse."""
     out: list[str] = []
     starts: list[int] = []
     ends: list[int] = []
@@ -165,14 +259,77 @@ def _nudge(npage: str, nq: str, s: int, e: int) -> tuple[float, int, int]:
     return ratio, ss, ee
 
 
-def _best_aligned(npage: str, nq: str) -> tuple[float, int, int] | None:
-    best: tuple[float, int, int] | None = None
-    for cand in _candidate_starts(npage, nq):
+_EPS = 1e-12  # far above float rounding of a ratio, far below the 1e-9 tie margin in closest_span
+
+
+@lru_cache(maxsize=4096)
+def _char_counts(npage: str) -> Counter[str]:
+    return Counter(npage)
+
+
+def _shared(cq: Counter[str], counts: Counter[str]) -> int:
+    return sum(min(v, counts[c]) for c, v in cq.items() if c in counts)
+
+
+def _ceiling(shared: int, size: int) -> float:
+    """Highest ratio any span can reach when at most `shared` characters can match: ratio = 2M/(|q|+|span|)
+    with M <= shared and M <= |span|, so ratio <= 2*shared/(|q|+shared). Used only to skip spans that
+    provably cannot win, so the chosen span is the same as without the skip."""
+    return 2.0 * shared / (size + shared) if shared else 0.0
+
+
+def _char_masks(nq: str) -> dict[str, int]:
+    masks: dict[str, int] = {}
+    for i, c in enumerate(nq):
+        masks[c] = masks.get(c, 0) | (1 << i)
+    return masks
+
+
+def _lcs_len(masks: dict[str, int], size: int, b: str) -> int:
+    """Length of the longest common subsequence of the quote (as bit masks) and b, bit-parallel
+    (Crochemore et al. 2001). SequenceMatcher's matching blocks are a common subsequence, so this bounds
+    their total size, which makes _ceiling(lcs) a tighter upper bound than the shared characters."""
+    full = (1 << size) - 1
+    v = full
+    for c in b:
+        mc = masks.get(c)
+        if mc:
+            u = v & mc
+            v = ((v + u) | (v - u)) & full
+    return size - v.bit_count()
+
+
+def _best_aligned(npage: str, nq: str, floor: float | None = None) -> tuple[float, int, int] | None:
+    """Best candidate span on one page. With floor, a candidate that cannot beat floor + 1e-9 (another
+    page's best, see closest_span) is skipped, and None comes back when no candidate can."""
+    size = len(nq)
+    cq = Counter(nq)
+    if floor is not None and _ceiling(_shared(cq, _char_counts(npage)), size) <= floor + 1e-9 - _EPS:
+        return None
+    pad = max(3, size // 5)
+    masks = _char_masks(nq) if floor is not None else {}
+    tops: list[tuple[float, int, int]] = []
+    for rank, cand in enumerate(_candidate_starts(npage, nq)):
+        w0, w1 = max(0, cand - pad), min(len(npage), cand + size + pad)
+        window = npage[w0:w1]  # the span _align picks lies inside this window
+        top = _ceiling(_shared(cq, Counter(window)), size)
+        if floor is not None and top > floor + 1e-9 - _EPS:
+            top = min(top, _ceiling(_lcs_len(masks, size, window), size))
+        if floor is None or top > floor + 1e-9 - _EPS:
+            tops.append((top, rank, cand))
+    # Most promising candidate first, so the rest are mostly skipped. The winner is still the highest
+    # (ratio, -length gap), the earliest candidate on a tie, exactly as a plain loop in vote order picks it.
+    best: tuple[tuple[float, int, int], tuple[float, int, int]] | None = None
+    for top, rank, cand in sorted(tops, key=lambda t: (-t[0], t[1])):
+        if best is not None and top < best[0][0] - _EPS:
+            break
         span = _align(npage, nq, cand)
-        if span is not None and (best is None or (span[0], -abs(span[2] - span[1] - len(nq)))
-                                 > (best[0], -abs(best[2] - best[1] - len(nq)))):
-            best = span
-    return best
+        if span is None:
+            continue
+        key = (span[0], -abs(span[2] - span[1] - size), -rank)
+        if best is None or key > best[0]:
+            best = (key, span)
+    return None if best is None else best[1]
 
 
 def _finish(page_text: str, nq: str, s: int, e: int) -> tuple[float, tuple[int, int], list[m.DiffSegment]]:
@@ -204,7 +361,7 @@ def closest_span(pages: list[str], quote: str,
     best: tuple[int, float, int, int] | None = None
     for p in _page_order(len(pages), page_hint):
         npage = _norm_map(pages[p - 1])[0]
-        span = _best_aligned(npage, nq) if npage else None
+        span = _best_aligned(npage, nq, None if best is None else best[1]) if npage else None
         if span is not None and (best is None or span[0] > best[1] + 1e-9):
             best = (p, *span)
     if best is None:
