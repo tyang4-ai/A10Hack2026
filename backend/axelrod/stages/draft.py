@@ -523,13 +523,14 @@ def precheck(state: RunState, group: list[str], out: drafter.DraftOutput, verifi
 
 async def _draft_group(ctx: RunContext, group: list[str], rows: list[dict],
                        verified: dict[str, m.DataItem] | None = None,
-                       index: list[dict] | None = None) -> tuple[drafter.DraftOutput | None, str]:
+                       index: list[dict] | None = None, *,
+                       runner: AgentRunner | None = None) -> tuple[drafter.DraftOutput | None, str]:
     """One drafter for one group. Returns the draft, or None and why. When code's pre-check finds problems in
     the draft, the same drafter revises it once with code's findings (and code's values for wrong displays);
-    the revision is kept only if it validates."""
+    the revision is kept only if it validates. A rerun (V3-rework) passes its own runner."""
     prompt = drafter.draft_prompt(company_view(ctx.state), [criterion_entry(c) for c in group], rows,
                                   metrics_for(group), needs_view(ctx.state.needs, group), index)
-    runner = AgentRunner(ctx, "drafter", f"Draft {', '.join(group)}", [r["id"] for r in rows], "large")
+    runner = runner or AgentRunner(ctx, "drafter", f"Draft {', '.join(group)}", [r["id"] for r in rows], "large")
     shown = {r["id"] for r in rows}
     try:
         with runner:
@@ -1019,6 +1020,119 @@ def build_items(ctx: RunContext, scope: list[str], groups: list[list[str]], veri
         ctx.emit("agent.log", m.AgentLogData(text="Code noted: " + "; ".join(b.info)),
                  message="draft: " + "; ".join(b.info))
     return out
+
+
+# ---------------------------------------------------------------------------
+# Rerun one drafter (V3-rework, CONTRACT.md 14): its criteria group again, with an Instructions block
+# ---------------------------------------------------------------------------
+# rework.py drives the rerun. The drafter sees the group's verified data as the stage shows it, and code
+# builds the items with the same Builder. New versions keep their ids: a score by its criterion, a
+# conclusion by the data it cites (most shared ids), a chart by its title. Code matches them, never the model.
+
+_TASK_GROUP = re.compile(r"^Draft ([a-z_]+(?:, [a-z_]+)*)$")
+
+
+def group_of_task(task: str) -> list[str] | None:
+    """The criteria from a drafter's code-written task ("Draft rotic_level, rotic_vs_peers"), else None."""
+    hit = _TASK_GROUP.match(task.strip())
+    return hit.group(1).split(", ") if hit else None
+
+
+class _ReservedIds:
+    """Stands in for the context inside the Builder: hands out an old id when one is reserved for the item
+    being built, a fresh one otherwise."""
+
+    def __init__(self, ctx: RunContext) -> None:
+        self._ctx = ctx
+        self.reserved: dict[str, str] = {}
+
+    def next_id(self, prefix: str) -> str:
+        return self.reserved.pop(prefix, None) or self._ctx.next_id(prefix)
+
+    def __getattr__(self, name: str):
+        return getattr(self._ctx, name)
+
+
+def _overlap(a: set[str], b: set[str]) -> float:
+    return len(a & b) / len(a | b) if a | b else 0.0
+
+
+class ReworkBuilder(Builder):
+    """The stage's Builder, with the old ids reserved for new versions."""
+
+    def __init__(self, ctx: RunContext, verified: dict[str, m.DataItem], old: list[m.Item]) -> None:
+        self.ids = _ReservedIds(ctx)
+        super().__init__(self.ids, verified)   # type: ignore[arg-type]
+        self.old_c = {i.id: i for i in old if i.kind == "conclusion"}
+        self.old_e = {i.criterion: i.id for i in old if i.kind == "extrapolation"}
+        self.old_g = {i.title.strip().lower(): i.id for i in old if i.kind == "chart"}
+
+    def conclusion(self, gi: int, group: list[str], dc: drafter.DraftConclusion) -> m.Conclusion | None:
+        cited = set(dc.data_ids) | {i for c in dc.computations for i in compute.ids_in(c.expr)}
+        best = max(self.old_c.values(), key=lambda c: _overlap(cited, set(c.data_ids)), default=None)
+        if best is not None and _overlap(cited, set(best.data_ids)) > 0:
+            self.ids.reserved["C"] = best.id
+        try:
+            c = super().conclusion(gi, group, dc)
+        finally:
+            self.ids.reserved.pop("C", None)
+        if c is not None:
+            self.old_c.pop(c.id, None)
+        return c
+
+    def extrapolation(self, criterion: str, gi: int | None, ds: drafter.DraftScore | None,
+                      missing: str) -> m.Extrapolation:
+        if criterion in self.old_e:
+            self.ids.reserved["E"] = self.old_e.pop(criterion)
+        try:
+            return super().extrapolation(criterion, gi, ds, missing)
+        finally:
+            self.ids.reserved.pop("E", None)
+
+    def chart(self, gi: int, group: list[str], dg: drafter.DraftChart) -> m.Chart | None:
+        key = dg.title.strip().lower()
+        if key in self.old_g:
+            self.ids.reserved["G"] = self.old_g[key]
+        try:
+            g = super().chart(gi, group, dg)
+        finally:
+            self.ids.reserved.pop("G", None)
+        if g is not None:
+            self.old_g.pop(key, None)
+        return g
+
+
+async def redraft_group(ctx: RunContext, runner: AgentRunner, group: list[str],
+                        old: list[m.Item]) -> list[m.Item]:
+    """Ask the rerun's drafter for its group again (with code's pre-check and one revision, as the stage does)
+    and build the items. Items whose id is in `old` are new versions, the rest are new. Raises RuntimeError
+    when the drafter gave nothing (blocked or invalid twice), StopRequested on STOP."""
+    ctx.check_stop()
+    state = ctx.state
+    data = usable_data(state)
+    verified = {d.id: d for d in data}
+    mine, _ = group_items(data, group)
+    rows = [data_row(d) for d in mine]
+    if not rows:
+        raise RuntimeError(f"No verified data item serves {', '.join(group)} any more")
+    index = inputs_index(state, mine) if metrics_for(group) else None
+    out, why = await _draft_group(ctx, group, rows, verified, index, runner=runner)
+    if out is None:
+        raise RuntimeError(why)
+    b = ReworkBuilder(ctx, verified, old)
+    b.agent_ids = {0: runner.agent_id}
+    b.seen = {0: {r["id"] for r in rows}}
+    items: list[m.Item] = [c for dc in out.conclusions if (c := b.conclusion(0, group, dc)) is not None]
+    for crit in group:
+        ds = next((s for s in out.scores if s.criterion == crit), None)
+        items.append(b.extrapolation(crit, 0, ds, _missing_reason(True, None)))
+    items += [g for dg in out.charts if (g := b.chart(0, group, dg)) is not None]
+    for lines in b.notes.values():
+        ctx.emit("agent.log", m.AgentLogData(text="Code rejected or changed: " + "; ".join(lines),
+                                             transcript_path=runner.agent.transcript_path),
+                 message=f"{runner.agent_id}: code rejected or changed {len(lines)} part(s) of the draft",
+                 agent_id=runner.agent_id, level="warn")
+    return items
 
 
 async def run(ctx: RunContext) -> None:

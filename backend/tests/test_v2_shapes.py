@@ -101,7 +101,7 @@ def test_cache_layout(settings):
                            content_type="application/pdf", bytes=3, sha256="0" * 64, collected_at=now_iso(),
                            origin="archive", source_path="01-Annual-Reports/a.pdf")
     assert cache.CacheMeta.model_validate_json(meta.model_dump_json()) == meta
-    assert cache.run_cache_mode(settings.model_copy(update={"cache_documents": True})) == "off"   # until V2
+    assert cache.run_cache_mode(settings.model_copy(update={"cache_documents": True})) == "documents"
 
 
 # ---------------------------------------------------------------------------
@@ -409,27 +409,31 @@ def run_path(state: RunState) -> str:
     return f"{P}/runs/{state.run.run_id}"
 
 
-def test_new_routes_answer_like_the_mock_while_their_modules_are_stubs(api):
+def test_new_routes_answer_like_the_mock(api):
+    """The mock's status codes and errors. Stop one agent (V2), chat (V7) and rerun one agent (V3) are real
+    now, resume (V6) and fork (V8) are still stubs."""
     client, state = api
     r = run_path(state)
+    assert "still working. Stop it first" in err(client.post(f"{r}/agents/verifier-D-001-1/rerun",
+                                                             json={"instructions": "x"}), 409)
     assert "No agent nope" in err(client.post(f"{r}/agents/nope/stop", json={}), 404, "not_found")
     assert err(client.post(f"{r}/agents/extractor-01/stop", json={}), 409) == "extractor-01 is already done"
-    assert err(client.post(f"{r}/agents/verifier-D-001-1/stop", json={"reason": "x"}), 409) == \
-        "not built yet (V2-gateway)"
-    assert err(client.post(f"{r}/agents/verifier-D-001-1/stop"), 409) == "not built yet (V2-gateway)"
+    got = client.post(f"{r}/agents/verifier-D-001-1/stop", json={"reason": "x"})
+    assert got.status_code == 200 and m.Agent.model_validate(got.json()).status == "stopped"
+    assert err(client.post(f"{r}/agents/verifier-D-001-1/stop"), 409) == "verifier-D-001-1 is already stopped"
     err(client.get(f"{r}/agents/nope/messages"), 404, "not_found")
-    assert err(client.get(f"{r}/agents/bobby/messages"), 409) == "not built yet (V7-chat)"
-    assert err(client.post(f"{r}/agents/bobby/messages", json={"text": "why?"}), 409) == "not built yet (V7-chat)"
+    got = client.get(f"{r}/agents/bobby/messages")
+    assert got.status_code == 200 and got.json() == {"messages": []}
+    got = client.post(f"{r}/agents/bobby/messages", json={"text": "why?"})
+    assert got.status_code == 201 and m.AgentMessage.model_validate(got.json()).status == "sent"
     err(client.post(f"{r}/agents/bobby/messages", json={"text": ""}), 422, "validation_error")
     err(client.post(f"{r}/agents/nope/rerun", json={"instructions": "x"}), 404, "not_found")
     assert "Bobby can't be rerun" in err(client.post(f"{r}/agents/bobby/rerun", json={"instructions": "x"}), 409)
     assert "Fetchers can't be rerun" in err(client.post(f"{r}/agents/fetcher-01/rerun",
                                                         json={"instructions": "x"}), 409)
-    assert "still working. Stop it first" in err(client.post(f"{r}/agents/verifier-D-001-1/rerun",
-                                                             json={"instructions": "x"}), 409)
     err(client.post(f"{r}/agents/extractor-01/rerun", json={"instructions": ""}), 422, "validation_error")
-    assert err(client.post(f"{r}/agents/extractor-01/rerun", json={"instructions": "Use page 138", "recheck": True}),
-               409) == "not built yet (V3-rework)"
+    assert "extractor-01 reads structured data by code" in err(client.post(
+        f"{r}/agents/extractor-01/rerun", json={"instructions": "Use page 138", "recheck": True}), 409)
     assert "Only a stopped run can resume. This one is running" in err(client.post(f"{r}/resume", json={}), 409)
     assert "This one is running" in err(client.post(f"{r}/rerun", json={"from_stage": "draft",
                                                                          "instructions": "x"}), 409)
@@ -549,12 +553,18 @@ def test_the_comment_route_hands_the_comment_to_bobby(api, monkeypatch):
     assert len(seen) == 1                                    # a rejected comment never reaches Bobby
 
 
-def test_the_default_comment_hook_leaves_the_comment_queued(api):
+def test_the_real_comment_hook_has_bobby_answer_the_comment(api):
+    """V3-rework: Bobby answers a comment on the run (no goon behind it), so it resolves as applied."""
     client, state = api
     got = client.post(f"{run_path(state)}/comments", json={"target_type": "run", "text": "noted"})
-    assert got.status_code == 201
-    time.sleep(0.05)
-    assert client.get(f"{run_path(state)}/comments").json()["comments"][0]["status"] == "queued"
+    assert got.status_code == 201 and got.json()["status"] == "queued"
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        c = client.get(f"{run_path(state)}/comments").json()["comments"][0]
+        if c["status"] == "applied":
+            break
+        time.sleep(0.02)
+    assert c["status"] == "applied" and c["response"].startswith("Simulated") and c["changed_item_ids"] == []
 
 
 def test_new_runs_report_honest_v2_defaults(api):

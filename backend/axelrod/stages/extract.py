@@ -26,6 +26,7 @@ from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
+from ..agentstop import is_stopped
 from ..agents.base import AgentOutputError, AgentRunner
 from ..agents.extractor import SYSTEM, ExtractedItem, ExtractorOutput, build_user_prompt
 from ..contract import RUBRIC, certainty, m
@@ -1263,6 +1264,10 @@ async def extract_json(ctx: RunContext, job: JsonJob, pages_by_doc: dict[str, li
                                        [job.source_id], None)
     try:
         ctx.check_stop()
+        if is_stopped(ctx.state, runner.agent_id):
+            log(ctx, runner, f"{job.source_id}: stopped by the analyst before reading", level="warn")
+            runner.finish("stopped")
+            return []
         source = ctx.state.sources_by_id()[job.source_id]
         pages = ctx.state.agent_pages(job.doc_id)
         try:
@@ -1278,10 +1283,17 @@ async def extract_json(ctx: RunContext, job: JsonJob, pages_by_doc: dict[str, li
             return []
         name = entity_name(source, doc)
         items = [build_code_item(ctx, source, job.doc_id, f, name, runner.agent_id) for f in facts]
-        for it in items:
-            register(ctx, it)
         sources = ctx.state.sources_by_id()
         verified = await asyncio.to_thread(lambda: [verify_item(it, pages_by_doc, sources) for it in items])
+        # A code reader makes no gateway call, so a stop can't cut it off there. Check here, after the last
+        # await and before anything enters the report: a result that lands after the stop is discarded.
+        if is_stopped(ctx.state, runner.agent_id):
+            log(ctx, runner, f"{job.source_id}: stopped by the analyst, {len(items)} fact(s) read by code discarded",
+                level="warn")
+            runner.finish("stopped")
+            return []
+        for it in items:
+            register(ctx, it)
         for it in verified:
             record_verified(ctx, it)
     except StopRequested:
@@ -1319,6 +1331,128 @@ def set_source_status(ctx: RunContext, source: m.Source, status: str) -> None:
 def log(ctx: RunContext, runner: AgentRunner, text_: str, *, level: str = "info") -> None:
     ctx.emit("agent.log", m.AgentLogData(text=text_, transcript_path=runner.agent.transcript_path),
              stage=STAGE, agent_id=runner.agent_id, level=level, message=f"{runner.agent_id}: {text_}")
+
+
+# ---------------------------------------------------------------------------
+# Rerun one extractor (V3-rework, CONTRACT.md 14): the same page again, with an Instructions block
+# ---------------------------------------------------------------------------
+# rework.py drives the rerun. This stage knows its own pages and items, so it gives the job back, asks the
+# model through the rerun's runner (which adds the Instructions block), builds the items exactly as the
+# stage does and says which old item each new one is a new version of. Code matches them, never the model.
+
+_TASK_PAGE = re.compile(r"^Extract (S-\d+) page (\d+)$")
+
+
+class _NoIdYet:
+    """Stands in for the context while build_item runs: the id is picked after matching, by rework code."""
+
+    def __init__(self, ctx: RunContext) -> None:
+        self._ctx = ctx
+
+    def next_id(self, prefix: str) -> str:
+        return f"{prefix}-000"
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._ctx, name)
+
+
+def page_of_task(task: str) -> tuple[str, int] | None:
+    """(source id, page) from an extractor's code-written task ("Extract S-001 page 138"), else None."""
+    hit = _TASK_PAGE.match(task.strip())
+    return (hit.group(1), int(hit.group(2))) if hit else None
+
+
+def rerun_job(state: RunState, source_id: str, page: int, doc_hint: str | None = None) -> PageJob:
+    """The page job a rerun reads again. Raises ValueError when the page can't be read any more: the source
+    was revoked (its pages are never read again) or the document is quarantined or gone."""
+    source = state.sources_by_id().get(source_id)
+    if source is None:
+        raise ValueError(f"{source_id} is not in this run")
+    if source.status == "revoked":
+        raise ValueError(f"{source_id} was revoked, so its pages are never read again")
+    docs = state.documents_by_id()
+    for doc_id in [d for d in (doc_hint, *source.doc_ids) if d]:
+        doc = docs.get(doc_id)
+        if doc is not None and doc.content_type != "json" and 1 <= page <= len(state.agent_pages(doc_id)):
+            return PageJob(source_id, doc_id, page, needs_for_page(state, source, page))
+    raise ValueError(f"{source_id} page {page} can't be read: the document is quarantined or was never stored")
+
+
+def _evidence(item: m.DataItem) -> m.Citation | None:
+    return next((c for c in item.citations if c.role == "evidence" and isinstance(c.locator, m.TextLocator)), None)
+
+
+def _same_item(new: m.DataItem, old: m.DataItem) -> int:
+    """How surely a new item is a new version of an old one: the same evidence span counts most, then the
+    same period and number, then the same statement. 0 means a different item."""
+    score = 0
+    a, b = _evidence(new), _evidence(old)
+    if (a is not None and b is not None and a.doc_id == b.doc_id and a.locator.page == b.locator.page
+            and a.locator.char_start < b.locator.char_end and b.locator.char_start < a.locator.char_end):
+        score += 4
+    va, vb = new.value, old.value
+    if va is not None and vb is not None and va.period == vb.period:
+        score += 2 if va.number == vb.number else 1
+    if text.normalize(new.statement).strip().lower() == text.normalize(old.statement).strip().lower():
+        score += 1
+    return score if score >= 2 else 0
+
+
+def match_items(new: list[m.DataItem], old: list[m.DataItem]) -> list[str | None]:
+    """For each new item, the id of the old item it is a new version of, or None (a new item). Each old id is
+    used once, best match first."""
+    free = {o.id: o for o in old}
+    out: list[str | None] = []
+    for n in new:
+        best, best_score = None, 0
+        for o in free.values():
+            s = _same_item(n, o)
+            if s > best_score:
+                best, best_score = o.id, s
+        if best is not None:
+            free.pop(best)
+        out.append(best)
+    return out
+
+
+async def reextract(ctx: RunContext, runner: AgentRunner, job: PageJob,
+                    old: list[m.DataItem]) -> list[tuple[m.DataItem, str | None]]:
+    """Ask the rerun's extractor for its page and build its items as the stage does. Returns (item, old id
+    or None) pairs; the items carry the placeholder id D-000 until rework code gives them theirs. Raises
+    Blocked, AgentOutputError or StopRequested from the call."""
+    ctx.check_stop()
+    state = ctx.state
+    source = state.sources_by_id()[job.source_id]
+    pages = state.agent_pages(job.doc_id)
+    doc = state.documents_by_id()[job.doc_id]
+    user = build_user_prompt(source=source, doc=doc, page=job.page, page_text=pages[job.page - 1], needs=job.needs,
+                             fiscal_note=state.fiscal_note)
+    out = await runner.ask(SYSTEM, user, ExtractorOutput, max_tokens=MAX_TOKENS)
+    built: list[m.DataItem] = []
+    seen: set[tuple[str, str, str]] = set()
+    for raw in out.items[:MAX_ITEMS_PER_PAGE]:
+        key = (text.normalize(raw.quote).strip(), raw.value_as_reported.strip(), raw.period.strip())
+        if not key[0] or key in seen:
+            continue
+        seen.add(key)
+        built.append(await asyncio.to_thread(build_item, _NoIdYet(ctx), source, job, raw, pages, runner.agent_id))
+    return list(zip(built, match_items(built, old)))
+
+
+async def check_reworked(ctx: RunContext, item: m.DataItem) -> m.DataItem:
+    """The data checks for a new version (verify_item, with its one fix by code), plus the tier rule for a
+    tier 2 or tier 3 item, which the stage runs once at the end. Returns the checked copy, not stored."""
+    state = ctx.state
+    sources = state.sources_by_id()
+    out = await asyncio.to_thread(verify_item, item, readable_pages(state), sources)
+    if out.source_tier == "priority":
+        return out
+    rule = checks.check_tier_rule(out, {**state.items, out.id: out}, sources)
+    found = [c for c in out.verification.checks if c.check != "tier_rule"] + list(rule)
+    status = checks.status_from(found)
+    if status == "pass" and out.verification.status == "fixed":
+        status = "fixed"
+    return _set_verification(out, out.verification.model_copy(update={"status": status, "checks": found}))
 
 
 def _short(s: str, n: int = 90) -> str:

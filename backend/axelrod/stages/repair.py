@@ -30,6 +30,9 @@ Scores, by rubric kind:
 Order: conclusions first, then the scores and charts that cite them are checked again, then those still
 failing are repaired. Blocked items (a revoked, quarantined or rejected source behind them) are left alone,
 and finalize declares them as holes. An item still failing after two repairs stays `fail` and becomes a hole.
+
+A rework (V3-rework: a rerun of the goon that produced the item, attempt action `rework`) makes a new version
+of the item. The two repairs count from the latest rework on, since the earlier repairs were of the old version.
 """
 from __future__ import annotations
 
@@ -68,6 +71,12 @@ class Proposal:
     action: str
     note: str
     item: m.Item | None = None
+
+
+def repairs_so_far(v: m.Verification) -> int:
+    """Repairs of the current version: those after the latest rework attempt (V3-rework), or all of them."""
+    last = max((i for i, a in enumerate(v.attempts) if a.action == "rework"), default=-1)
+    return sum(a.action in REPAIRS for a in v.attempts[last + 1:])
 
 
 def _failing(v: m.Verification) -> set[str]:
@@ -836,8 +845,9 @@ def _apply_extrapolation(e: m.Extrapolation, out: repairer.RepairOutput, items: 
     return Proposal("downgrade", _notes(conf_note, f"Repairer: {out.note.strip()}"), new)
 
 
-async def agent_repair(ctx: RunContext, item: m.Item) -> Proposal:
-    """One repairer call for a wording failure (judges or untraced numbers)."""
+async def agent_repair(ctx: RunContext, item: m.Item, *, runner: AgentRunner | None = None) -> Proposal:
+    """One repairer call for a wording failure (judges or untraced numbers). A repairer rerun (V3-rework)
+    passes its own runner, which adds the Instructions block."""
     state = ctx.state
     v = item.verification
     claim = {"id": item.id, **claim_view(item)}
@@ -850,8 +860,8 @@ async def agent_repair(ctx: RunContext, item: m.Item) -> Proposal:
     fixed = None if cs is None else {"score": cs.score, "rule_input": cs.rule_input, "display": cs.display,
                                      "code_sentence": cs.text}
     prompt = repairer.repair_prompt(claim, failing, evidence_view(state, item), history, rubric, code_score=fixed)
-    n = sum(a.action in REPAIRS for a in v.attempts) + 1
-    runner = AgentRunner(ctx, "repairer", f"Repair {item.id} (attempt {n})", [item.id], "large")
+    n = repairs_so_far(v) + 1
+    runner = runner or AgentRunner(ctx, "repairer", f"Repair {item.id} (attempt {n})", [item.id], "large")
     giving_up = "not_determinable" if item.kind == "extrapolation" else "delete"
     try:
         with runner:
@@ -927,7 +937,7 @@ async def repair_item(ctx: RunContext, item_id: str, book: CertaintyBook) -> Non
         v = item.verification
         if v.status != "fail" or rests_on_blocked(v):
             return
-        if sum(a.action in REPAIRS for a in v.attempts) >= MAX_REPAIRS:
+        if repairs_so_far(v) >= MAX_REPAIRS:
             _give_up(ctx, item, book)
             return
         ctx.check_stop()

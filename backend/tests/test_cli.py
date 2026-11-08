@@ -438,7 +438,8 @@ def test_cli_run_approve_tail_revoke_stop(server, store, monkeypatch) -> None:
     assert code == 1 and "409" in out                                   # already revoked
 
     code, out = run_cli("status", run_id, "--api", base)
-    assert code == 0 and "running at collect" in out and "allowed 2" in out and "blocked 1" in out \
+    # allowed 3: two fetches plus Bobby's plan-gate call (V3-rework), an allowed model call by the orchestrator
+    assert code == 0 and "running at collect" in out and "allowed 3" in out and "blocked 1" in out \
         and "flagged 1" in out and "$0.0123" in out, out
 
     code, out = run_cli("stop", run_id, "--reason", "demo stop", "--api", base)

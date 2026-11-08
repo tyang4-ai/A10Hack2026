@@ -25,12 +25,15 @@ It counts only what the brief itself renders, not the register beside it.
 """
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar, Literal
+
+from pydantic import BaseModel, Field
 
 from ..agents import summarizer
-from ..agents.base import AgentRunner
+from ..agents.base import AgentRunner, register_fake
 from ..contract import m
 from ..verify.numbers import half_up
 from .draft import ANALYST_ONLY
@@ -507,39 +510,140 @@ def log(ctx: RunContext, agent_id: str, text: str, level: str = "info") -> None:
 # ---------------------------------------------------------------------------
 
 
+SUMMARIZER_TASK = "Write the 3-page brief from verified report items"
+
+
 async def run(ctx: RunContext) -> None:
     ctx.check_stop()
+    runner = AgentRunner(ctx, "summarizer", SUMMARIZER_TASK, [], "large")
+    with runner:
+        await draft_brief(ctx, runner)
+
+
+async def draft_brief(ctx: RunContext, runner: AgentRunner) -> None:
+    """The summarizer's whole draft, as the stage writes it: state.summary set (drafting), summary.sentence
+    events. The stage and a summarizer rerun (V3-rework) both call it with their runner."""
     st = ctx.state
     gaps = gap_sentences(st)
     n_charts = sum(g.verification.status in PASSING for g in st.charts())
     budget = word_budget(n_charts, reserved_words=sum(words_of(s.text) for s in gaps))
     payload = summarizer.report_payload(st, word_budget=budget, gap_summary=[
         {"text": s.text, "derived_from": list(s.derived_from)} for s in gaps])
-    runner = AgentRunner(ctx, "summarizer", "Write the 3-page brief from verified report items", [], "large")
-    with runner:
-        draft = await runner.ask(summarizer.summarizer_system(budget), summarizer.summarizer_user(payload),
-                                 summarizer.BriefDraft, max_tokens=SUMMARIZER_MAX_TOKENS)
-        sections, notes = build_sections(draft, st)
-        notes += place_gaps(sections, draft, gaps)
-        sections, cut = fit_pages(sections, items=st.items)
-        if cut:
-            notes.append(f"{len(cut)} sentence(s) cut to fit {MAX_PAGES:g} estimated pages")
-        for note in notes:
-            log(ctx, runner.agent_id, note, level="warn")
-        sentences = all_sentences(sections)
-        if not sentences:
-            raise RuntimeError("The summarizer wrote no sentence that cites the report")
-        for _, s in sentences:
-            s.id = ctx.next_id("H")
-        content, gap = split_counts(sections)
-        log(ctx, runner.agent_id, f"brief drafted: {content} content and {gap} gap sentence(s), "
-                                  f"{len(st.holes)} hole(s) in the register")
-        st.summary = m.HumanReport(
-            run_id=st.run.run_id, title=brief_title(st), company=st.run.company, ticker=st.run.ticker,
-            as_of=st.as_of or st.run.created_at[:10], status="drafting", sections=sections, holes=list(st.holes),
-            disclaimer=st.disclaimer, stats=make_stats(sections), certainty=None, markdown_path=None,
-            as_of_seq=st.run.last_seq)
-        for heading, s in sentences:
-            ctx.emit("summary.sentence", m.SummarySentenceData(sentence=s, section_heading=heading),
-                     message=f"{s.id} written ({s.mode}, cites {', '.join(s.derived_from)})",
-                     stage="summarize", agent_id=runner.agent_id)
+    draft = await runner.ask(summarizer.summarizer_system(budget), summarizer.summarizer_user(payload),
+                             summarizer.BriefDraft, max_tokens=SUMMARIZER_MAX_TOKENS)
+    sections, notes = build_sections(draft, st)
+    notes += place_gaps(sections, draft, gaps)
+    sections, cut = fit_pages(sections, items=st.items)
+    if cut:
+        notes.append(f"{len(cut)} sentence(s) cut to fit {MAX_PAGES:g} estimated pages")
+    for note in notes:
+        log(ctx, runner.agent_id, note, level="warn")
+    sentences = all_sentences(sections)
+    if not sentences:
+        raise RuntimeError("The summarizer wrote no sentence that cites the report")
+    for _, s in sentences:
+        s.id = ctx.next_id("H")
+    content, gap = split_counts(sections)
+    log(ctx, runner.agent_id, f"brief drafted: {content} content and {gap} gap sentence(s), "
+                              f"{len(st.holes)} hole(s) in the register")
+    st.summary = m.HumanReport(
+        run_id=st.run.run_id, title=brief_title(st), company=st.run.company, ticker=st.run.ticker,
+        as_of=st.as_of or st.run.created_at[:10], status="drafting", sections=sections, holes=list(st.holes),
+        disclaimer=st.disclaimer, stats=make_stats(sections), certainty=None, markdown_path=None,
+        as_of_seq=st.run.last_seq)
+    for heading, s in sentences:
+        ctx.emit("summary.sentence", m.SummarySentenceData(sentence=s, section_heading=heading),
+                 message=f"{s.id} written ({s.mode}, cites {', '.join(s.derived_from)})",
+                 stage="summarize", agent_id=runner.agent_id)
+
+
+# ---------------------------------------------------------------------------
+# Rerun the summarizer for one sentence (V3-rework): an analyst's comment on a brief sentence
+# ---------------------------------------------------------------------------
+# A whole-brief rerun calls draft_brief with the rerun's runner, then verify_summary checks the new brief. A
+# comment on one sentence needs only that sentence again: the summarizer rewrites it with the comment as its
+# instructions, from the evidence of the sentence and the verified claims of the same categories. Code keeps
+# only ids it offered, and the verify_summary checks decide whether the new version replaces the old one.
+
+
+class SentenceRevision(BaseModel):
+    """The one brief sentence, rewritten as the instructions ask. Cite only ids from the evidence."""
+    TOOL_NAME: ClassVar[str] = "brief_sentence_revision"
+    text: str = Field(description="One sentence. Never write an id in it.")
+    mode: Literal["copied", "derived"] = Field(
+        description="copied: exactly one item's text, and derived_from is that one id. derived: your own words "
+                    "that say no more than the cited items.")
+    derived_from: list[str] = Field(description="The evidence ids this sentence rests on.")
+
+
+REVISE_SENTENCE_SYSTEM = """You rewrite one sentence of a three-page screening brief, as the instructions at the end ask, using only the evidence you are given.
+Every number must be a cited item's value as shown, a cited computation's display, a cited score or a rollup number. Never compute a number yourself. Never add a cause, forecast or opinion the evidence does not state. Cite in derived_from every evidence id the sentence rests on, and never write an id in the text. Keep one sentence in plain words.
+If the instructions ask for something the evidence cannot support, return the sentence as it is."""
+
+
+def find_sentence(summary: m.HumanReport | None, sid: str) -> m.SummarySentence | None:
+    if summary is None:
+        return None
+    return next((s for _, s in all_sentences(summary.sections) if s.id == sid), None)
+
+
+def sentence_evidence(state: RunState, s: m.SummarySentence) -> tuple[list[dict], set[str]]:
+    """What the rewrite may rest on: the sentence's own refs and their inputs, then the verified conclusions
+    and scores of the same categories. Returns the evidence and the ids it offers."""
+    cats = {state.items[r].category for r in s.derived_from if r in state.items}
+    extra = [i.id for i in state.items.values() if i.kind in ("conclusion", "extrapolation") and i.category in cats
+             and i.verification.status in PASSING and i.id not in s.derived_from]
+    ev = summarizer.evidence_for(list(s.derived_from) + extra, state.items, state.holes, state.rollup)
+    return ev, {e["id"] for e in ev if isinstance(e.get("id"), str) and e["id"] != "hole_count"}
+
+
+def revise_user(s: m.SummarySentence, evidence: list[dict]) -> str:
+    task = {"sentence": s.text, "mode": s.mode, "derived_from": list(s.derived_from), "evidence": evidence}
+    return (f"Rewrite this brief sentence. Call {SentenceRevision.TOOL_NAME} once.\n\n<task>\n"
+            + json.dumps(task, ensure_ascii=False, indent=1, default=str) + "\n</task>")
+
+
+async def revise_sentence(ctx: RunContext, runner: AgentRunner, sid: str) -> m.SummarySentence:
+    """The rerun's summarizer rewrites one sentence. Returns the pending new version (same id, refs filtered to
+    what code offered). Raises ValueError when the sentence is not in the brief, RuntimeError when the new
+    version cites nothing it was offered."""
+    ctx.check_stop()
+    s = find_sentence(ctx.state.summary, sid)
+    if s is None:
+        raise ValueError(f"{sid} is not in the brief")
+    evidence, offered = sentence_evidence(ctx.state, s)
+    out = await runner.ask(REVISE_SENTENCE_SYSTEM, revise_user(s, evidence), SentenceRevision, max_tokens=600)
+    refs = [r for r in dict.fromkeys(x.strip().split(":")[0] for x in out.derived_from) if r in offered]
+    text = " ".join(out.text.split())
+    if not refs or not text:
+        raise RuntimeError(f"The new version of {sid} cites nothing from its evidence")
+    return m.SummarySentence(id=sid, text=text, mode=out.mode, derived_from=refs,
+                             verification=m.Verification(status="pending", attempts=list(s.verification.attempts)))
+
+
+def replace_sentence(summary: m.HumanReport, new: m.SummarySentence) -> bool:
+    """Swap the sentence with the same id for its new version, in place. False when it is not there."""
+    for sec in summary.sections:
+        for b in sec.blocks:
+            if isinstance(b, (m.ParagraphBlock, m.BulletsBlock)):
+                for i, s in enumerate(b.sentences):
+                    if s.id == new.id:
+                        b.sentences[i] = new
+                        return True
+            elif isinstance(b, m.ChartBlock) and b.caption.id == new.id:
+                b.caption = new
+                return True
+    return False
+
+
+def fake_revise_sentence(system: str, user: str, schema: dict) -> dict:
+    """Simulated summarizer rerun: copies the first short cited item it is offered, else keeps the sentence."""
+    task = summarizer._tagged(user, "task") or {}
+    for e in task.get("evidence", []):
+        if e.get("kind") in ("conclusion", "extrapolation", "data") and len(str(e.get("text", "")).split()) <= 60:
+            return {"text": e["text"], "mode": "copied", "derived_from": [e["id"]]}
+    return {"text": task.get("sentence", ""), "mode": task.get("mode", "derived"),
+            "derived_from": list(task.get("derived_from", []))}
+
+
+register_fake(SentenceRevision.TOOL_NAME, fake_revise_sentence)

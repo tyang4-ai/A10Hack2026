@@ -452,7 +452,9 @@ def test_full_path_fetches_flags_quarantines_and_blocks_the_link(settings, monke
     assert len(link_reqs) == 1
     assert (link_reqs[0].decision, link_reqs[0].rule_id) == ("blocked", None)
     assert link_reqs[0].reason.startswith("link found in page") and "Default deny" in link_reqs[0].reason
-    assert len(reqs) == 3
+    assert len([r for r in reqs if r.action == "fetch"]) == 3
+    # the rest are Bobby's gate calls (V3-rework): allowed model calls by the orchestrator, never a fetch
+    assert all(r.role == "orchestrator" and r.decision == "allowed" for r in reqs if r.action != "fetch")
 
     assert len(documents) == 1
     doc = documents[0]
