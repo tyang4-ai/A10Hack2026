@@ -11,7 +11,8 @@ Checks per kind (in this order):
   data           quote_exact (one per text citation, in citation order), json_value (one per json
                  citation), value_in_quote, unit_context, period_match, numbers_traced (the statement),
                  citations_resolve (the source)
-  conclusion     citations_resolve, computation (when it has computations), numbers_traced
+  conclusion     citations_resolve, computation (when it has computations, including the year-ends an
+                 average balance uses), numbers_traced
   extrapolation  citations_resolve, threshold_rule (numeric rubric thresholds only), numbers_traced
   chart          citations_resolve, chart_values
   sentence       citations_resolve, then copy_exact (copied) or numbers_traced (derived)
@@ -25,6 +26,7 @@ its evidence quote. Years, fiscal-year labels, dates and ids are never counted a
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 from dataclasses import dataclass
@@ -574,8 +576,20 @@ def _unit_context(item: m.DataItem, uc: list[str], ev: list[str]) -> m.CheckResu
 
 
 _ORD = {1: "first", 2: "second", 3: "third", 4: "fourth"}
-_CLAUSE = re.compile(r"[;()\[\]]|,\s|\s(?:compared\s+(?:with|to)|versus|vs\.?|against|from|to|while|whereas)\s",
-                     re.IGNORECASE)
+# Clause boundaries inside an evidence sentence. "over" and "than" introduce a comparison base ("growth of
+# 4.0% over fiscal year 2026"), so the base sits in a clause of its own, as in stages/extract.py.
+_CLAUSE = re.compile(r"[;()\[\]]|,\s|\s(?:compared\s+(?:with|to)|versus|vs\.?|against|from|to|while|whereas|"
+                     r"over|than)\s", re.IGNORECASE)
+# The words before a comparison base. A sentence that opens with "Over fiscal year 2026, ..." means "during",
+# so a word, number or bracket must come before the comparison word.
+_BASE_LEFT = re.compile(r"(?<=[\w%)])\s+(?:over|than|versus|vs\.?|against|compared\s+(?:with|to)|relative\s+to|"
+                        r"level\s+of)\s+(?:in\s+)?(?:the\s+)?(?:(?:Q[1-4]|(?:first|second|third|fourth)\s+quarter)"
+                        r"\s+(?:of\s+)?(?:the\s+)?)?$", re.IGNORECASE)
+_PRIOR_LABEL = re.compile(r"\b(?:prior|previous)[\s-]year\s?:", re.IGNORECASE)  # "(prior year: €1.00)"
+# A nil table cell standing alone: a dash of any kind, "n/a", "n.a." or "n.m.".
+_NIL = re.compile(r"(?<!\S)(?:[-‐‑‒–—−]|n/a|n\.a\.|n\.m\.)(?!\S)", re.IGNORECASE)
+# A word of a row label. Letters glued to a number ("1M", "2.5x") belong to that cell, not to a label.
+_LABEL_WORD = re.compile(r"(?<!\d)[^\W\d_]+")
 
 
 def _has_quarter(q: str, n: int) -> bool:
@@ -590,21 +604,71 @@ def _ordered_years(mentions: list[tuple[int, int, int]]) -> list[int]:
     return out
 
 
-def _columns(header: list[int], row: list[NumToken], hits: list[NumToken], year: int, label: str):
-    """True if a hit sits in the column the header labels with year, a failure detail if it sits in
-    another year's column, None when the row cannot be aligned. Columns align from the right, so a
-    leading note column does not shift them."""
-    if len(header) < 2 or len(row) < len(header):
+def _row_cells(q: str, h: NumToken, pct: bool, floor: int = 0) -> tuple[list[int] | None, list[int]] | None:
+    """The value cells of the table row around hit h that hold the same kind of value as h (% or amount),
+    as start offsets: (with nil cells, without them). The first is None when a nil cell sits between a %
+    cell and an amount, so its column kind is unknown. None when h is not a table cell.
+
+    The row runs from the last label word before h to the next label word after it, so numbers inside a
+    row label ("Loan (US$1,742 million)") are not cells and the next row's cells are left out. A number
+    with a scale word or currency ("€2,160 million", the "1M" of "EURIBOR 1M") is prose or a label, never
+    an amount cell. A % cell in a row that also holds amounts is a change column, never a year column."""
+    if h.word or h.currency:
         return None
-    starts = [t.start for t in row[-len(header):]]
+    toks = scan_numbers(q)
+    nils = [mm.span() for mm in _NIL.finditer(q) if not any(t.start < mm.end() and mm.start() < t.end for t in toks)]
+    words = [mm.span() for mm in _LABEL_WORD.finditer(q) if not any(s <= mm.start() < e for s, e in nils)]
+    left = max([e for s, e in words if e <= h.core_start] + [floor])
+    right = min([s for s, e in words if s >= h.end], default=len(q))
+    cells: list[tuple[int, bool | None]] = [(t.start, t.pct) for t in toks if left <= t.core_start
+                                            and t.end <= right and not (t.word or t.currency)]
+    cells += [(s, None) for s, e in nils if left <= s and e <= right]
+    cells.sort()
+    kinds = [kind for _, kind in cells]
+    if pct and False in kinds:
+        return None
+    bare = [s for s, kind in cells if kind == pct]
+    full: list[int] | None = []
+    for i, (s, kind) in enumerate(cells):
+        if kind is None:
+            near = {next((k for k in reversed(kinds[:i]) if k is not None), None),
+                    next((k for k in kinds[i + 1:] if k is not None), None)} - {None}
+            if len(near) > 1:
+                full = None
+                break
+            kind = near.pop() if near else pct
+        if kind == pct:
+            full.append(s)
+    return full, bare
+
+
+def _columns(header: list[int], q: str, hits: list[NumToken], pct: bool, year: int, label: str, *, floor: int = 0):
+    """True if a hit sits in the column the header labels with year, a failure detail if it sits in
+    another year's column, None when the row cannot be aligned.
+
+    Nil cells count as columns when that lines the row up with the header, or with the header repeated
+    (a "current" and a "non-current" pair of year columns under one cited header). Otherwise the cells
+    without nils align from the right, so a leading note column does not shift them."""
+    if len(header) < 2:
+        return None
     bad: list[str] = []
     for h in hits:
+        row = _row_cells(q, h, pct, floor)
+        if row is None:
+            continue
+        full, bare = row
+        if full is not None and len(full) != len(bare) and len(full) % len(header) == 0:
+            starts, cols = full, header * (len(full) // len(header))
+        elif len(bare) >= len(header):
+            starts, cols = bare[-len(header):], header
+        else:
+            continue
         if h.start in starts:
             j = starts.index(h.start)
-            if header[j] == year:
+            if cols[j] == year:
                 return True
             bad.append(f"'{h.raw}' sits in value column {j + 1} of the row, which the header labels "
-                       f"{header[j]}, not {label}")
+                       f"{cols[j]}, not {label}")
     return bad[0] if bad else None
 
 
@@ -617,22 +681,83 @@ def _period_style(q: str, s: int, e: int) -> bool:
     return bool(re.match(r"\)?\s?:", q[e:e + 3]))
 
 
-def _clauses(q: str, mentions: list[tuple[int, int, int]], hits: list[NumToken], year: int, label: str):
-    """True if a hit's clause names exactly year, a failure detail if it names one other year, else None."""
-    protected = [(t.start, t.end) for t in scan_numbers(q, include_labels=True)] + [(s, e) for _, s, e in mentions]
-    cuts = [mm.span() for mm in _CLAUSE.finditer(q) if not any(s <= mm.start() < e for s, e in protected)]
-    periods = [(y, s, e) for y, s, e in mentions if _period_style(q, s, e)]
-    bad: list[str] = []
+def _borrowed(q: str, s: int, e: int) -> str | None:
+    """The phrase that makes a period mention belong to another value, or None: a comparison base
+    ("over fiscal year 2026") or a bracketed comparative ("(2024: 9%)")."""
+    seg = q[max(0, s - 60):s]
+    base = _BASE_LEFT.search(seg)
+    if base:
+        return (seg[base.start():] + q[s:e]).strip()
+    opener = re.search(r"[(\[]\s?$", q[:s])
+    if opener and re.match(r"\s?\)?\s?:", q[e:e + 4]):
+        return q[opener.start():e] + ":"
+    return None
+
+
+def _free_mentions(q: str) -> list[tuple[int, int, int]]:
+    """Period mentions that may set the period of a value elsewhere in the quote (not borrowed)."""
+    return [(y, s, e) for y, s, e in period_mentions(q) if _borrowed(q, s, e) is None]
+
+
+def _clause_cuts(q: str) -> list[tuple[int, int]]:
+    protected = ([(t.start, t.end) for t in scan_numbers(q, include_labels=True)]
+                 + [(s, e) for _, s, e in period_mentions(q)])
+    return [mm.span() for mm in _CLAUSE.finditer(q) if not any(s <= mm.start() < e for s, e in protected)]
+
+
+def _own_clause(q: str, hits: list[NumToken], year: int, label: str, latest: int | None):
+    """What the value's own clause says about its period. True when some appearance of the value sits in a
+    clause that names exactly year. A failure detail when every appearance sits in a clause that names one
+    other period: a comparative ("(2024: 9%)", "(prior year: €1.00)") or "in fiscal year 2024". None when some
+    appearance sits in a clause that names no period (or several), so the headers decide. latest is the latest
+    year of the context, which a "prior year:" label counts back from."""
+    cuts = _clause_cuts(q)
+    ments = period_mentions(q)
+    verdicts: list[bool | str | None] = []
     for h in hits:
         left = max([ce for cs, ce in cuts if ce <= h.start], default=0)
         right = min([cs for cs, ce in cuts if cs >= h.end], default=len(q))
-        ys = {y for y, s, e in periods if s >= left and e <= right}
-        if len(ys) == 1:
-            y = next(iter(ys))
-            if y == year:
-                return True
-            bad.append(f"'{h.raw}' sits next to {y} in the quote, not {label}")
-    return bad[0] if bad else None
+        inside = [(y, s, e) for y, s, e in ments if s >= left and e <= right]
+        if len({y for y, _, _ in inside}) >= 2:  # a header and its row ("Fiscal year 2025 2024 Revenue ...")
+            verdicts.append(None)
+            continue
+        ys = {y for y, s, e in inside if _period_style(q, s, e)}
+        prior = _PRIOR_LABEL.search(q[left:right]) if not ys else None
+        if prior and latest is None:
+            verdicts.append(f"'{h.raw}' sits next to '{prior.group(0)}' in the quote, a prior-year comparative, "
+                            f"and no year in the context says which year that is, so it is not {label}")
+            continue
+        if prior:
+            ys = {latest - 1}
+        if len(ys) != 1:
+            verdicts.append(None)
+            continue
+        y = next(iter(ys))
+        what = f"'{prior.group(0)}' (a prior-year comparative, so {y})" if prior else str(y)
+        verdicts.append(True if y == year else f"'{h.raw}' sits next to {what} in the quote, not {label}")
+    return _first_verdict(verdicts)
+
+
+def _first_verdict(verdicts: list):
+    """Any True wins, then any None (no verdict), then the first failure detail."""
+    if True in verdicts:
+        return True
+    if not verdicts or None in verdicts:
+        return None
+    return verdicts[0]
+
+
+def _own_verdict(v: m.Value, ev: list[str], pc: list[str], year: int, label: str):
+    """_own_clause over every evidence quote that holds the value: any True wins, then any None, then a failure."""
+    ctx_years = ([y for p in pc for y, _, _ in period_mentions(p)] if pc
+                 else [y for q in ev for y, _, _ in _free_mentions(q)])
+    latest = max(ctx_years, default=None)
+    verdicts = []
+    for q in ev:
+        hits = _value_hits(q, v)
+        if hits:
+            verdicts.append(_own_clause(q, hits, year, label, latest))
+    return _first_verdict(verdicts)
 
 
 def _merge(a, b):
@@ -642,50 +767,62 @@ def _merge(a, b):
 
 
 def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | None:
+    """period_match for a text value. The value's own clause in the evidence decides first: a comparative
+    ("8% (2024: 9%)") or "in fiscal year 2024" next to the value wins over any header, so an agent-supplied
+    header cannot mask it. Headers apply only when the clause names no period: then the period_context quote
+    (or the evidence itself) must name the period, and a table value must sit in that year's column."""
     if not v.period:
         return None
     years, quarter = period_key(v.period)
     label = v.period
     if not years:
         return _cr("period_match", "blocked", f"Period '{label}' names no year, so it could not be checked")
+    year = next(iter(years)) if len(years) == 1 else None
+    if year is not None:
+        own = _own_verdict(v, ev, pc, year, label)
+        # A year named nowhere in the quotes fails below as "does not mention", the more basic failure.
+        if isinstance(own, str) and any(y == year for q in ev + pc for y, _, _ in period_mentions(q)):
+            return _cr("period_match", "fail", own)
+        if own is True:
+            if quarter and not any(_has_quarter(q, quarter) for q in ev + pc):
+                return _cr("period_match", "fail", f"The evidence quote does not mention Q{quarter}")
+            return _cr("period_match", "pass", f"The value's own clause in the evidence quote places it in {label}")
     ctx = pc or ev
     where = "period_context quote" if pc else "evidence quote"
-    found = {y for q in ctx for y, _, _ in period_mentions(q)}
+    # Without a header, a comparison base or another value's comparative never sets this value's period.
+    free = year is not None and not pc
+    found = {y for q in ctx for y, _, _ in (_free_mentions(q) if free else period_mentions(q))}
     if not years <= found:
+        lent = next((_borrowed(q, s, e) for q in ctx for y, s, e in period_mentions(q)
+                     if free and y == year and _borrowed(q, s, e)), None)
+        if lent:
+            return _cr("period_match", "fail",
+                       f"The {where} does not mention {label} except in '{lent}', a comparison base or another "
+                       f"value's comparative, so it is not the period of '{v.as_reported}'")
         named = f" (it names {_and([str(y) for y in sorted(found)])})" if found else ""
         return _cr("period_match", "fail", f"The {where} does not mention {label}{named}")
     if quarter and not any(_has_quarter(q, quarter) for q in ctx):
         return _cr("period_match", "fail", f"The {where} does not mention Q{quarter}")
-    if len(years) > 1:
+    if year is None:
         return _cr("period_match", "pass", f"The {where} names every year of {label}")
-    year = next(iter(years))
     pct = v.unit == "%"
     verdict = None
     for q in ev:
         hits = _value_hits(q, v)
-        toks = scan_numbers(q)
-        row = [t for t in toks if t.pct == pct]
-        # A row with amounts and % tokens ("23,375 22,363 4.5% 5.9%" under "2025 2024 Act. Comp."): the %
-        # tokens are change columns, not year columns, so only a row of % tokens alone is aligned to years.
         if pc:
-            if pct and any(not t.pct for t in toks):
-                continue
             header = _ordered_years([mm for p in pc for mm in period_mentions(p)])
-            verdict = _merge(verdict, _columns(header, row, hits, year, label))
+            verdict = _merge(verdict, _columns(header, q, hits, pct, year, label))
             continue
         ments = period_mentions(q)
         if len({y for y, _, _ in ments}) < 2:
             continue
         head_end = max(e for _, _, e in ments)
+        row = [t for t in scan_numbers(q) if t.pct == pct]
         if row and head_end <= row[0].start:  # a header line, then a row
-            if pct and any(not t.pct for t in toks if t.start >= head_end):
-                continue
-            verdict = _merge(verdict, _columns(_ordered_years(ments), row, hits, year, label))
-        else:
-            verdict = _merge(verdict, _clauses(q, ments, hits, year, label))
+            verdict = _merge(verdict, _columns(_ordered_years(ments), q, hits, pct, year, label, floor=head_end))
     if isinstance(verdict, str):
         return _cr("period_match", "fail", verdict)
-    tail = " and the value sits in that year's column or clause" if verdict is True else ""
+    tail = " and the value sits in that year's column" if verdict is True else ""
     return _cr("period_match", "pass", f"The {where} names {label}{tail}")
 
 
@@ -773,6 +910,126 @@ def display_of(value: Decimal, display: str) -> tuple[bool, str]:
     return Decimal(shown) == t.number, expect
 
 
+_ID_RX = re.compile(r"\b([A-Z]{1,4})-(\d{1,4})\b")  # the id form compute.ids_in reads
+_COUNT = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten"}
+MAX_AVERAGE_GAP_DAYS = 396  # about 13 months: two year-ends one fiscal year apart, with a little slack
+
+
+def _expr_tree(expr: str) -> tuple[ast.Expression, dict[str, str]] | None:
+    """The parsed expression and a map from its Python names back to item ids ("D_021" -> "D-021")."""
+    back = {f"{a}_{b}": f"{a}-{b}" for a, b in (i.split("-") for i in compute.ids_in(expr))}
+    try:
+        return ast.parse(_ID_RX.sub(lambda mm: f"{mm.group(1)}_{mm.group(2)}", expr), mode="eval"), back
+    except SyntaxError:
+        return None
+
+
+def _operands(expr: str) -> set[str]:
+    """Every D-id and computation name an expression reads."""
+    parsed = _expr_tree(expr)
+    if parsed is None:
+        return set()
+    tree, back = parsed
+    return {back.get(n.id, n.id) for n in ast.walk(tree) if isinstance(n, ast.Name)}
+
+
+def _averages(expr: str) -> list[tuple[str, str]]:
+    """Operand pairs the expression averages as (A + B) / 2, each a D-id or a computation name."""
+    parsed = _expr_tree(expr)
+    if parsed is None:
+        return []
+    tree, back = parsed
+    out = []
+    for n in ast.walk(tree):
+        if (isinstance(n, ast.BinOp) and isinstance(n.op, ast.Div) and isinstance(n.right, ast.Constant)
+                and n.right.value == 2 and isinstance(n.left, ast.BinOp) and isinstance(n.left.op, ast.Add)
+                and isinstance(n.left.left, ast.Name) and isinstance(n.left.right, ast.Name)):
+            out.append((back.get(n.left.left.id, n.left.left.id), back.get(n.left.right.id, n.left.right.id)))
+    return out
+
+
+def _period_point(p: str | None) -> tuple[str, object] | None:
+    """A year-end as ("date", date) for "2025-09-30" or ("fy", 2025) for "FY2025". Anything else is None."""
+    p = (p or "").strip()
+    mm = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", p)
+    if mm:
+        try:
+            return "date", date(int(mm.group(1)), int(mm.group(2)), int(mm.group(3)))
+        except ValueError:
+            return None
+    mm = re.fullmatch(r"FY\s?(\d{4})", p, re.IGNORECASE)
+    return ("fy", int(mm.group(1))) if mm else None
+
+
+_DATED = re.compile(r"\b(?:at|as\s+(?:of|at)|on)\s+(?:the\s+end\s+of\s+)?(?:[A-Z][a-z]{2,8}\.?\s+\d{1,2},?\s+|"
+                    r"\d{1,2}\s+[A-Z][a-z]{2,8}\.?,?\s+)?(?:19|20)\d{2}\b|\b(?:19|20)\d{2}-\d{2}-\d{2}\b",
+                    re.IGNORECASE)
+
+
+def _year_end(name: str, c: m.Conclusion, items: dict, seen: frozenset[str] = frozenset()) -> str | None:
+    """The one balance-sheet date behind an operand, as its period label: a D-id whose period is an ISO date
+    or whose statement is dated ("at September 30, 2023"), or an earlier computation whose D-ids all share
+    one such period (ticap_fy23 = D-127 - D-126 - ..., all at FY2023). None when unclear or not a balance."""
+    it = items.get(name)
+    if it is not None and it.kind == "data":
+        p = it.value.period if it.value is not None else None
+        point = _period_point(p)
+        if point is None or (point[0] == "fy" and not _DATED.search(it.statement)):
+            return None
+        return p
+    comp = next((x for x in c.computations if x.name == name), None)
+    if comp is None or name in seen:
+        return None
+    periods = {_year_end(o, c, items, seen | {name}) for o in _operands(comp.expr)}
+    return periods.pop() if len(periods) == 1 and None not in periods else None
+
+
+def _year_end_gap(a: str, b: str) -> str | None:
+    """How far apart two year-ends are, in words, when that is clearly more than one fiscal year, else None.
+    Two fiscal-year labels count whole years. A label against a date counts from the nearest day of the
+    label's calendar year, since its year-end month is not known."""
+    pa, pb = _period_point(a), _period_point(b)
+    if pa is None or pb is None:
+        return None
+    if pa[0] == pb[0] == "fy":
+        years = abs(pa[1] - pb[1])
+        return f"{_COUNT.get(years, str(years))} fiscal years" if years >= 2 else None
+    if pa[0] == pb[0] == "date":
+        days = abs((pa[1] - pb[1]).days)
+    else:
+        fy, d = (pa[1], pb[1]) if pa[0] == "fy" else (pb[1], pa[1])
+        lo, hi = date(fy, 1, 1), date(fy, 12, 31)
+        days = 0 if lo <= d <= hi else min(abs((d - lo).days), abs((d - hi).days))
+    if days <= MAX_AVERAGE_GAP_DAYS:
+        return None
+    years = round(days / 365.25)
+    if abs(days / 365.25 - years) < 0.1:
+        return f"{_COUNT.get(years, str(years))} years"
+    return f"about {round(days / 30.44)} months"
+
+
+def _average_gaps(comp: m.Computation, c: m.Conclusion, items: dict) -> list[str]:
+    """An average balance ((A + B) / 2, as in average TICAP) must use year-ends one fiscal year apart. Two
+    D-ids are only compared when they look like the same metric (same unit, mostly the same words)."""
+    out = []
+    for a, b in _averages(comp.expr):
+        if a == b:
+            continue
+        ia, ib = items.get(a), items.get(b)
+        if ia is not None and ib is not None and ia.kind == ib.kind == "data":
+            if ia.value is None or ib.value is None or ia.value.unit != ib.value.unit:
+                continue
+            wa, wb = _words(ia.statement), _words(ib.statement)
+            if not (wa and wb) or len(wa & wb) / min(len(wa), len(wb)) < 0.6:
+                continue
+        pa, pb = _year_end(a, c, items), _year_end(b, c, items)
+        gap = _year_end_gap(pa, pb) if pa and pb else None
+        if gap:
+            out.append(f"{comp.name}: the average of {a} and {b} uses year-ends {pa} and {pb}, {gap} apart, "
+                       f"not one fiscal year")
+    return out
+
+
 def _computations(c: m.Conclusion, items: dict) -> m.CheckResult | None:
     if not c.computations:
         return None
@@ -800,6 +1057,7 @@ def _computations(c: m.Conclusion, items: dict) -> m.CheckResult | None:
         if not ok:
             problems.append(f"{comp.name} = {_fmt(val)}, which rounds half up to {expect}, "
                             f"but the display says {comp.display}")
+        problems += _average_gaps(comp, c, items)
     if problems:
         return _cr("computation", "fail", "; ".join(problems))
     return _cr("computation", "pass", f"{len(c.computations)} computation(s) re-evaluated from data values")
@@ -844,6 +1102,26 @@ def _bar(thr: tuple[str, Decimal, str]) -> str:
     return f"{thr[0]} {thr[1]}{thr[2]}"
 
 
+def _shown_against(x: Decimal, unit: str, bars: list[tuple[str, Decimal, str]]) -> str:
+    """The recomputed value as the detail shows it. Within half a display step of a bar, "10.0%" could be
+    either side of a 10% bar, so more decimals are shown until it is unambiguous, plus which side it is on
+    ("9.996%, below the 10% bar"). The score itself is always decided on the exact value."""
+    bars = [b for b in bars if b[2] == unit]
+    v = x * 100 if unit == "%" else x
+    base = 1 if unit == "%" else 2
+    half_step = Decimal(5) * Decimal(10) ** -(base + 1)
+    places = base
+    while places < 8 and any(v != b[1] and Decimal(half_up(v, places)) == b[1] for b in bars):
+        places += 1
+    shown = f"{half_up(v, places)}{unit}"
+    near = [b[1] for b in bars if abs(v - b[1]) <= half_step]
+    if not near:
+        return shown
+    n = near[0]
+    side = "exactly at" if v == n else "below" if v < n else "above"
+    return f"{shown}, {side} the {n}{unit} bar"
+
+
 def _threshold_rule(e: m.Extrapolation, items: dict, crit: dict) -> m.CheckResult | None:
     if e.score is None or crit.get("scoring") != "threshold":
         return None
@@ -863,8 +1141,7 @@ def _threshold_rule(e: m.Extrapolation, items: dict, crit: dict) -> m.CheckResul
         x = conclusion_env(c, items)[name]
     except compute.ComputeError as err:
         return _cr("threshold_rule", "fail", f"Could not recompute {e.rule.input}: {err}")
-    unit = plus[2]
-    shown = f"{half_up(x * 100, 1)}%" if unit == "%" else f"{half_up(x, 2)}{unit}"
+    shown = _shown_against(x, plus[2], [plus, minus])
     if _meets(x, plus):
         expected, why = 1, f"meets the +1 bar ({_bar(plus)})"
     elif _meets(x, minus):

@@ -268,6 +268,192 @@ def test_period_match_ignores_maturity_years_in_prose() -> None:
     assert period(fcf, 1953, "1,953", "FY2025").result == "fail"
 
 
+def _pv(as_reported: str, period: str, *, unit: str | None = None) -> m.Value:
+    """A value as an extractor would claim it: % values in units, amounts in EUR millions."""
+    pct = as_reported.endswith("%")
+    number = float(as_reported.rstrip("%").replace(",", "").lstrip("€").split()[0])
+    return m.Value(number=number, as_reported=as_reported, unit=unit or ("%" if pct else "EUR"),
+                   scale="one" if pct else "million", period=period)
+
+
+def _period(v: m.Value, ev: list[str], pc: list[str] = ()) -> m.CheckResult:
+    return checks._period_text(v, [text.normalize(q) for q in ev], [text.normalize(q) for q in pc])
+
+
+RD = "The resulting R&D intensity, defined as the ratio of R&D expenses to revenue, was 8% (2024: 9%)."  # real SHL text
+
+
+def test_the_values_own_comparative_beats_an_agent_supplied_header() -> None:
+    """B-fix-checks task 1: a header naming FY2025 must not mask the "(2024: 9%)" comparative."""
+    assert _period(_pv("8%", "FY2025"), [RD], ["fiscal year 2025"]).result == "pass"
+    masked = _period(_pv("9%", "FY2025"), [RD], ["fiscal year 2025"])
+    assert masked.result == "fail" and "'9%' sits next to 2024" in masked.detail
+    assert _period(_pv("9%", "FY2024"), [RD], ["fiscal year 2025"]).result == "pass"
+    assert _period(_pv("9%", "FY2024"), [RD]).result == "pass"
+    # "in fiscal year 2024" in the value's own clause wins over a two-year table header
+    q = "Revenue was €17,906 million in fiscal year 2024."
+    assert _period(_pv("17,906", "FY2025"), [q], ["Fiscal year 2025 2024"]).result == "fail"
+    # without a header, another value's comparative year is not this value's period
+    no_header = _period(_pv("17.3%", "FY2024"), ["The adjusted EBIT margin was 17.3% (2024: 16.8%)."])
+    assert no_header.result == "fail" and "(2024:" in no_header.detail
+
+
+def test_prior_year_comparatives_count_back_from_the_context() -> None:
+    q = "Revenue was €22,363 million in fiscal year 2025 (prior year: €21,680 million)."
+    assert _period(_pv("21,680", "FY2024"), [q]).result == "pass"
+    assert _period(_pv("21,680", "FY2025"), [q]).result == "fail"
+    masked = _period(_pv("21,680", "FY2025"), ["Revenue rose 3% (prior year: €21,680 million)."], ["Fiscal year 2025"])
+    assert masked.result == "fail" and "prior year" in masked.detail
+    # the same value also printed outside the comparative may still take the header's year (real SHL text)
+    div = m.Value(number=1.0, as_reported="1.00", unit="EUR", scale="one", period="FY2026")
+    assert _period(div, ["Proposed dividend of €1.00 per share (prior year: €1.00)"], ["Fiscal Year 2026"]).result == "pass"
+
+
+def test_a_comparison_base_is_not_the_values_period() -> None:
+    """B-fix-checks task 2: "over fiscal year 2026" is what the 2027 outlook is compared with (real SHL text)."""
+    q = "For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0% over fiscal year 2026."
+    outlook = m.Value(number=4.0, as_reported="4.0% and 5.0%", unit="%", scale="one", period="FY2027")
+    assert _period(outlook, [q]).result == "pass"
+    assert _period(outlook, [q], ["fiscal year 2027"]).result == "pass"
+    base = _period(outlook.model_copy(update={"period": "FY2026"}), [q])
+    assert base.result == "fail" and "over fiscal year 2026" in base.detail
+    assert _period(outlook.model_copy(update={"period": "FY2026"}), [q], ["fiscal year 2027"]).result == "fail"
+    than = "The margin in fiscal year 2025 was 17.3%, higher than fiscal year 2024."
+    assert _period(_pv("17.3%", "FY2025"), [than]).result == "pass"
+    assert _period(_pv("17.3%", "FY2024"), [than]).result == "fail"
+
+
+# Real SHL text (S-001, annual report FY2025, page 160): one loan row per line group, nil cells as "‐" (U+2010),
+# and a header pair of "current" year-ends followed by a "non-current" pair.
+LOAN_HEADER = "Sept 30, 2025 \nSept 30, 2024"
+LOAN_HEADER_FULL = "Sept 30, 2025 \nSept 30, 2024 \nSept 30, 2025 \nSept 30, 2024"
+LOAN_1742 = "Loan (US$1,742 million) \n2026 \n1.38% \n1,484 \n‐"
+LOAN_1742_FULL = "Loan (US$1,742 million) \n2026 \n1.38% \n1,484 \n‐ \n‐ \n1,556"
+LOAN_700 = "Loan (€700 million) \n2025 \n0.46%+EURIBOR 1M \n‐ \n700 \n‐ \n‐"
+LOAN_300 = "Loan (€300 million) \n2026 \n3.70% \n300 \n‐ \n‐ \n300"
+
+
+def test_nil_cells_count_and_label_numbers_do_not() -> None:
+    """B-fix-checks task 3 (r0 D-307): "1,742" in the row label is not a cell and "‐" is, so 1,484 lines up
+    with Sept 30, 2025 again."""
+    ok = _period(_pv("1,484", "FY2025"), [LOAN_1742], [LOAN_HEADER])
+    assert ok.result == "pass" and "column" in ok.detail
+    wrong = _period(_pv("1,484", "FY2024"), [LOAN_1742], [LOAN_HEADER])
+    assert wrong.result == "fail" and "column 1" in wrong.detail and "2025" in wrong.detail
+    # the whole row under the whole header: current 2025, current 2024, non-current 2025, non-current 2024
+    assert _period(_pv("1,484", "FY2025"), [LOAN_1742_FULL], [LOAN_HEADER_FULL]).result == "pass"
+    assert _period(_pv("1,556", "FY2024"), [LOAN_1742_FULL], [LOAN_HEADER_FULL]).result == "pass"
+    assert _period(_pv("1,556", "FY2025"), [LOAN_1742_FULL], [LOAN_HEADER_FULL]).result == "fail"
+    # a header that names only the first pair repeats over the row; "1M" belongs to the rate cell
+    assert _period(_pv("300", "FY2025"), [LOAN_300], [LOAN_HEADER]).result == "pass"
+    assert _period(_pv("700", "FY2024"), [LOAN_700], [LOAN_HEADER]).result == "pass"
+    assert _period(_pv("700", "FY2025"), [LOAN_700], [LOAN_HEADER]).result == "fail"
+
+
+def test_nil_cells_inline_and_in_prose() -> None:
+    # an inline header, then a row: the clause names two years, so the columns decide, not "Fiscal year 2025"
+    assert _period(_pv("21,680", "FY2024"), ["Fiscal year 2025 2024 Revenue 22,363 21,680"]).result == "pass"
+    assert _period(_pv("21,680", "FY2025"), ["Fiscal year 2025 2024 Revenue 22,363 21,680"]).result == "fail"
+    # a nil cell for a new line item
+    assert _period(_pv("1,234", "FY2025"), ["Fiscal year 2025 2024 Other provisions 1,234 –"]).result == "pass"
+    assert _period(_pv("1,234", "FY2024"), ["Fiscal year 2025 2024 Other provisions 1,234 –"]).result == "fail"
+    # a dash in prose is not a cell, and "€2,160 million" is not a table cell
+    q = "Free cash flow reached €2,160 million – a record."
+    assert _period(_pv("2,160", "FY2025"), [q], ["Fiscal year 2025 2024"]).result == "pass"
+    assert "column" not in _period(_pv("2,160", "FY2024"), [q], ["Fiscal year 2025 2024"]).detail
+
+
+def _rotic_items(nopat: float, ticap: float, display: str) -> dict[str, m.Item]:
+    d1 = _data("NOPAT was €9,996 million in fiscal year 2025.", [_cit("Revenue 22,363 21,680")],
+               m.Value(number=nopat, as_reported=f"{nopat:,.0f}", unit="EUR", scale="million", period="FY2025"),
+               verification=m.Verification(status="pass"))
+    d2 = _data("TICAP was €100,000 million at September 30, 2025.", [_cit("Revenue 22,363 21,680")],
+               m.Value(number=ticap, as_reported=f"{ticap:,.0f}", unit="EUR", scale="million", period="2025-09-30"),
+               iid="D-002", verification=m.Verification(status="pass"))
+    c = m.Conclusion(id="C-001", category="compounder", criteria=["rotic_level"], text=f"ROTIC was {display}.",
+                     data_ids=["D-001", "D-002"], verification=m.Verification(status="pass"),
+                     computations=[m.Computation(name="rotic", expr="D-001 / D-002", result=nopat / ticap,
+                                                 display=display)])
+    return {"D-001": d1, "D-002": d2, "C-001": c}
+
+
+def _rotic_score(score: int) -> m.Extrapolation:
+    return m.Extrapolation(id="E-001", category="compounder", criterion="rotic_level", score=score,
+                           text="ROTIC level is scored against the 10% and 15% bars.", conclusion_ids=["C-001"],
+                           rule=m.ScoreRule(type="threshold", plus_one="> 15%", minus_one="< 10%", input="C-001:rotic"),
+                           confidence="medium", verification=m.Verification(status="pending"))
+
+
+def test_threshold_near_a_bar_shows_the_exact_side() -> None:
+    """Task 5: 9.996% displays as "10.0%", but it is below the 10% bar, so the score is -1, decided on the
+    exact value. The detail shows enough decimals to say so."""
+    items = _rotic_items(9996, 100000, "10.0%")
+    assert _by(checks.check_conclusion(items["C-001"], items, SOURCES), "computation").result == "pass"
+    good = _by(checks.check_extrapolation(_rotic_score(-1), items, RUBRIC), "threshold_rule")
+    assert good.result == "pass" and "9.996%, below the 10% bar" in good.detail
+    bad = _by(checks.check_extrapolation(_rotic_score(0), items, RUBRIC), "threshold_rule")
+    assert bad.result == "fail" and "9.996%, below the 10% bar" in bad.detail and "-1" in bad.detail
+    at_bar = _rotic_items(10000, 100000, "10.0%")
+    exact = _by(checks.check_extrapolation(_rotic_score(0), at_bar, RUBRIC), "threshold_rule")
+    assert exact.result == "pass" and "exactly at the 10% bar" in exact.detail
+    far = _rotic_items(20000, 100000, "20.0%")
+    plain = _by(checks.check_extrapolation(_rotic_score(1), far, RUBRIC), "threshold_rule")
+    assert plain.result == "pass" and "= 20.0%, which" in plain.detail
+
+
+def _ticap_items(periods: tuple[str, str], *, dated: bool = True) -> dict[str, m.Item]:
+    """Total assets less cash at two year-ends, and a conclusion that averages the two TICAPs."""
+    items: dict[str, m.Item] = {}
+    n = 0
+    for p in periods:
+        when = f"at September 30, {p[2:]}" if dated else f"in fiscal year {p[2:]}"
+        for what, number in (("Total assets", 46000), ("Cash and cash equivalents", 2000)):
+            n += 1
+            iid = f"D-{n:03d}"
+            items[iid] = _data(f"{what} were €{number:,} million {when}.", [_cit("Revenue 22,363 21,680")],
+                               m.Value(number=number, as_reported=f"{number:,}", unit="EUR", scale="million", period=p),
+                               iid=iid, verification=m.Verification(status="pass"))
+    comps = [m.Computation(name="ticap_a", expr="D-001 - D-002", result=44000e6, display="€44,000 million"),
+             m.Computation(name="ticap_b", expr="D-003 - D-004", result=44000e6, display="€44,000 million"),
+             m.Computation(name="avg_ticap", expr="(ticap_a + ticap_b) / 2", result=44000e6, display="€44,000 million")]
+    items["C-001"] = m.Conclusion(id="C-001", category="compounder", criteria=["rotic_level"],
+                                  text="Average TICAP was €44,000 million.", data_ids=list(items),
+                                  computations=comps, verification=m.Verification(status="pending"))
+    return items
+
+
+def test_average_over_adjacent_year_ends_passes() -> None:
+    items = _ticap_items(("FY2024", "FY2025"))
+    res = _by(checks.check_conclusion(items["C-001"], items, SOURCES), "computation")
+    assert res.result == "pass", res.detail
+    flows = _ticap_items(("FY2023", "FY2025"), dated=False)  # flows, not balances: out of scope, left alone
+    assert _by(checks.check_conclusion(flows["C-001"], flows, SOURCES), "computation").result == "pass"
+
+
+def test_average_over_year_ends_two_years_apart_fails() -> None:
+    """Task 6, seen live: FY2025 average TICAP used the FY2023 and FY2025 year-ends."""
+    items = _ticap_items(("FY2023", "FY2025"))
+    res = _by(checks.check_conclusion(items["C-001"], items, SOURCES), "computation")
+    assert res.result == "fail"
+    assert "avg_ticap" in res.detail and "FY2023 and FY2025" in res.detail and "two fiscal years apart" in res.detail
+    # two D-ids with ISO year-ends, averaged directly
+    a = _data("Total equity was €18,436 million at September 30, 2025.", [_cit("Revenue 22,363 21,680")],
+              m.Value(number=18436, as_reported="18,436", unit="EUR", scale="million", period="2025-09-30"),
+              verification=m.Verification(status="pass"))
+    b = _data("Total equity was €17,102 million at September 30, 2023.", [_cit("Revenue 22,363 21,680")],
+              m.Value(number=17102, as_reported="17,102", unit="EUR", scale="million", period="2023-09-30"),
+              iid="D-002", verification=m.Verification(status="pass"))
+    c = m.Conclusion(id="C-002", category="compounder", criteria=["rotic_level"], text="Average equity was €17,769 million.",
+                     data_ids=["D-001", "D-002"], verification=m.Verification(status="pending"),
+                     computations=[m.Computation(name="avg_equity", expr="(D-001 + D-002) / 2", result=17769e6,
+                                                 display="€17,769 million")])
+    direct = {"D-001": a, "D-002": b, "C-002": c}
+    res = _by(checks.check_conclusion(c, direct, SOURCES), "computation")
+    assert res.result == "fail" and "2025-09-30 and 2023-09-30, two years apart" in res.detail
+    one_year = {**direct, "D-002": b.model_copy(update={"value": b.value.model_copy(update={"period": "2024-09-30"})})}
+    assert _by(checks.check_conclusion(c, one_year, SOURCES), "computation").result == "pass"
+
+
 def test_quote_on_another_page_passes_with_the_page_fixed() -> None:
     pages = {"DOC-001": ["Cover page", PAGE]}
     cit = m.Citation(doc_id="DOC-001", locator=m.TextLocator(page=1, char_start=0, char_end=5),

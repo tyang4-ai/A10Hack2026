@@ -216,6 +216,17 @@ CASES = [
          run_sentence),
     Case("chart point that does not match its item", "chart_values",
          chart("G-911", 18742.0), chart("G-911", 18724.0)),
+    # "17.3% (2024: 16.8%)" under an agent-supplied period header that names fiscal year 2025: the
+    # comparative's own "2024:" wins over the header, so 16.8% claimed for FY2025 fails (B-fix-checks).
+    Case("comparative claimed as the current year", "period_match",
+         data("D-918", "The adjusted EBIT margin was 17.3% in fiscal year 2025.",
+              "The adjusted EBIT margin was 17.3% (2024: 16.8%).",
+              m.Value(number=17.3, as_reported="17.3%", unit="%", scale="one", period="FY2025"), page=3,
+              period="fiscal year 2025"),
+         data("D-918", "The adjusted EBIT margin was 16.8% in fiscal year 2025.",
+              "The adjusted EBIT margin was 17.3% (2024: 16.8%).",
+              m.Value(number=16.8, as_reported="16.8%", unit="%", scale="one", period="FY2025"), page=3,
+              period="fiscal year 2025")),
 ]
 
 
