@@ -612,6 +612,25 @@ Added 2026-11-07 10:17 PM. The verifier's full report is in status.md Log (G3). 
 
 ---
 
+## B-fix-yield
+Added 2026-11-07 11:05 PM after G5b (run_20261108_0murfv on EC2, G3-fixed code).
+**Problem.** Data items are good (380 of 399 pass or fixed, exact quotes), but only 1 of 6 criteria scored. 6 of 11 conclusions failed, and each failure took a whole criterion's support with it. The checks caught real drafter errors:
+- C-001 (rotic_level): judges 1 of 3 ("the computation uses EBIT €3,154 million, the evidence shows €2,807 million").
+- C-003 (secular_growth): judges 0 of 3 ("Varian growth is 5.5%, not 5.6%").
+- C-009 (liquidity): judges 0 of 3 ("the €1,482 million loan is due in fiscal year 2031, not 2029").
+- C-008: numbers_traced ("'€2,445 million' and '€2,714 million' do not match any cited value").
+- C-002 and C-004: numbers_traced on '5.0%' (sent to B-fix-polish as a possible threshold-formatting false fail).
+Each conclusion is a long paragraph with many numbers, so one wrong number fails all of it, and repair (downgrade, then not_determinable) gives up instead of removing the bad sentence. The saved report is `backend/.data/g5b_report.json` (read only).
+**Owns.** `axelrod/agents/drafter.py`, `axelrod/stages/draft.py`, `axelrod/agents/repairer.py`, `axelrod/stages/repair.py`, `tests/test_yield.py` (new).
+**Tasks.**
+1. Granular conclusions. The drafter writes one claim per conclusion: at most 2 sentences and at most 3 numbers, each with its own citations and computations. A criterion gets several small conclusions instead of one long one. The score's text and its `conclusion_ids` reference them. Keep the code pre-check.
+2. Repair by removal (still weaken-only). When a conclusion fails `numbers_traced`, or the judges name an unsupported span (`CheckResult.unsupported_spans` or the judge detail quoting a number or phrase), code's first repair removes the sentence holding that number or span. Then it drops computations and citations no longer used, and re-checks. If nothing citable is left, delete the conclusion as today. Record it as a `downgrade` attempt with the note "removed the unsupported sentence: ...". Only then fall back to the repairer model, at most two attempts in total as today.
+3. A score rests on what passed. When a criterion's rule-input conclusion fails but other conclusions for that criterion pass, a threshold criterion stays N/A (code can't recompute without the input). A judgment criterion may be re-scored by code's existing rules from the passing conclusions only, never moving away from 0 compared with what the drafter proposed. Don't change B-fix-repair's code-score-wins rule.
+4. Tests with fake models: a long conclusion with one bad number becomes a shorter passing conclusion with the bad sentence removed. A granular draft keeps the criterion scored when one of its conclusions fails. Replay G5b's six failing conclusions through code-only repair (no model), and report how many end pass or fixed.
+**Acceptance.** Offline suite green. A live draft, verify and repair on a copy of the G5b state (short DATA_DIR such as `backend/.data/fixyield`, copied from EC2 with export_run, or rebuilt from `backend/.data/g5b_report.json` plus the replay page texts) scores at least 4 of the 5 scoreable criteria, with every remaining conclusion pass or fixed. Report the scores honestly whatever they are. Under $3.
+
+---
+
 ## W3 plans
 
 Written loosely on purpose. The orchestrator sharpens them after G5 with what the full run showed.

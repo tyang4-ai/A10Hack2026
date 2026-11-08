@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: G5 done (10:15 PM). Next G6 demo rehearsal, then W3 polish.
-- Running: B-fix-polish. G5b (fresh EC2 run on the G3-fixed code). G6 rehearsal on EC2 by the orchestrator. Verifier (G3). W1 is 5/5 done.
+- Running: B-fix-polish, B-fix-yield. Then deploy and a final EC2 run (G5c) to tag demo-ok-2 if it beats demo-ok-1. G6 rehearsal on EC2 by the orchestrator. Verifier (G3). W1 is 5/5 done.
 - Next: G6 (demo rehearsal on EC2). Finish G3 when the verifier reports. W3 polish (B-p1) while time allows.
 - **Rehearsal R0b done (9:46 PM): run_20261108_whhj0d, full SHL run, laptop, live models.** Report final: 403 items (341 pass, 40 fixed, 22 fail = 94.5% pass or fixed), 25 holes, report certainty 92. Scores: rotic_level -1 (9.4%, low), rotic_vs_peers 0 (low), secular_growth +1, leverage 0, liquidity N/A (its coverage computation failed), research_stage N/A (by design). 4 of 6 scored, weighted average 0.0. Brief final: 33 sentences (31 pass, 2 fixed, 1 removed), 2.8 pages, certainty 85. $2.06, about 5 min. contract_smoke 21/21. Exported as the replay fallback (`backend/data/replay/run_20261108_whhj0d`, 31 MB, text only).
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
@@ -37,6 +37,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-cite | builder | G3 fix | done | 126 passed (suite 498) | planted 14/14. Passing quotes equal their page span, headers on the evidence's page, signed numbers_traced, charts blocked by revoked sources. Replays of 3 stored runs: 0 breaks |
 | B-fix-holes | builder | G3 fix | done | 41 passed (suite 483), 1 live | live on a G5 copy: 20 content + 5 gap sentences, 2.8 pages, all 4 categories. Code writes the gap summary, counts in words |
 | B-fix-polish | builder | G3 fix | running | | gap summary always, numbers written as words, register label in human-report.md, demo edit path keeps exact quotes |
+| B-fix-yield | builder | G5b fix | running | | one claim per conclusion, repair removes the bad sentence, score from what passed |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
 | B-p1 | builder | W3 | todo | | |
 
@@ -50,6 +51,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G3 Pipeline and pre-smoke | fail at 1c7118c, fixes running | Sat 10:17 PM | Verifier: the blocker (brief crash) is already fixed. Open majors: citation quote vs page span after relocation, and a brief full of hole bullets (printed about 4 pages). Minors: numbers_traced ignores sign, charts not checked against revoked sources, 2 displays without half_up. Fix builders B-fix-cite and B-fix-holes running. Earlier: | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
 | G4 Deploy | pass | Sat 10:10 PM | public healthz live, /api/v1/runs lists, test page 200 with simulated header, deploy.sh moved the instance to b223c2b (the pushed HEAD) |
 | G5 Full SHL run, demo-ok-1 | pass | Sat 10:15 PM | **run_20261108_pin2ve** on EC2 (STORE=aws, live). Report final, certainty mean 93. Items 374: 345 pass, 18 fixed, 11 fail (97.1% pass or fixed). Holes 13, every gap declared. Rollup -0.6 (3 of 6 scored). Brief 24 sentences, 2.8 pages, certainty 75. $1.96 of $5, about 4 min. Exported to backend/data/replay/run_20261108_pin2ve |
+| G5b fresh run | done, not tagged | Sat 11:02 PM | run_20261108_0murfv on EC2, G3-fixed code (65a0b02). Data 380/399 pass or fixed, exact quotes, holes 25, brief 24 sentences 2.6 pages with every category and the gap summary, $1.83. But only 1 of 6 scored (leverage -1): 6 of 11 conclusions failed real checks (wrong EBIT, 5.6 vs 5.5%, wrong due year, uncited FCF) and each took its criterion with it. Fix: B-fix-yield |
 | G6 Demo rehearsal | 1 of 2 | Sat 10:20 PM | Rehearsal 1 on EC2 (run_20261108_8ejtjd): every beat PASS (link blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks 8 calls, pacing), $0.10. EC2 env: DEMO_PACING=2, MAX_CONCURRENCY_SMALL=8. DEMO.md: revoke S-006 when collect starts, not at NEXT S-006 (only 2 s warning). Rehearsal 2 after the G3 fixes deploy |
 
 ## AWS
@@ -163,3 +165,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 10:15 PM: G5 pass. run_20261108_pin2ve on EC2, 97.1% items pass or fixed, $1.96. Exported, tagging demo-ok-1.
 - Sat 10:17 PM: G3 verifier: fail at 1c7118c (blocker already fixed). Two majors and four minors going to B-fix-cite and B-fix-holes.
 - Sat 10:20 PM: G6 rehearsal 1 on EC2: all beats PASS. Demo env set on EC2.
+- Sat 11:02 PM: G5b done on EC2: data and brief better, but 1 of 6 scored (drafter errors caught, coarse conclusions). B-fix-yield launched. demo-ok-1 (pin2ve) stays the demo run for now.
