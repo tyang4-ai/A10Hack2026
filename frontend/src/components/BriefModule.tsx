@@ -10,7 +10,7 @@ import { ChartView, Gauge, Holes, Scorecard } from "./report";
 import { btn, Skeleton } from "./ui";
 
 // Like an AI-detector page: every sentence is shaded by how well checked
-// evidence supports it. Hover or focus a sentence for Show source.
+// evidence supports it. Hover or focus a sentence for its certainty; click the panel to show the source.
 function Sentence({ s }: { s: SummarySentence }) {
   const select = useRunStore((x) => x.select);
   const selected = useRunStore((x) => x.selected);
@@ -62,11 +62,32 @@ function Sentence({ s }: { s: SummarySentence }) {
       >
         {s.text}
       </button>{" "}
-      {open && hasPage && (
+      {open && (
         // pt-1 instead of a margin: the padding is part of the hover area, so there is no gap to fall through.
-        <span className="absolute top-full left-0 z-30 pt-1 print:hidden">
-          <button onClick={showSource} className="h-7 rounded-[4px] bg-desk px-3 font-sans text-[12px] font-medium whitespace-nowrap text-desk-ink hover:bg-desk-raised">
-            Show source
+        // The whole panel is one button: clicking anywhere on it shows the source.
+        <span className="absolute top-full left-0 z-30 w-80 pt-1 print:hidden">
+          <button
+            onClick={showSource}
+            className="block w-full rounded-[4px] bg-desk px-3 py-2 text-left font-sans text-[12px] leading-snug text-desk-ink hover:bg-desk-raised"
+          >
+            <span className="text-white">
+              {s.id}: certainty {c?.score ?? "—"} ({band})
+            </span>
+            <br />
+            {c && (
+              <>
+                {c.basis}
+                <br />
+                <span className="font-mono">
+                  support {c.support.toFixed(2)} × inherited {c.inherited.toFixed(2)} × completeness {c.completeness.toFixed(2)}
+                </span>
+                <br />
+              </>
+            )}
+            <span className="text-desk-muted">
+              From {s.derived_from.length ? s.derived_from.map((r) => (r === "rollup" ? "the scorecard" : r)).join(", ") : "—"}.
+            </span>
+            {hasPage && <span className="text-desk-link"> Show source</span>}
           </button>
         </span>
       )}
