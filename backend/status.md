@@ -1,3 +1,15 @@
+DEMO RUN: run_20261108_rzpoj7 (picked 1:32 AM)
+
+- **Run:** R2 on EC2, 647 items, 96.6% pass or fixed, 5 of 6 criteria scored, rollup -0.6, certainty 94 (report) and 74 (brief), brief 2.5 pages, $2.84. Tag `demo-ok-2`, replay in `backend/data/replay/run_20261108_rzpoj7`. Backup: demo-ok-1 run_20261108_pin2ve. The comparison is under Now.
+- **Deployed:** 4f10702 on EC2 (`axelrod` service, port 8000). Later commits are only this board, DEMO.md and the R2 replay, which EC2 doesn't need because a stored run wins over a replay with the same id. Invoke URL `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com`. Webapp: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`. No API key yet (Needs Gordon).
+- **Server env for the demo** (set 1:33 AM in `/etc/axelrod.env`):
+  - `CACHE_DOCUMENTS=on`: the gateway decides every fetch, then serves it from the S3 cache.
+  - `CACHE_MODELS=record`: model calls stay live and each answer is also recorded, so the in-person rehearsals record the demo path for the replay fallback. Runs say `cache_mode: documents`.
+  - `DEMO_PACING=0.8`: seconds before each fetch. In the scripted check, STOP landed at about 52 s with a 10 s approval, revoking S-006 right after the first fetches. Set what the in-person rehearsal needs: `bash backend/infra/remote.sh --set-env DEMO_PACING=<seconds>`, or ask this session.
+  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5` (per run), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
+- **Fallback if Bedrock throttles:** `--set-env CACHE_MODELS=replay` serves recorded answers at $0, labeled `documents_and_models`. So far that's R2's 291 answers. It's untested on the live segment until a rehearsal has run with `record`.
+- **Cut:** the scripted G6b rehearsal and B-rehearse (Gordon, 1 AM). The script stays in the repo, unused. Nothing else: v2 steps 1 to 12 are built.
+
 # Backend build board
 
 Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top, history in Log.
@@ -6,7 +18,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, origin/main 69b40fc merged at 1:24 AM). Gordon's 1 AM change: the integrator runs next to us and shares EC2 (it owns `axelrod-web` on port 3000 and the `$default` route, we own the `axelrod` service on 8000 and its env). No scripted rehearsal, no READY FOR INTEGRATION. Cutoff: R2 done and the `DEMO RUN:` line posted by 3:15 AM.
 - **R2 done** at 1:29 AM: run_20261108_rzpoj7. EC2 is free for runs again.
-- **Env change at 1:33 AM** (restarts the `axelrod` service only, no deploy): demo values `DEMO_PACING=0.8`, `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`.
+- **Env changed at 1:33 AM** (restarted the `axelrod` service only, no deploy): demo values `DEMO_PACING=0.8`, `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`.
 - **Deployed at 1:25 AM:** 4f10702 to EC2, `axelrod` service on port 8000 only. Then env for R2: `DEMO_PACING=0`, `MAX_CONCURRENCY_SMALL=32`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`. `axelrod-web`, port 3000 and the `$default` route are not touched.
 - **R2 against demo-ok-1** (same API, same counting, `r2_compare.py` in the scratchpad):
 
@@ -160,3 +172,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:26 AM: deployed 4f10702 (env for R2 set). R2 started: run_20261108_rzpoj7.
 - Sun 1:29 AM: R2 done: run_20261108_rzpoj7, 647 items, 96.6% pass or fixed, 5 of 6 scored, $2.84, 3.4 min.
 - Sun 1:32 AM: picked R2 over demo-ok-1 (table in Now). Exported as a replay, tagged demo-ok-2.
+- Sun 1:33 AM: demo env set on EC2. DEMO RUN line posted: run_20261108_rzpoj7.
