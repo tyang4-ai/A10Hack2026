@@ -153,6 +153,33 @@ function applyGroups(groups: EdgeGroup[], orig: Record<string, Win>, dx: number,
   return out;
 }
 
+// Filling empty space only triggers from a small square at the centre of that space,
+// so a window can still be dropped freely anywhere else in it.
+const TARGET_PX = 56;
+function targetSquare(region: Geo, desk: DOMRect): Geo {
+  const s = Math.min(TARGET_PX, region.w * desk.width * 0.5, region.h * desk.height * 0.5);
+  const cx = (region.x + region.w / 2) * desk.width;
+  const cy = (region.y + region.h / 2) * desk.height;
+  return { x: (cx - s / 2) / desk.width, y: (cy - s / 2) / desk.height, w: s / desk.width, h: s / desk.height };
+}
+function emptyRegion(id: string, px: number, py: number, desk: DOMRect) {
+  return emptyAt(id, px / desk.width, py / desk.height, Math.min(1, MIN_W / desk.width), Math.min(1, MIN_H / desk.height));
+}
+// The empty region to fill, if the pointer is inside its centre square.
+function fillTarget(id: string, px: number, py: number, desk: DOMRect): Geo | null {
+  const region = emptyRegion(id, px, py, desk);
+  if (!region) return null;
+  const t = targetSquare(region, desk);
+  const fx = px / desk.width;
+  const fy = py / desk.height;
+  return fx >= t.x && fx <= t.x + t.w && fy >= t.y && fy <= t.y + t.h ? region : null;
+}
+// The centre square to show while the pointer is over empty space but not on it yet.
+function hintAt(id: string, px: number, py: number, desk: DOMRect): Geo | null {
+  const region = emptyRegion(id, px, py, desk);
+  return region ? targetSquare(region, desk) : null;
+}
+
 const HANDLES: [Exclude<Mode, "move">, string][] = [
   ["n", "-top-[3px] left-3 right-3 h-[6px] cursor-ns-resize"],
   ["s", "-bottom-[3px] left-3 right-3 h-[6px] cursor-ns-resize"],
@@ -253,10 +280,11 @@ export const Window = memo(function Window({ id }: { id: string }) {
         snap =
           edge ??
           (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ??
-          (pushing ? null : emptyAt(id, px / d.desk.width, py / d.desk.height, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height)));
+          (pushing ? null : fillTarget(id, px, py, d.desk));
       }
-      const cur = useWindows.getState().snap;
-      if (JSON.stringify(snap) !== JSON.stringify(cur)) useWindows.setState({ snap });
+      const cur = useWindows.getState();
+      const hint = !snap && !pushing && !cur.auto ? hintAt(id, px, py, d.desk) : null;
+      if (JSON.stringify(snap) !== JSON.stringify(cur.snap) || JSON.stringify(hint) !== JSON.stringify(cur.snapHint)) useWindows.setState({ snap, snapHint: hint });
     } else {
       const res = applyGroups(d.groups, d.wins, dx, dy, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));
       d.result = res;
@@ -272,7 +300,7 @@ export const Window = memo(function Window({ id }: { id: string }) {
     if (!d) return;
     drag.current = null;
     const snap = useWindows.getState().snap;
-    useWindows.setState({ snap: null });
+    useWindows.setState({ snap: null, snapHint: null });
     const g = liveRef.current;
     setGeo(null);
     if (d.result) {

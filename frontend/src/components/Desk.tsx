@@ -67,6 +67,15 @@ export function Desk() {
 
 function SnapPreview() {
   const snap = useWindows((s) => s.snap);
+  const hint = useWindows((s) => s.snapHint);
+  if (hint && !snap)
+    return (
+      <div
+        aria-hidden
+        style={{ left: `${hint.x * 100}%`, top: `${hint.y * 100}%`, width: `${hint.w * 100}%`, height: `${hint.h * 100}%` }}
+        className="pointer-events-none absolute z-[100000] rounded-[4px] border border-dashed border-accent bg-accent/10 print:hidden"
+      />
+    );
   if (!snap) return null;
   return (
     <div

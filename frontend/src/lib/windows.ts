@@ -186,6 +186,8 @@ interface WinState {
   dirty: boolean;
   suggest: LayoutName | null;
   snap: Geo | null;
+  // While dragging over empty space: the small square at its centre that you drop on to fill it.
+  snapHint: Geo | null;
   // Live geometry of neighbours while an edge they share is being dragged.
   peek: Record<string, Geo>;
   desk: { w: number; h: number };
@@ -243,6 +245,7 @@ export const useWindows = create<WinState>((set, get) => ({
   dirty: false,
   suggest: null,
   snap: null,
+  snapHint: null,
   peek: {},
   desk: { w: 1280, h: 720 },
   palette: false,
