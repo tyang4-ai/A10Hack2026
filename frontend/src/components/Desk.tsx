@@ -216,9 +216,7 @@ export function LayoutControl() {
       {customs.length > 0 && (
         <div role="group" aria-label="Your saved layouts" className="flex overflow-hidden rounded-[4px] border border-desk-line-strong text-[12px]">
           {customs.map((c, i) => (
-            <button key={c.id} aria-pressed={layout === c.id} onClick={() => applyLayout(c.id)} className={`${seg(layout === c.id, i === 0)} max-w-32 truncate`}>
-              {c.label}
-            </button>
+            <SavedLayoutButton key={c.id} id={c.id} label={c.label} on={layout === c.id} first={i === 0} />
           ))}
         </div>
       )}
@@ -232,28 +230,92 @@ export function LayoutControl() {
   );
 }
 
+// A saved layout: click to apply it, right-click (or the Menu key) to delete it.
+function SavedLayoutButton({ id, label, on, first }: { id: string; label: string; on: boolean; first: boolean }) {
+  const { applyLayout, deleteLayout } = useWindows.getState();
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null);
+  const [confirm, setConfirm] = useState(false);
+  const btn = useRef<HTMLButtonElement | null>(null);
+  const menu = useRef<HTMLDivElement | null>(null);
+
+  const close = () => {
+    setAt(null);
+    setConfirm(false);
+  };
+  // Close on a click elsewhere, Escape, or scrolling away; focus the menu when it opens.
+  useEffect(() => {
+    if (!at) return;
+    menu.current?.querySelector<HTMLElement>("button")?.focus();
+    const down = (e: MouseEvent) => !menu.current?.contains(e.target as Node) && close();
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        btn.current?.focus();
+      }
+    };
+    document.addEventListener("mousedown", down);
+    document.addEventListener("keydown", key);
+    window.addEventListener("blur", close);
+    return () => {
+      document.removeEventListener("mousedown", down);
+      document.removeEventListener("keydown", key);
+      window.removeEventListener("blur", close);
+    };
+  }, [at]);
+
+  return (
+    <>
+      <button
+        ref={btn}
+        aria-pressed={on}
+        aria-haspopup="menu"
+        onClick={() => applyLayout(id)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          // The Menu key fires contextmenu at 0,0: place the menu under the button instead.
+          const r = e.currentTarget.getBoundingClientRect();
+          setAt(e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : { x: r.left, y: r.bottom + 4 });
+          setConfirm(false);
+        }}
+        className={`${seg(on, first)} max-w-32 truncate`}
+      >
+        {label}
+      </button>
+      {at && (
+        <div ref={menu} role="menu" aria-label={`${label} layout`} style={{ left: Math.min(at.x, window.innerWidth - 232), top: at.y }} className="fixed z-[200000] w-56 rounded-[6px] border border-desk-line-strong bg-desk p-1 text-desk-ink">
+          <button
+            role="menuitem"
+            onClick={() => {
+              if (!confirm) return setConfirm(true);
+              deleteLayout(id);
+              close();
+            }}
+            className={`${menuItem} ${confirm ? "bg-desk-bad font-semibold text-desk hover:bg-desk-bad focus:bg-desk-bad" : "text-desk-bad"}`}
+          >
+            {confirm ? `Confirm delete ${label}` : `Delete ${label}`}
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 const menuItem = "flex h-8 w-full items-center gap-2 rounded-[4px] px-2.5 text-left text-[13px] hover:bg-desk-raised focus:bg-desk-raised";
 
 // The + button: everything about layouts that isn't picking one.
 function LayoutMenu() {
   const layout = useWindows((s) => s.layout);
   const dirty = useWindows((s) => s.dirty);
-  const auto = useWindows((s) => s.auto);
-  const customs = useWindows((s) => s.customs);
-  const { applyLayout, toggleAuto, saveAs, deleteLayout } = useWindows.getState();
+  const { applyLayout, saveAs } = useWindows.getState();
   const { open, setOpen, root, trigger } = usePopover();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const menu = useRef<HTMLDivElement | null>(null);
-  const custom = customs.find((c) => c.id === layout);
 
   // Each time it opens, start on the menu, not the name form.
   useEffect(() => {
-    if (!open) {
-      setNaming(false);
-      setConfirmDelete(false);
-    } else menu.current?.querySelector<HTMLElement>("[role^=menuitem]")?.focus();
+    if (!open) setNaming(false);
+    else menu.current?.querySelector<HTMLElement>("[role^=menuitem]")?.focus();
   }, [open]);
 
   const close = () => {
@@ -313,24 +375,7 @@ function LayoutMenu() {
               <button role="menuitem" onClick={() => setNaming(true)} className={menuItem}>
                 Save layout as…
               </button>
-              <button
-                role="menuitemcheckbox"
-                aria-checked={auto}
-                title="Windows never overlap. Drag one onto another to swap."
-                onClick={() => {
-                  toggleAuto();
-                  close();
-                }}
-                className={menuItem}
-              >
-                <span className="flex-1">Auto tile</span>
-                {auto && (
-                  <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" className="text-accent">
-                    <path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
-                  </svg>
-                )}
-              </button>
-              {dirty && !auto && (
+              {dirty && (
                 <button
                   role="menuitem"
                   onClick={() => {
@@ -340,19 +385,6 @@ function LayoutMenu() {
                   className={menuItem}
                 >
                   Reset layout
-                </button>
-              )}
-              {custom && (
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    if (!confirmDelete) return setConfirmDelete(true);
-                    deleteLayout(custom.id);
-                    close();
-                  }}
-                  className={`${menuItem} ${confirmDelete ? "bg-desk-bad font-semibold text-desk hover:bg-desk-bad focus:bg-desk-bad" : "text-desk-bad"}`}
-                >
-                  {confirmDelete ? `Confirm delete ${custom.label}` : `Delete ${custom.label}`}
                 </button>
               )}
             </>

@@ -41,11 +41,6 @@ function titleBarAt(self: string, px: number, py: number, W: number, H: number) 
   return over && py < over.y * H + TITLE_PX ? over : null;
 }
 
-// The visible, unmaximized window (other than the one being dragged) under a point on the desk.
-function tileAt(self: string, fx: number, fy: number) {
-  return Object.values(useWindows.getState().wins).find((w) => w.id !== self && !w.min && !w.max && fx >= w.x && fx < w.x + w.w && fy >= w.y && fy < w.y + w.h) ?? null;
-}
-
 // Dropping onto empty desk fills the empty space there: the largest rectangle that
 // contains the pointer and overlaps no other window. Candidate edges are the desk's
 // edges and every other window's edges; for each left/right pair around the pointer,
@@ -196,7 +191,7 @@ const tbBtn = "grid h-6 w-6 flex-none place-items-center rounded-[4px] text-desk
 export const Window = memo(function Window({ id }: { id: string }) {
   const win = useWindows((s) => s.wins[id]);
   const focused = useWindows((s) => s.focused === id);
-  const { focus, minimize, toggleMax, close, resize, swap } = useWindows.getState();
+  const { focus, minimize, toggleMax, close, resize } = useWindows.getState();
   const [live, setLive] = useState<Geo | null>(null);
   const liveRef = useRef<Geo | null>(null);
   const peek = useWindows((s) => s.peek[id]);
@@ -277,26 +272,15 @@ export const Window = memo(function Window({ id }: { id: string }) {
       setGeo(clampGeo({ x, y, w, h }, TITLE_PX / d.desk.height, KEEP_PX / d.desk.width));
       const px = e.clientX - d.desk.left;
       const py = e.clientY - d.desk.top;
-      let snap: Geo | null;
-      if (useWindows.getState().auto) {
-        // Auto tiling: preview the tile under the pointer; dropping there swaps the two windows.
-        const over = tileAt(id, px / d.desk.width, py / d.desk.height);
-        d.target = over?.id ?? null;
-        snap = over ? { x: over.x, y: over.y, w: over.w, h: over.h } : null;
-      } else {
-        // Desk edges first, then another window's title bar (drop to swap), then the empty space under the pointer.
-        // Filling needs a drop on the small centre square, so it stays on even while the window
-        // is pushed into an edge; only the title bar swap waits until the window is clear of the edges.
-        const edge = snapFor(px, py, d.desk.width, d.desk.height);
-        const bar = edge || pushing ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
-        d.target = bar?.id ?? null;
-        snap =
-          edge ??
-          (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ??
-          fillTarget(id, px, py, d.desk);
-      }
+      // Desk edges first, then another window's title bar (drop to swap), then the empty space under the pointer.
+      // Filling needs a drop on the small centre square, so it stays on even while the window
+      // is pushed into an edge; only the title bar swap waits until the window is clear of the edges.
+      const edge = snapFor(px, py, d.desk.width, d.desk.height);
+      const bar = edge || pushing ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
+      d.target = bar?.id ?? null;
+      const snap = edge ?? (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ?? fillTarget(id, px, py, d.desk);
       const cur = useWindows.getState();
-      const hint = !snap && !cur.auto ? hintAt(id, px, py, d.desk) : null;
+      const hint = snap ? null : hintAt(id, px, py, d.desk);
       if (JSON.stringify(snap) !== JSON.stringify(cur.snap) || JSON.stringify(hint) !== JSON.stringify(cur.snapHint)) useWindows.setState({ snap, snapHint: hint });
     } else {
       const res = applyGroups(d.groups, d.wins, dx, dy, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));
@@ -321,12 +305,6 @@ export const Window = memo(function Window({ id }: { id: string }) {
       return;
     }
     if (!d.moved || !g) return;
-    if (useWindows.getState().auto && d.mode === "move") {
-      // Dropped on another tile: swap. Dropped anywhere else: snap back into place.
-      if (d.target) swap(id, d.target);
-      else useWindows.getState().tile();
-      return;
-    }
     if (d.target) return useWindows.getState().swapPlaces(id, d.target);
     if (snap && snap.w === 1 && snap.h === 1) resize(id, d.orig, true);
     else resize(id, snap ?? g);

@@ -29,8 +29,6 @@ export interface Win extends Geo {
   z: number;
   min: boolean;
   max: boolean;
-  // Position in the auto tiling order: 0 is the main window on the left.
-  slot?: number;
 }
 
 // The three module windows can be minimized but never closed.
@@ -113,26 +111,6 @@ export function winId(kind: WinKind, ref?: string): string {
   return `${kind}:${ref}`;
 }
 
-// Auto tiling: the first window takes the left 55%, the rest stack on the right
-// (in two columns once there are more than three). Windows never overlap.
-const MAIN_W = 0.55;
-export function tileGeos(n: number): Geo[] {
-  if (n <= 0) return [];
-  if (n === 1) return [{ x: 0, y: 0, w: 1, h: 1 }];
-  const rest = n - 1;
-  const cols = rest > 3 ? 2 : 1;
-  const rows = Math.ceil(rest / cols);
-  const w = (1 - MAIN_W) / cols;
-  const out: Geo[] = [{ x: 0, y: 0, w: MAIN_W, h: 1 }];
-  for (let i = 0; i < rest; i++) {
-    const col = Math.floor(i / rows);
-    const inCol = Math.min(rows, rest - col * rows);
-    const row = i % rows;
-    out.push({ x: MAIN_W + col * w, y: row / inCol, w, h: 1 / inCol });
-  }
-  return out;
-}
-
 const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), Math.max(lo, hi));
 
 export const TITLE_PX = 32;
@@ -159,7 +137,6 @@ const KEY = "axelrod.windows.v1";
 interface Saved {
   layout: LayoutName;
   dirty: boolean;
-  auto?: boolean;
   layouts: Record<string, Win[] | undefined>;
   customs?: Custom[];
 }
@@ -200,8 +177,6 @@ interface WinState {
   desk: { w: number; h: number };
   palette: boolean;
   hydrated: boolean;
-  // Auto tiling: re-arrange visible windows whenever one opens, closes, minimizes or restores.
-  auto: boolean;
   customs: Custom[];
 
   hydrate: () => void;
@@ -217,9 +192,6 @@ interface WinState {
   applyLayout: (name: LayoutName, opts?: { reset?: boolean }) => void;
   setSuggest: (name: LayoutName | null) => void;
   closePinned: () => void;
-  toggleAuto: () => void;
-  tile: () => void;
-  swap: (a: string, b: string) => void;
   swapPlaces: (a: string, b: string) => void;
   saveAs: (label: string) => void;
   deleteLayout: (id: string) => void;
@@ -229,7 +201,7 @@ function presetWins(name: LayoutName, customs: Custom[]): Win[] {
   const custom = customs.find((c) => c.id === name);
   if (custom) return custom.wins;
   const slots = PRESETS[name as BuiltIn] ?? PRESETS.read;
-  return slots.map((s) => ({ ...s, id: winId(s.kind, s.ref), z: 0, min: false, max: false, slot: undefined }));
+  return slots.map((s) => ({ ...s, id: winId(s.kind, s.ref), z: 0, min: false, max: false }));
 }
 
 function build(name: LayoutName, current: Record<string, Win>, saved: Win[] | null, customs: Custom[]): { wins: Record<string, Win>; top: number; focused: string | null } {
@@ -237,7 +209,7 @@ function build(name: LayoutName, current: Record<string, Win>, saved: Win[] | nu
   const wins: Record<string, Win> = {};
   let top = 0;
   // Windows outside the layout stay open, minimized to the dock.
-  for (const w of Object.values(current)) wins[w.id] = { ...w, min: true, max: false, z: ++top, slot: undefined };
+  for (const w of Object.values(current)) wins[w.id] = { ...w, min: true, max: false, z: ++top };
   for (const kind of MODULE_KINDS) if (!wins[kind]) wins[kind] = { id: kind, kind, x: 0.1, y: 0.06, w: 0.6, h: 0.85, z: ++top, min: true, max: false };
   for (const s of [...slots].sort((a, b) => a.z - b.z)) wins[s.id] = { ...s, ...clampGeo(s), z: ++top };
   const visible = slots.filter((s) => !s.min).sort((a, b) => b.z - a.z);
@@ -257,7 +229,6 @@ export const useWindows = create<WinState>((set, get) => ({
   desk: { w: 1280, h: 720 },
   palette: false,
   hydrated: false,
-  auto: false,
   customs: [],
 
   // Runs once on the client, after the first render, so server and client HTML match.
@@ -266,8 +237,7 @@ export const useWindows = create<WinState>((set, get) => ({
     const saved = readSaved();
     const customs = saved?.customs ?? [];
     const layout = saved?.layout && (customs.some((c) => c.id === saved.layout) || saved.layout in PRESETS) ? saved.layout : "read";
-    set({ ...build(layout, {}, saved?.layouts[layout] ?? null, customs), customs, layout, dirty: saved?.dirty ?? false, auto: saved?.auto ?? false, hydrated: true });
-    if (get().auto) get().tile();
+    set({ ...build(layout, {}, saved?.layouts[layout] ?? null, customs), customs, layout, dirty: saved?.dirty ?? false, hydrated: true });
   },
 
   open: (kind, ref, opts) => {
@@ -324,15 +294,14 @@ export const useWindows = create<WinState>((set, get) => ({
     const { wins } = get();
     const w = wins[id];
     if (!w) return;
-    // Placing a window by hand turns auto tiling off.
-    set({ wins: { ...wins, [id]: { ...w, ...clampGeo(g, TITLE_PX / get().desk.h, KEEP_PX / get().desk.w), max } }, dirty: true, auto: false });
+    set({ wins: { ...wins, [id]: { ...w, ...clampGeo(g, TITLE_PX / get().desk.h, KEEP_PX / get().desk.w), max } }, dirty: true });
   },
 
   // Commit a shared-edge resize: every window on the dragged line at once.
   resizeMany: (geos) => {
     const wins = { ...get().wins };
     for (const [id, g] of Object.entries(geos)) if (wins[id]) wins[id] = { ...wins[id], ...clampGeo(g, TITLE_PX / get().desk.h, KEEP_PX / get().desk.w), max: false };
-    set({ wins, peek: {}, dirty: true, auto: false });
+    set({ wins, peek: {}, dirty: true });
   },
 
   minimize: (id) => {
@@ -354,27 +323,9 @@ export const useWindows = create<WinState>((set, get) => ({
     // Saved windows pinned to an agent, page or item may belong to an older run: only keep the ones open now.
     const saved = opts?.reset ? null : (readSaved()?.layouts[name]?.filter((w) => !w.ref || !!cur[w.id]) ?? null);
     set({ ...build(name, cur, saved, get().customs), layout: name, dirty: false, suggest: null });
-    if (get().auto) get().tile();
   },
 
   setSuggest: (suggest) => set({ suggest }),
-
-  toggleAuto: () => {
-    set({ auto: !get().auto });
-    if (get().auto) get().tile();
-  },
-
-  // Keep the current order (slot, else left to right, top to bottom), then lay the windows out.
-  tile: () => {
-    const { wins } = get();
-    const vis = Object.values(wins)
-      .filter((w) => !w.min)
-      .sort((a, b) => (a.slot ?? 1e9) - (b.slot ?? 1e9) || a.x - b.x || a.y - b.y);
-    const geos = tileGeos(vis.length);
-    const next = { ...wins };
-    vis.forEach((w, i) => (next[w.id] = { ...w, ...geos[i], slot: i }));
-    set({ wins: next });
-  },
 
   // Save the current arrangement as a named profile and switch to it.
   saveAs: (label) => {
@@ -395,23 +346,14 @@ export const useWindows = create<WinState>((set, get) => ({
     if (layout === id) get().applyLayout("read");
   },
 
-  // Drop a window on another's title bar: the two trade position and size (and tiling order).
+  // Drop a window on another's title bar: the two trade position and size.
   swapPlaces: (a, b) => {
-    const { wins, auto } = get();
+    const { wins } = get();
     const A = wins[a];
     const B = wins[b];
     if (!A || !B) return;
-    const geo = (w: Win) => ({ x: w.x, y: w.y, w: w.w, h: w.h, slot: w.slot, max: w.max });
+    const geo = (w: Win) => ({ x: w.x, y: w.y, w: w.w, h: w.h, max: w.max });
     set({ wins: { ...wins, [a]: { ...A, ...geo(B) }, [b]: { ...B, ...geo(A) } }, dirty: true });
-    if (auto) get().tile();
-  },
-
-  // Drag a window onto another in auto mode to swap their places.
-  swap: (a, b) => {
-    const { wins } = get();
-    if (!wins[a] || !wins[b]) return;
-    set({ wins: { ...wins, [a]: { ...wins[a], slot: wins[b].slot }, [b]: { ...wins[b], slot: wins[a].slot } }, dirty: true });
-    get().tile();
   },
 
   // When the analyst opens a different run, windows pinned to the old run's agents, pages and items go away.
@@ -430,18 +372,7 @@ function topVisible(wins: Record<string, Win>): string | null {
 
 // Save the current layout's geometry whenever windows change.
 useWindows.subscribe((s, prev) => {
-  if (!s.hydrated || (s.wins === prev.wins && s.layout === prev.layout && s.dirty === prev.dirty && s.auto === prev.auto && s.customs === prev.customs)) return;
+  if (!s.hydrated || (s.wins === prev.wins && s.layout === prev.layout && s.dirty === prev.dirty && s.customs === prev.customs)) return;
   const saved = readSaved();
-  writeSaved({ layout: s.layout, dirty: s.dirty, auto: s.auto, customs: s.customs, layouts: { ...saved?.layouts, [s.layout]: Object.values(s.wins) } });
-});
-
-// In auto mode, re-tile whenever the set of visible windows changes.
-const visibleKey = (wins: Record<string, Win>) =>
-  Object.values(wins)
-    .filter((w) => !w.min)
-    .map((w) => w.id)
-    .sort()
-    .join("\n");
-useWindows.subscribe((s, prev) => {
-  if (s.auto && s.hydrated && visibleKey(s.wins) !== visibleKey(prev.wins)) s.tile();
+  writeSaved({ layout: s.layout, dirty: s.dirty, customs: s.customs, layouts: { ...saved?.layouts, [s.layout]: Object.values(s.wins) } });
 });
