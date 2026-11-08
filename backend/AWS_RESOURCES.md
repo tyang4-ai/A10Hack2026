@@ -21,6 +21,19 @@ Every resource above is tagged `project=axelrod` (the API's route and integratio
 
 Delete order for the deploy: API Gateway, then the instance, then the security group (it can't go while the instance uses it).
 
+## Credentials
+
+Every credential Axelrod created or used. Name, where it lives, how to revoke it. **Never the value.** Gordon deletes everything right after the hackathon.
+
+| Credential | What it is | Where it lives | How to revoke |
+|---|---|---|---|
+| Workshop AWS CLI credentials | Temporary STS keys for the workshop account, from the Workshop Studio dashboard ("Get AWS CLI credentials") | Gordon's laptop only: environment variables or the laptop's AWS CLI credentials file. Never in the repo, `.env` or EC2 | They expire on their own. End the Workshop Studio event, or remove them from the laptop |
+| EC2 instance role `axelrod-ec2` | Temporary credentials that AWS issues to the instance through its instance profile | Only inside instance `i-0dec5cc5824a11aec`, through IMDSv2 (HttpTokens required, hop limit 1). Never written to disk by Axelrod | `aws iam remove-role-from-instance-profile --instance-profile-name axelrod-ec2 --role-name axelrod-ec2`, or delete the role (commands in the table above) |
+| GitHub push credentials | Gordon's GitHub login (`tyang4-ai`), used for `git push` to the private repo | Git Credential Manager and `gh` on Gordon's laptop. Never on EC2 (EC2 gets code through S3) | GitHub Settings > Applications and Personal access tokens, or `gh auth logout` |
+| `AXELROD_API_KEY` | Optional API key that the API checks in `X-Axelrod-Key` | **Not set** (as of Sat 11:40 PM). If Gordon sets one: `/etc/axelrod.env` on EC2, `backend/.env` locally, and the webapp's `NEXT_PUBLIC_AXELROD_KEY` | Remove it from those files, then `bash backend/infra/remote.sh --set-env AXELROD_API_KEY=` and rebuild the webapp |
+
+No IAM users, access keys or SSH key pairs were created (organizer rule). SSM sessions use the workshop credentials above.
+
 ## Notes
 
 - Models: the workshop allowlist policy (`ws-bedrock-model-allowlist-policy-1` on `WSParticipantRole`) explicitly denies Sonnet 5.5 and Haiku 5.5. In use: `us.anthropic.claude-sonnet-5` (large) and `us.anthropic.claude-haiku-4-5-20251001-v1:0` (small). If organizers allow 5.5, change `MODEL_*` in `.env` and re-run `backend/infra/ec2_role.py` so the role's policy follows.
