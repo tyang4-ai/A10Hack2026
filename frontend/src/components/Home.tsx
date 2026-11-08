@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Run } from "@contract/types";
 import { api } from "@/lib/api";
-import { CACHE_HELP, CACHE_LABEL, MODE_HELP, MODE_LABEL, STAGE_LABEL, usd } from "@/lib/format";
+import { CACHE_HELP, CACHE_LABEL, STAGE_LABEL, usd } from "@/lib/format";
 import { ago, STATUS_DOT, STATUS_WORD, ThemeSwitcher } from "./Switchers";
 import { Skeleton } from "./ui";
 
@@ -224,11 +224,6 @@ function RunRow({ r }: { r: Run }) {
           {r.run_id}
         </Link>
         <Lineage r={r} />
-        {r.mode !== "live" && (
-          <span title={MODE_HELP[r.mode]} className="mt-0.5 inline-block rounded-[3px] bg-warn-bg px-1 font-mono text-[10px] font-semibold text-warn">
-            {MODE_LABEL}
-          </span>
-        )}
         {r.cache_mode !== "off" && (
           <span title={CACHE_HELP[r.cache_mode]} className="mt-0.5 ml-1 inline-block rounded-[3px] border border-warn px-1 font-mono text-[10px] font-semibold text-warn">
             {CACHE_LABEL}

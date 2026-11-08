@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Stage } from "@contract/types";
 import { api, ApiError } from "@/lib/api";
-import { CACHE_HELP, CACHE_LABEL, MODE_HELP, MODE_LABEL, STAGES, STAGE_LABEL, usd } from "@/lib/format";
+import { CACHE_HELP, CACHE_LABEL, STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { LayoutControl } from "./Desk";
 import { RerunDialog } from "./RerunDialog";
@@ -150,11 +150,6 @@ export function TopBar() {
         )}
         {run && st && (
           <div className="flex items-center gap-3">
-            {run.mode !== "live" && (
-              <span title={MODE_HELP[run.mode]} className="rounded-[3px] bg-desk-warn px-1.5 font-mono text-[11px] font-semibold text-desk">
-                {MODE_LABEL}
-              </span>
-            )}
             {run.cache_mode !== "off" && (
               <span title={CACHE_HELP[run.cache_mode]} className="rounded-[3px] border border-desk-warn px-1.5 font-mono text-[11px] font-semibold text-desk-warn">
                 {CACHE_LABEL}

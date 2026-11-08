@@ -13,11 +13,15 @@ const CURRENCY: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", JPY:
 // Format a reported value from its own unit and scale. Never assume a currency.
 export function formatValue(v: Value | null): string {
   if (!v) return "—";
-  const n = roundHalfUp(v.number, 1).toLocaleString("en-US", { maximumFractionDigits: 1 });
+  // Two decimals below 10, so per-share amounts keep their cents (€0.95, not €1).
+  const digits = Math.abs(v.number) < 10 ? 2 : 1;
+  const n = roundHalfUp(v.number, digits).toLocaleString("en-US", { maximumFractionDigits: digits });
   if (v.unit === "percent" || v.unit === "%") return `${n}%`;
   const scale = SCALE_WORD[v.scale] ? ` ${SCALE_WORD[v.scale]}` : "";
   const cur = CURRENCY[v.unit];
-  return cur ? `${cur}${n}${scale}` : `${n}${scale} ${v.unit}`.trim();
+  // Sign before the currency symbol: -€818 million, not €-818 million.
+  const abs = roundHalfUp(Math.abs(v.number), digits).toLocaleString("en-US", { maximumFractionDigits: digits });
+  return cur ? `${v.number < 0 ? "-" : ""}${cur}${abs}${scale}` : `${n}${scale} ${v.unit}`.trim();
 }
 
 // Compact chart labels from the value's own unit and scale: 13,429,000,000 EUR at scale
@@ -81,14 +85,6 @@ export const STATUS_TEXT: Record<VerificationStatus, string> = {
 };
 
 export const CERTAINTY_HELP = "Support from checked evidence. Not the chance it's true.";
-
-// Runs that are not live are labelled as simulated, in plain words (a hackathon rule too).
-export const MODE_LABEL = "SIMULATED";
-export const MODE_HELP: Record<"live" | "replay" | "fixture", string> = {
-  live: "",
-  fixture: "Recorded run. No live agents or AWS calls.",
-  replay: "Recorded run, replayed at live speed. No live agents or AWS calls.",
-};
 
 // Runs served partly from a cache are labelled too (contract v0.2, demo cache labels).
 export const CACHE_LABEL = "CACHED";
