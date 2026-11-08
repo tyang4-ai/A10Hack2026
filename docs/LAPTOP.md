@@ -53,48 +53,58 @@ Tong's terminal UI is optional: `cd frontend/cli`, `npm install`, then `node bin
 
 ## Server settings for the demo
 
-Set on EC2 in `/etc/axelrod.env` by the build machine. The laptop never changes them.
+Final since 5:10 AM (`backend/status.md`, `backend/DEMO.md`). Set on EC2 in `/etc/axelrod.env` by the build machine. The laptop never changes them.
 
 | Setting | Value | What it does |
 |---|---|---|
-| `STAGE_PACING` | 1 (since 4:03 AM, was 3) | A pause of that many seconds at the start of each stage (not at approve). STOP ends it at once |
-| `MAX_CONCURRENCY_SMALL`, `MAX_CONCURRENCY_LARGE` | 48, 8 (since 4:03 AM) | More goons in parallel, so a full run aims for about 2:30. A run left going past STOP spends faster |
-| `DEMO_FAULTS` | fetch,judge | The planted faults, labeled simulated: S-017 is a broken download (503 twice, then a declared hole), and one judge verdict per run is malformed (flagged, the judge reruns) |
+| `CACHE_MODELS` | replay_only | Every agent model call is answered from two recorded live runs, at $0: approve-all (run_20261108_5rzsat) and the stage click path (run_20261108_etowmo). Only agent chat calls Bedrock live. A call with no recording is blocked and becomes a declared hole, never a live call. Runs say `cache_mode: documents_and_models` |
 | `CACHE_DOCUMENTS` | on | The gateway decides every fetch, then serves it from the S3 cache |
-| `CACHE_MODELS` | replay_only (since about 4:52 AM) | Every agent model call is served from a recorded run (run_20261108_5rzsat, a live recording run, $3.25). Only agent chat calls Bedrock live. A recorded answer that's missing is blocked and becomes a declared hole, never a live call. A full run takes about 63 s from Approve and costs $0. Runs show the CACHED badge and say `cache_mode: documents_and_models` |
+| `STAGE_PACING` | 1 | Seconds of pause at the start of each stage (not at approve). STOP ends it at once |
+| `FETCH_PACING` | 1.2 | Seconds before each fetch decision. A revoke in that time still blocks it |
+| `VERIFY_PACING` | 3 | Seconds per judge call, so verification visibly takes time |
+| `DEMO_FAULTS` | fetch,judge | The planted faults, labeled simulated: S-017 is a broken download (503 twice, then a declared hole), and one judge verdict per run is malformed (flagged, the judge reruns) |
+| `MAX_CONCURRENCY_SMALL`, `MAX_CONCURRENCY_LARGE` | 48, 8 | Goons in parallel |
 | `BUDGET_USD` | 50 | Per run |
 | `PROTECTED_RUNS` | rzpoj7, pin2ve | Delete refuses the demo run and its backup |
 
-Check from the build machine: `bash backend/infra/remote.sh 'grep -E "^(STAGE_PACING|DEMO_FAULTS|CACHE_MODELS|BUDGET_USD)=" /etc/axelrod.env'`
+Check from the build machine: `bash backend/infra/remote.sh 'grep -E "^(CACHE_MODELS|STAGE_PACING|FETCH_PACING|VERIFY_PACING|DEMO_FAULTS)=" /etc/axelrod.env'`
 
 ## The live segment, click by click
 
-Times are seconds from the moment you click **Approve and run**. Measured with `STAGE_PACING=3` and the old concurrency on the deployed URL (run_20261108_0ntqmj, 3:05 AM, a headless browser with all sources approved). With `STAGE_PACING=1` since 4:03 AM, expect every beat about 2 to 4 seconds earlier (two pauses of 1 s instead of 3 s). The order stays the same. Revoking S-006 right after approval still works, and the first rehearsal gives the real numbers.
+`backend/DEMO.md` has the backend session's click script. The short version:
 
-**Under `replay_only` (since about 4:52 AM) model answers come back at once, so everything after collect is much faster: a whole run finishes about 63 s after Approve.** STOP before that, or the run completes on its own. If the beats come too fast, ask the build machine to raise `STAGE_PACING` (the user may set about 5). Approval changes (the drag, the reject, the revoke) are being checked against the recording: see the note at the end of this section.
+**How long a run takes now** (timed replays with scripted clicks, 5:10 AM, both $0):
 
-| When | What happens | What you do |
+| Path | Launch to done | Approve to done |
 |---|---|---|
-| before | `axelrod run ...` prints the link. The plan streams in. Bobby's plan call lands about 10 s after launch, then the approval gate opens | Open the run. At approval: drag S-002 above S-001, reject S-016. Never touch S-006, S-009, S-010 or S-017. Click **Approve and run** |
-| 0 s | Collect starts (a short stage pause) | Click **Revoke** on S-006, then **Confirm revoke**, right away. Don't wait for the first fetches |
-| 3 s | Fetches start. Each says `cache` and when the copy was collected | Talk through the traffic |
-| about 19 s | S-006's request turns red: `R-revoke-S-006` | Point at it |
-| about 20 s | S-009's off-site links go red on their own (default deny). S-010, our planted test page (simulated), comes back FLAGGED by Bedrock Guardrails | "Show only blocked and flagged" in Traffic |
-| about 21 s | S-017 fails, 503 twice (planted, simulated). It becomes a declared hole | Point at it |
-| about 22 s | Extract starts (a short stage pause) | |
-| about 27 s | The first extractor calls | Stop one goon: click a working extractor in the Agents window (or Ctrl+K, type its id, Enter), then **Stop agent**, **Confirm stop**. Its next call is blocked, the rest keep going |
-| about 35 s | | **Stop run**, **Confirm stop**. The red banner counts the blocked requests |
+| Stage click path: S-002 above S-001, S-016 rejected, S-006 revoked at collect start (run_20261108_f5eznb) | 103 s | 97 s (revoke at +7 s) |
+| Every source approved, nothing else (run_20261108_zef836) | 129 s | 123 s |
+
+With a person clicking, expect about 1:55 to 2:15 from launch to a finished run. In both timed replays, one judge call had no recording: it shows as blocked and becomes a hole. Expect that one red `model.invoke` line, and don't present it as a block.
+
+**Click only one of the two recorded paths.** Any other clicks (another drag, another reject, revoking later than collect start) make later model calls miss: they show as blocked and become holes.
+
+The beats, in order (times from the stage click path: launch at 0 s, approve at about 6 s):
+
+| Order | What happens | What you do |
+|---|---|---|
+| 1 | `axelrod run ...` prints the link. The plan streams in (frozen, say so). Bobby's plan call shows, then the approval gate opens | Open the run. Approve the priority sources, drag S-002 above S-001, reject S-016. Never touch S-006, S-009, S-010 or S-017. Click **Approve and run** |
+| 2 | Collect starts after a 1 s pause | **Right away, click Revoke on S-006, then Confirm revoke** (the timed replay revoked it at +7 s) |
+| 3 | Fetches, about 1.2 s apart. Each says `cache` and when the copy was collected | Talk through the traffic |
+| 4 | S-006's request turns red: `R-revoke-S-006`. S-009's off-site links go red on their own (default deny). S-010, our planted test page (simulated), comes back FLAGGED by Bedrock Guardrails. S-017 answers 503 twice and becomes a declared hole (planted, simulated) | "Show only blocked and flagged" in Traffic |
+| 5 | Extract, then draft and verify. Judges take 3 s each, and the planted malformed verdict is flagged and rerun | Talk through Bobby's gate calls in the log |
+| 6 | The run finishes and the brief appears, about 97 s after Approve | Click into the brief, or switch to the finished R2 run (tab 2) as in docs/PLAN.md |
+
+**Stopping a goon, and STOP.** A stopped goon's page has no items, so its drafter calls miss the recording and show as holes. If you stop a goon, press **Stop run**, **Confirm stop** right after it. If the run should finish on stage, skip the goon stop. STOP at any point is safe: in-flight calls come back blocked ("Result discarded"), and the red banner counts the blocked requests.
 
 Rehearsals (fill in with a stopwatch):
 
-| | Launch to approval | Approval to STOP | Whole live segment | Notes |
+| | Launch to approval | Approval to STOP or done | Whole live segment | Notes |
 |---|---|---|---|---|
 | Rehearsal 1 | | | | |
 | Rehearsal 2 | | | | |
 
-**Approval changes and the recording (backend session, 5:05 AM):** up to a STOP in extract, the demo clicks are safe, because extractor prompts carry page text and no ids. After extract, the drag, the reject and the revoke change the prompts, so draft, judges and the brief would miss the first recording. A second recording that follows the exact demo path (priority sources approved, S-002 above S-001, S-016 rejected, S-006 revoked at the start of collect, no goon stop) is being made, and both recordings replay. **If the demo runs past extract, either skip the goon stop or press STOP right after it**, because a stopped goon's page has no items and its drafter calls would miss and show as holes. New pacing (`FETCH_PACING`, `VERIFY_PACING`) is coming, aiming for a full run of 2:00 to 2:30, and the final numbers go in `backend/status.md`. Update the table above from there.
-
-If there isn't enough time between beats, ask the build machine to raise `STAGE_PACING` (`bash backend/infra/remote.sh --set-env STAGE_PACING=<seconds>`), and write the new value here.
+If the beats come too fast, ask the build machine to raise `FETCH_PACING`, `VERIFY_PACING` or `STAGE_PACING` (`bash backend/infra/remote.sh --set-env KEY=<seconds>`), and write the new value here.
 
 ## 10 minutes before
 
@@ -102,7 +112,7 @@ If there isn't enough time between beats, ask the build machine to raise `STAGE_
 - [ ] The home page lists run_20261108_rzpoj7 and run_20261108_pin2ve.
 - [ ] Open the three tabs. Tab 2 on Read.
 - [ ] One warm-up run: `axelrod run ...`, approve, STOP at once ($0 under replay_only). It checks the whole path. Then delete it from the home page (Delete on its row, then confirm).
-- [ ] The build machine confirms `STAGE_PACING=1` and `DEMO_FAULTS=fetch,judge` (command above).
+- [ ] The build machine confirms `CACHE_MODELS=replay_only`, `STAGE_PACING=1`, `FETCH_PACING=1.2`, `VERIFY_PACING=3` and `DEMO_FAULTS=fetch,judge` (command above).
 - [ ] Notifications off (Windows: Do not disturb). Slack and Discord closed.
 - [ ] Charger in. Phone hotspot ready.
 - [ ] Browser at 100% zoom, full screen (F11), at least 1600 px wide. The desk is a grid of windows.
