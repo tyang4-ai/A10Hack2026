@@ -7,6 +7,10 @@ stage carries on with the next one. Only a stop (kill switch) ends the stage ear
 tier_3 HTML pages also get their off-page links requested through the gateway (why="link found in page").
 Nothing approves those domains, so default deny blocks them: that is the demo's disallowed action. A link
 the policy happens to allow is fetched and dropped, never ingested, because links are not planned sources.
+
+Live demo: before every request (source or link) the fetcher logs "next: S-006 ...", and the gateway waits
+DEMO_PACING seconds before deciding it. So the presenter sees what is coming and has time to revoke it, and a
+revoke that lands during the wait blocks that very request. The plan puts S-006 (the revoke target) 8th.
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ APPROVED = ("approved", "auto_approved")
 ALREADY_STORED = ("fetched", "quarantined", "extracting", "extracted")
 MAX_LINKS = 3
 LINK_WHY = "link found in page"
+NEXT_TITLE_CHARS = 60
 
 
 async def run(ctx: RunContext) -> None:
@@ -61,6 +66,7 @@ async def collect_source(ctx: RunContext, agent: m.Agent, source: m.Source) -> m
     source = state_source(ctx.state, source.source_id) or source
     if source.doc_ids and source.status in ALREADY_STORED:
         return None  # stored before a restart: never fetch twice
+    log(ctx, agent, next_source_text(source))
     if source.status != "revoked":
         set_status(ctx, agent, source, "fetching")
     try:
@@ -104,6 +110,7 @@ async def follow_links(ctx: RunContext, agent: m.Agent, source: m.Source, result
     blocked: list[str] = []
     for url in links:
         ctx.check_stop()
+        log(ctx, agent, f"next: link found in {source.source_id}, not a planned source: {url}")
         try:
             await ctx.gateway.fetch(agent, url, source_id=None, why=LINK_WHY)
         except Blocked:
@@ -121,6 +128,16 @@ async def follow_links(ctx: RunContext, agent: m.Agent, source: m.Source, result
         log(ctx, agent, f"{source.source_id}: requested {len(links)} link(s) found in the page, "
                         f"{len(blocked)} blocked by the gateway", level="warn" if blocked else "info")
     return blocked
+
+
+def next_source_text(source: m.Source) -> str:
+    """The line logged before a source's request, e.g. next: S-006 Reuters via Euronext: ... (live.euronext.com)."""
+    title = " ".join(source.title.split())
+    if len(title) > NEXT_TITLE_CHARS:
+        title = title[: NEXT_TITLE_CHARS - 3].rstrip() + "..."
+    host = urlsplit(source.url).hostname or source.domain
+    revoked = ", revoked: the gateway will block it" if source.status == "revoked" else ""
+    return f"next: {source.source_id} {title} ({host}{revoked})"
 
 
 def blocked_status(exc: Blocked) -> str:

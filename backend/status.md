@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2). B-live, B-baseline (W3). B-fix-extract, B-fix-draft (R0 fixes). Verifier (G3). W1 is 5/5 done.
+- Running: A-deploy (W2). B-baseline (W3). B-fix-extract, B-fix-draft (R0 fixes). Verifier (G3). W1 is 5/5 done.
 - Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -30,7 +30,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-brief | builder | R0 fix | done | suite 415, 1 live | Sonnet wrapped its whole answer in an extra string. Runner now unwraps it safely. Both R0 outputs replay as valid |
 | B-fix-extract | builder | R0 fix | running | | value verbatim, unit and period context, table recite |
 | B-fix-draft | builder | R0 fix | running | | score ROTIC from available years, peers, declared computations |
-| B-live | builder | W3 | running | | revoke cascade, demo pacing, demo_live.py rehearsal, % column fix |
+| B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
 | B-baseline | builder | W3 | running | | plain Claude report vs harness, same checks, labeled experiment |
 | B-p1 | builder | W3 | todo | | |
 
@@ -59,6 +59,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Decisions
 
+- Sat 8:52 PM: for the live demo, set `DEMO_PACING=2` and `MAX_CONCURRENCY_SMALL=8` on the instance (fewer metered calls discarded at STOP). Keep 32 for the full SHL run.
+
 - Sat 7:15 PM: start S1 right after G0 instead of at 8:00 PM (Gordon's call). Cutoffs stay at their clock times.
 - Sat 7:15 PM: venv is Python 3.12 via uv (no pip inside, so installs use `uv pip install --python .venv/Scripts/python.exe`). Code targets 3.11 for EC2.
 - Sat 7:16 PM: no git identity on this machine. Commits use `git -c user.name=Claude -c user.email=noreply@anthropic.com`, matching the earlier backend commits. Git config is not changed.
@@ -73,6 +75,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 7:58 PM: Gordon's call: don't wait at gates. W2 starts now, while B-verify finishes and G2 runs alongside. No W2 plan owns a B-verify file.
 
 ## Known issues
+
+- Revoke cascade: an item whose checks are running in a worker thread when the revoke lands can still be recorded as pass. After a revoke on a finished run, report and brief certainty and the rollup stay as finalize left them (items and brief stats do update).
 
 - Windows only: with a long DATA_DIR (for example a temp folder), vault paths for S-002 and S-009 pass the 260-character MAX_PATH limit and their ingest fails. The default `backend/.data` is fine, and EC2 is Linux. Keep DATA_DIR short on the laptop.
 - Presmoke cost on 5 pages: $0.80 (146 model calls). The full run reads 36 PDF pages plus HTML and JSON, so expect about $3 to $5 against `BUDGET_USD=5`. Raise the budget for R1 if the estimate holds.
@@ -91,6 +95,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Guard quirk: `git push origin backend 2>&1 | tail -1` is read as a push to "2>" and asks Gordon. Orchestrator pushes are plain `git push origin backend` from now on. The guard itself is unchanged (Gordon's file).
 
 ## Needs Gordon
+
+- (8:52 PM, contract change, additive) Add `"source_revoked"` to `ItemUpdatedData.reason` in `contract/models.py` (it allows repair, comment, user_edit, demo_injection today). Why: when a source is revoked mid-run, the items citing it turn blocked, and the cascade should say why in an `item.updated` event. Until then it sends `item.verified` only, which already carries the blocked status and the detail "Source revoked: S-006". The backend switches over by itself once the reason exists. Say yes and I'll make the change on main at a gate (models.py, types.ts, mock, CHANGELOG, VERSION), then you tell Tong.
 
 - (8:18 PM, pass to Tong) The CLI prints a run link as `PUBLIC_UI_URL?run=<run_id>` (or `PUBLIC_UI_URL` with `{run_id}` replaced). The UI has no run deep link yet. If Tong adds one, tell me the URL shape and I'll set `PUBLIC_UI_URL`.
 
@@ -114,4 +120,5 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
 - Sat 8:26 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
 - Sat 8:32 PM: B-reason done (W2 6/7, only A-deploy left). G3: live presmoke ok through every stage, $0.80. Verifier on W2 running.
+- Sat 8:52 PM: B-live done. All demo beats pass live. DEMO.md written. Tail shows NEXT lines by default (orchestrator, cli.py), "Source revoked: S-006" capitalization fixed (checks.py).
 - Sat 8:38 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.

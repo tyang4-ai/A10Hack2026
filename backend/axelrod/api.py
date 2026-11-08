@@ -298,7 +298,10 @@ async def approve_run(run_id: str, req: m.ApprovalRequest, rt: RT):
 
 
 async def revoke(run_id: str, source_id: str, rt: RT, req: Optional[m.RevokeRequest] = Body(None)):
-    """After approval only. The gateway adds R-revoke-<S>, so the next request to that source is blocked."""
+    """After approval only. The gateway adds R-revoke-<S>, so the next request to that source is blocked.
+    Then the cascade re-runs citations_resolve on every item resting on that source (they go blocked)."""
+    from . import cascade
+
     ctx = rt.ctx(run_id)
     state = ctx.state
     source = state.sources_by_id().get(source_id)
@@ -319,6 +322,10 @@ async def revoke(run_id: str, source_id: str, rt: RT, req: Optional[m.RevokeRequ
         raise ApiError(404, "not_found", f"No source {source_id}") from None
     except ValueError as e:
         raise ApiError(409, "invalid_state", str(e)) from None
+    try:
+        cascade.revoke_cascade(ctx, source_id)
+    except Exception:  # the revoke itself stands: the policy already denies the source
+        log.exception("revoke cascade failed for %s %s", run_id, source_id)
     await rt.store.save_async(state)
     return m.RevokeResponse(source=source, policy=state.policy_view(rt.settings))
 

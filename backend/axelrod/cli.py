@@ -299,8 +299,19 @@ def _usage(e: dict, st: TailState) -> Line | None:
     return Line(_head(e, "COST", "dim") + [(f"{u.get('model_calls', 0)} calls, {_money(st.cost)}{of}", "dim")])
 
 
+def _agent_log(e: dict, st: TailState) -> Line | None:
+    """The fetcher's "next: S-006 ..." lines show by default, so the presenter sees what's coming."""
+    msg = e.get("message") or ""
+    if msg.startswith("next: "):
+        return Line(_head(e, "NEXT", "cyan") + [(_trim(msg[len("next: "):], 160), "cyan")])
+    if not st.show_all:
+        return None
+    return Line([(_clock(e), "dim"), ("  ", ""), (f"{e.get('type', '?'):<17}", "dim"), (_trim(msg, 170), "dim")])
+
+
 _RENDER = {
     "gateway.request": render_gateway,
+    "agent.log": _agent_log,
     "run.status": _stage_line,
     "item.verified": _verified_line,
     "item.updated": _updated_line,

@@ -663,15 +663,23 @@ def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | No
     verdict = None
     for q in ev:
         hits = _value_hits(q, v)
-        row = [t for t in scan_numbers(q) if t.pct == pct]
+        toks = scan_numbers(q)
+        row = [t for t in toks if t.pct == pct]
+        # A row with amounts and % tokens ("23,375 22,363 4.5% 5.9%" under "2025 2024 Act. Comp."): the %
+        # tokens are change columns, not year columns, so only a row of % tokens alone is aligned to years.
         if pc:
+            if pct and any(not t.pct for t in toks):
+                continue
             header = _ordered_years([mm for p in pc for mm in period_mentions(p)])
             verdict = _merge(verdict, _columns(header, row, hits, year, label))
             continue
         ments = period_mentions(q)
         if len({y for y, _, _ in ments}) < 2:
             continue
-        if row and max(e for _, _, e in ments) <= row[0].start:  # a header line, then a row
+        head_end = max(e for _, _, e in ments)
+        if row and head_end <= row[0].start:  # a header line, then a row
+            if pct and any(not t.pct for t in toks if t.start >= head_end):
+                continue
             verdict = _merge(verdict, _columns(_ordered_years(ments), row, hits, year, label))
         else:
             verdict = _merge(verdict, _clauses(q, ments, hits, year, label))
@@ -687,7 +695,7 @@ def _source_resolves(item: m.DataItem, sources: dict[str, m.Source]) -> m.CheckR
         return _cr("citations_resolve", "fail", f"Source {item.source_id} is not in this run's plan")
     issue = _source_issue(src)
     if issue:
-        return _cr("citations_resolve", "blocked", issue.capitalize())
+        return _cr("citations_resolve", "blocked", issue[:1].upper() + issue[1:])
     foreign = sorted({c.doc_id for c in item.citations if src.doc_ids and c.doc_id not in src.doc_ids})
     if foreign:
         return _cr("citations_resolve", "fail", f"{_and(foreign)} does not belong to {src.source_id}")
