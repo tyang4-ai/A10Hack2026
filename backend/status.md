@@ -68,7 +68,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Decisions
 
-- Sat 10:44 PM (Gordon may override): a cited cost or outflow line may be stated as its size in text ("Income tax expenses were €646 million" for -646). Every other negative needs a minus, brackets or a sign word next to it. Without the exemption 6 correct stored sentences failed. With it, none do.
+- Sat 10:55 PM (Gordon may override): a cited cost or outflow line may be stated as its size in text ("Income tax expenses were €646 million" for -646). Every other negative needs a minus, brackets or a sign word next to it. Without the exemption 6 correct stored sentences failed. With it, none do.
 
 - Sat 10:41 PM: the brief always carries code's gap summary, even when the model's draft has no gap sentences. Queued as B-fix-polish, with numbers written as words in numbers_traced and labeling the register in human-report.md.
 - Sat 10:41 PM: offline tests point `store.REPLAY_DIR` at an empty temp folder (conftest). The committed replays broke 2 store and API tests that expect no recorded runs.
