@@ -16,7 +16,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V1-shapes | 1 | builder | running | | v0.2/v0.3 fields, names (Bobby, goons), route stubs, cache keys |
 | V2-gateway | 2, 6 | builder | todo | | stop one agent, document cache |
 | V3-rework | 3, 4, 5 | builder | todo | | rerun one agent, Bobby at the gates, comments to Bobby |
-| V4-archive | 7 | builder + aws-operator | running | | importer script, then the upload |
+| V4-archive | 7 | builder + aws-operator | script done, upload after V1 | 16 passed | dry run on the real archive: 929 files, 988 MB, every file has its original URL and date. S-001, S-003, S-004, S-005 are byte-identical to tonight's fetches |
 | V5-plan2 | 8 | builder | running | | S-011 and up from the archive |
 | V6-resume | 9 | builder | todo | | |
 | V7-chat | 10 | builder | todo | | |
@@ -50,6 +50,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Decisions
 
+- Sat 11:55 PM: the archive upload excludes the licensed LSEG files and the provenance-less TED CSVs (conservative default, Gordon may override). The upload runs after V1 lands, because the cache keys come from V1's `cache.py`.
+
 - Sat 11:35 PM: v2 runs in three waves, so no file has two owners: V1 alone (plus V4 and V5, which touch other files), then V2, V3 and V7, then V6 and V8. V1 puts every new route in `api.py` as a thin call into its own module, so later plans never share `api.py`.
 - Sat 11:35 PM: the archive rule. Gordon's summer archive feeds runs as primary source documents only (his explicit call in docs/BACKEND_V2.md). No script, note or analysis from `Notes/Finance/` is ever opened, copied or run. Sidecars and indexes are read only to find each file's original URL and date.
 - Sat 10:55 PM (Gordon may override): a cited cost or outflow line may be stated as its size ("Income tax expenses were €646 million" for -646). Every other negative needs a minus, brackets or a sign word.
@@ -75,6 +77,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Guard quirk: a redirect or pipe after `git push` (or any `>`, `2>&1` in a git command) is read as a path or push target. Use plain git commands.
 
 ## Needs Gordon
+
+- (11:55 PM, archive) The importer leaves out **100 LSEG transcripts and slides**, whose sidecars say "Licensed third-party content. Private research use; do not redistribute", plus **3 TED-EU CSVs** with no sidecar, URL or date (possibly derived data). My default: both stay out of S3, since the demo shows vault files to judges. Say "include LSEG" to add them with `--include-licensed` (1,029 files, 1.09 GB).
 
 - (11:50 PM, not blocking) Facts without a number ("strong growth in fiscal year 2025") are not year-checked, because their statements add the report's own year, which no quote repeats (checking them wrongly flagged 13 items). Say if you want them checked against the source's period instead.
 
