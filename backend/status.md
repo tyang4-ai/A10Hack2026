@@ -179,3 +179,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:42 AM: BUDGET_USD=1 on EC2 (Gordon, 1:45 AM message: no API key, so this caps each run).
 - Sun 1:47 AM: account id moved to backend/.env (AWS_EXPECTED_ACCOUNT). C-026 logged as a judge error. On call until the 5:30 freeze: DEMO_PACING after the first in-person rehearsal, then one replay-fallback test.
 - Sun 2:06 AM: typo-tolerant plan match (suite 927 passed). Deploy and BUDGET_USD=50 noted here first.
+- Sun 2:08 AM: deployed afd37aa, BUDGET_USD=50. Live check: run_20261108_7q87xb typed "siemens heathineers" reached approval as Siemens Healthineers (SHL), $0.004, stopped.
