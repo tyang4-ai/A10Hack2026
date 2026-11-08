@@ -54,7 +54,8 @@ ensure_route() {  # route key, integration id
     echo "route $1 -> $2 (exists, target set)"
   fi
 }
-code() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1"; }
+code() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1" || true; }   # never trips set -e
+wait_200() { local c=""; for _ in $(seq 1 15); do c="$(code "$1")"; [ "$c" = 200 ] && break; sleep 2; done; printf '%s' "$c"; }
 
 if [ "${1:-}" = --rollback ]; then
   [ -n "$(route_id 'ANY /{proxy+}')" ] || aws apigatewayv2 create-route --api-id $API_ID --region $R \
@@ -81,7 +82,7 @@ else
     --query 'Return' --output text
   echo "opened port 3000 on $SG"
 fi
-web_direct="$(code "http://$DNS:3000/")"
+web_direct="$(wait_200 "http://$DNS:3000/")"   # a new rule takes a few seconds to apply
 echo "check webapp on the instance: $web_direct"
 [ "$web_direct" = 200 ] || { echo "the webapp does not answer on :3000 yet (deploy_web.sh first), stopping before the route change" >&2; exit 1; }
 
