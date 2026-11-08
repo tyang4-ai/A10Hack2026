@@ -26,7 +26,7 @@ git switch -c integration origin/main
 git merge --no-edit origin/backend
 git merge --no-edit origin/frontend
 copy <orchestrator folder>\backend\.env backend\.env
-aws sts get-caller-identity --query Account --output text     # 506556958358
+aws sts get-caller-identity --query Account --output text     # must print the workshop account id
 claude --permission-mode acceptEdits
 ```
 
