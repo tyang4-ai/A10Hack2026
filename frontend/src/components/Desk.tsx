@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { api } from "@/lib/api";
 import { useRunStore } from "@/lib/store";
-import { LAYOUTS, useWindows, type Geo, type Win } from "@/lib/windows";
+import { LAYOUTS, MODULE_KINDS, useWindows, type Geo, type Win } from "@/lib/windows";
 import { Window } from "./Window";
 import { KIND_META, KIND_ORDER, winTitle } from "./WindowContent";
 
@@ -22,6 +22,36 @@ function cycleFocus() {
   const next = wins.sort((a, b) => a.z - b.z)[0];
   useWindows.getState().focus(next.id);
   document.querySelector<HTMLElement>(`[data-win="${CSS.escape(next.id)}"] [data-titlebar]`)?.focus();
+}
+
+// R: put this screen's windows back the way the screen starts (same as its Reset menu item).
+function resetScreen() {
+  const { layout, applyLayout } = useWindows.getState();
+  applyLayout(layout, { reset: true });
+}
+
+// X: close the focused window, the same path as its ✕ button. The three main panels
+// can't be closed, so they minimize to the dock instead.
+function closeFocused() {
+  const { focused, wins, close, minimize } = useWindows.getState();
+  const w = focused ? wins[focused] : null;
+  if (!w || w.min) return;
+  const hadFocus = !!document.activeElement?.closest(`[data-win="${CSS.escape(w.id)}"]`);
+  if (MODULE_KINDS.includes(w.kind)) minimize(w.id);
+  else close(w.id);
+  // Keyboard focus was inside the window that just went away: hand it to the next one.
+  const next = useWindows.getState().focused;
+  if (hadFocus && next) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-win="${CSS.escape(next)}"] [data-titlebar]`)?.focus());
+}
+
+// Single-key shortcuts must not steal letters typed into a field, a dialog or a menu.
+function keysBelongElsewhere(e: KeyboardEvent): boolean {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing || e.defaultPrevented) return true;
+  if (useWindows.getState().palette || document.querySelector('[aria-modal="true"]')) return true;
+  const t = e.target;
+  if (!(t instanceof HTMLElement)) return false;
+  if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return true;
+  return !!t.closest('[role="dialog"], [role="menu"], [role="listbox"]');
 }
 
 export function Desk() {
@@ -48,6 +78,15 @@ export function Desk() {
       } else if (e.ctrlKey && e.code === "Backquote") {
         e.preventDefault();
         cycleFocus();
+      } else if (!keysBelongElsewhere(e)) {
+        const k = e.key.toLowerCase();
+        if (k === "r") {
+          e.preventDefault();
+          resetScreen();
+        } else if (k === "x") {
+          e.preventDefault();
+          closeFocused();
+        }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -120,6 +159,8 @@ export function Dock() {
         <kbd className="font-mono text-[11px] text-desk-muted">{mac ? "⌘K" : "Ctrl K"}</kbd>
         Open anything
       </button>
+      <ShortcutHint k="R" label="Reset panels" title="Put this screen's windows back where they start (R)" onClick={resetScreen} />
+      <ShortcutHint k="X" label="Close panel" title="Close the focused window (X). The three main panels minimize to the dock." onClick={closeFocused} />
       <span aria-hidden className="mx-1 h-6 w-px flex-none bg-desk-line" />
       {wins.map((w) => {
         const state = w.min ? "min" : focused === w.id ? "focused" : "open";
@@ -143,6 +184,27 @@ export function Dock() {
       })}
       <InjectErrors />
     </nav>
+  );
+}
+
+// A dock hint for a one-key shortcut that also works as a button. The label hides on
+// narrow screens so the window buttons keep their room.
+function ShortcutHint({ k, label, title, onClick }: { k: string; label: string; title: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={label}
+      aria-keyshortcuts={k}
+      className="flex h-8 flex-none items-center gap-2 rounded-[4px] border border-desk-line-strong px-2.5 text-desk-ink hover:border-desk-muted"
+    >
+      <kbd aria-hidden className="font-mono text-[11px] text-desk-muted">
+        {k}
+      </kbd>
+      <span aria-hidden className="hidden lg:inline">
+        {label}
+      </span>
+    </button>
   );
 }
 
