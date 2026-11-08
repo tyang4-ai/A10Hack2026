@@ -1,10 +1,14 @@
 """Stage repair: weaken failed items toward the evidence, at most two attempts, then holes and finalize_report.
 
-Only weakening is allowed: recompute (code redoes a computation or a threshold score), downgrade (drop refs
-that failed, or a repairer rewrite toward the evidence), delete (drop a claim) and not_determinable (a score
-becomes N/A). Code makes every repair it can by itself, and the repairer agent only rewrites wording. Code
-refuses any repair that strengthens a claim: a stronger score, a higher data coverage, a new citation or an
-unchanged text. Every repair is checked again by code and by three fresh judges.
+Actions: recompute (code redoes a computation or a threshold score), downgrade (drop refs that failed, or a
+repairer rewrite toward the evidence), delete (drop a claim) and not_determinable (a score becomes N/A).
+Code makes every repair it can by itself, and the repairer agent only rewrites wording.
+
+Models can only weaken claims. Code refuses a model repair that strengthens one: a stronger judgment score,
+a higher data coverage, a new citation or an unchanged text. Code itself is not bound that way for threshold
+criteria: it recomputes the score from the rubric's bar and the unrounded rule input, and its score wins,
+which can move a score either way (up as well as down). Every repair is checked again by code and by three
+fresh judges.
 
 Scores, by rubric kind:
 - Numeric threshold (rotic_level "> 15%" / "< 10%", liquidity "> 2x" / "< 1x"): the score is the one the

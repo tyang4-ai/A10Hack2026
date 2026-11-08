@@ -522,3 +522,22 @@ async def test_live_brief_from_the_fixture_report(settings, fixture_bundle, fixt
         print(f"{s.id} {s.mode} {s.verification.status} {s.derived_from}: {s.text}")
     assert brief.status == "final" and brief.stats.est_pages <= 3.0
     assert all_s and len(ok) >= 0.8 * len(all_s)
+
+
+# ---------------------------------------------------------------------------
+# B-fix-holes: the gap section is a counted summary, not the register
+# ---------------------------------------------------------------------------
+
+
+async def test_fixture_gap_section_is_a_short_counted_summary(ctx: RunContext, fixture_report):
+    brief = await make_brief(ctx)
+    gap = brief.sections[-1]
+    assert gap.heading == summarize.HOLE_HEADING
+    gaps = [s for _, s in summarize.all_sentences([gap])]
+    assert 1 <= len(gaps) <= summarize.MAX_HOLE_SENTENCES
+    assert gaps[0].text == "The full hole register lists four gaps for this run."
+    assert set(gaps[0].derived_from) == {h.hole_id for h in fixture_report.holes}
+    assert all(not re.search(r"\d", s.text) and all(r.startswith("HOLE-") for r in s.derived_from) for s in gaps)
+    assert brief.holes == fixture_report.holes and brief.stats.est_pages <= 3.0
+    research = next(sec for sec in brief.sections if sec.heading == "Research Stage")    # unscored, still present
+    assert [s.derived_from for _, s in summarize.all_sentences([research])] == [["E-006"]]

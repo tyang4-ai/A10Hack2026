@@ -7,11 +7,16 @@ repairer (role repairer, small model), which may only weaken a sentence toward i
 Output models carry no new ids. Sentences cite ids the prompt showed them, and code checks every one
 (citations_resolve) and assigns every H- id. The fakes below answer when FAKE_MODELS=1: they build an
 offline brief from the prompt's own JSON, so the whole pipeline runs without Bedrock.
+
+Holes: the brief's gap section is a short summary that code writes and counts (stages/summarize.py), not
+the register. A judge checking a counted gap sentence gets a code-made tally of the holes it cites
+(hole_tally), so it never has to count a long list itself.
 """
 from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, Field
@@ -24,6 +29,10 @@ _KIND_ORDER = {"extrapolation": 0, "conclusion": 1, "chart": 2, "data": 3}
 _CATEGORY_ORDER = [c["id"] for c in RUBRIC["categories"]]
 _CATEGORY_LABEL = {c["id"]: c["label"] for c in RUBRIC["categories"]}
 EVIDENCE_LIMIT = 40          # items a judge or repairer sees at most (cited ones first, then their inputs)
+KIND_WORDS = {"data": ("data item", "data items"), "conclusion": ("conclusion", "conclusions"),
+              "chart": ("chart", "charts"), "extrapolation": ("score", "scores")}
+_SOURCE_REF = re.compile(r"\bS-\d{3}\b")
+_AGENT_HOLE = re.compile(r"^[a-z]+-\d+ failed\b")    # finalize._agent_reason: "extractor-07 failed: ..."
 
 
 # ---------------------------------------------------------------------------
@@ -90,19 +99,19 @@ Rules:
 1. Use only the items, the rollup and the holes you are given. Never add a fact, a cause, a forecast, a comparison or an opinion that the cited items do not state.
 2. Every sentence lists in derived_from the ids it rests on: item ids (D-, C-, E-, G-), "rollup" for scorecard numbers (weighted average, the two percentages, criteria counts), and HOLE- ids for gaps. Cite only ids that appear in the input. Never write an id in the sentence text.
 3. mode "copied": the text is exactly one item's "text", character for character, and derived_from is that one id. Copy when an item already says it well.
-4. mode "derived": a summary in your own words that says no more than its cited items. Every number in it must be a cited item's value as shown (you may round it half up to fewer decimals), a cited computation's display, a cited chart's point, a cited score (-1, 0, +1) or its rule threshold, or a rollup number. Other numbers inside an item's text do not count. Never compute a number yourself: no sums, differences, ratios or growth rates. Years and fiscal-year labels are fine. Spell out small counts in words ("three years", "two sources") unless the count is a rollup number.
+4. mode "derived": a summary in your own words that says no more than its cited items. Every number in it must be a cited item's value as shown (you may round it half up to fewer decimals), a cited computation's display, a cited chart's point, a cited score (-1, 0, +1) or its rule threshold, or a rollup number. Other numbers inside an item's text do not count. Never compute a number yourself: no sums, differences, ratios or growth rates. Years and fiscal-year labels are fine. Spell out small counts in words ("three years", "two sources") unless the count is a rollup number. Everything else (amounts, percentages, ratios, scores, rollup numbers) is written in digits, never in words, so code can trace it.
 5. Structure, in this order:
    - "Bottom line": a short paragraph with the weighted average and the coverage (cite "rollup") and the main reasons (cite the E and C items).
-   - One section per BOFFIN category that has items, as a paragraph or bullets, built from conclusions and data.
+   - One section per category in categories_in_scope, in that order, headed by its label, as a paragraph or bullets built from its conclusions, scores and data. Every one of these categories gets at least one sentence. A category whose criteria are not scored still gets a sentence from its verified conclusions or data, or a copy of its score item's text.
    - At most two chart blocks, each with a chart_id from the input and a caption sentence that cites that chart (copy its text, or describe it using only its points).
    - A section "Scorecard" with one scorecard block and no sentences. Code renders the rollup table.
-   - Last, "What we could not determine": bullets, one per hole, citing the HOLE id and its item_id when it has one. Say what is missing and why in plain words, with no numbers.
-6. Length: at most {word_budget} words in all sentences together, so the brief fits three printed pages with the scorecard and the charts.
+   - Last, "What we could not determine": one bullets block holding the sentences in gap_summary, copied exactly as given, each with mode "derived" and its derived_from. Code wrote and counted them from the hole register, which the analyst sees in full next to the brief. Add nothing to this section, and write no other sentence that cites only HOLE ids. Elsewhere you may cite a HOLE id next to the item the sentence is about.
+6. Length: at most {word_budget} words in all sentences together, not counting the gap_summary sentences, so the brief fits three printed pages with the scorecard and the charts. Spend the words on the categories first.
 7. Style: plain neutral words, short sentences, no hype, no advice to buy or sell. Write currency and scale the way the items show them, for example "€1,234 million"."""
 
 JUDGE_SYSTEM = """You check one sentence from an analyst brief against the evidence it cites. You see only that sentence and its evidence.
 
-Answer supported=true only if every part of the sentence is directly stated in the evidence or follows from it by plain reading: the numbers, the direction of any change, the period, the subject, and any cause or comparison. Rounding a number half up is fine. A sentence that says a claim failed verification or a criterion is not scored is supported when the evidence shows that.
+Answer supported=true only if every part of the sentence is directly stated in the evidence or follows from it by plain reading: the numbers, the direction of any change, the period, the subject, and any cause or comparison. Rounding a number half up is fine. A sentence that says a claim failed verification or a criterion is not scored is supported when the evidence shows that. Counts written in words ("five data items") are checked against the hole_count entry, which code counted over the cited holes.
 Otherwise answer supported=false and list in unsupported_spans the exact words of the sentence that go beyond the evidence, copied character for character.
 Use no outside knowledge. Missing support counts as unsupported. reason is one short sentence."""
 
@@ -190,9 +199,96 @@ def rollup_view(r: m.Rollup | None) -> dict | None:
             "note": r.note}
 
 
-def hole_view(h: m.Hole) -> dict:
-    return {"id": h.hole_id, "kind": "hole", "criterion": h.criterion, "criterion_label": criterion_label(h.criterion),
-            "item_id": h.item_id, "reason": h.reason}
+def plain_label(criterion: str | None) -> str:
+    """'ROTIC level (10y)' -> 'ROTIC level', so a gap sentence naming a criterion carries no stray number."""
+    return re.sub(r"\s*\([^)]*\)", "", criterion_label(criterion) or "").strip() or "A criterion"
+
+
+def hole_kind(h: m.Hole) -> str:
+    """How the brief groups a hole: criterion, item, agent, source or other (reasons come from finalize)."""
+    if h.criterion:
+        return "criterion"
+    if h.item_id:
+        return "item"
+    if _AGENT_HOLE.match(h.reason):
+        return "agent"
+    return "source" if _SOURCE_REF.search(h.reason) else "other"
+
+
+def item_criterion(it: m.Item | None) -> str | None:
+    """The first criterion an item serves (charts serve none)."""
+    if isinstance(it, m.Extrapolation):
+        return it.criterion
+    crits = getattr(it, "criteria", None) or []
+    return crits[0] if crits else None
+
+
+def left_out(holes: list[m.Hole], items: dict[str, m.Item]) -> tuple[Counter, Counter, Counter]:
+    """Over the item holes: (failed by kind, not verified by kind, by criterion label or None)."""
+    failed, unverified, by_crit = Counter(), Counter(), Counter()
+    for h in holes:
+        if hole_kind(h) != "item":
+            continue
+        it = items.get(h.item_id)
+        kind = it.kind if it is not None else "data"
+        (failed if it is None or it.verification.status == "fail" else unverified)[kind] += 1
+        crit = item_criterion(it)
+        by_crit[plain_label(crit) if crit else None] += 1
+    return failed, unverified, by_crit
+
+
+def hole_tally(holes: list[m.Hole], items: dict[str, m.Item]) -> dict:
+    """Counts over the holes a sentence cites, made by code: the judge checks counted words against these."""
+    out: dict[str, Any] = {"id": "hole_count", "kind": "count",
+                           "note": "Counted by code over the holes this sentence cites.", "holes": len(holes)}
+    crit = [plain_label(h.criterion) for h in holes if h.criterion]
+    if crit:
+        out["criteria_not_scored"] = crit
+    failed, unverified, by_crit = left_out(holes, items)
+    if failed:
+        out["items_that_failed_verification"] = {KIND_WORDS[k][1]: n for k, n in failed.items()}
+    if unverified:
+        out["items_that_could_not_be_verified"] = {KIND_WORDS[k][1]: n for k, n in unverified.items()}
+    if by_crit:
+        out["items_by_criterion"] = {(c or "no criterion"): n for c, n in by_crit.most_common()}
+    kinds = Counter(hole_kind(h) for h in holes)
+    if kinds["source"]:
+        out["sources_not_used"] = kinds["source"]
+    if kinds["agent"]:
+        out["extractor_agents_failed"] = kinds["agent"]
+    return out
+
+
+def hole_view(h: m.Hole, items: dict[str, m.Item] | None = None) -> dict:
+    """One hole. With items, a judge also sees the kind, status and criterion of the item it is about."""
+    out = {"id": h.hole_id, "kind": "hole", "criterion": h.criterion, "criterion_label": criterion_label(h.criterion),
+           "item_id": h.item_id, "reason": h.reason}
+    it = (items or {}).get(h.item_id) if h.item_id else None
+    if it is not None:
+        crit = item_criterion(it)
+        out.update(item_kind=it.kind, item_status=it.verification.status,
+                   item_criterion=plain_label(crit) if crit else None)
+    return out
+
+
+def scope_criteria(depth: str) -> list[str]:
+    """In-scope criteria in rubric order (the same rule as finalize.in_scope)."""
+    d = RUBRIC["depths"].get(depth)
+    if d == "all" or d is None:
+        return [k for c in RUBRIC["categories"] for k in c["criteria"]]
+    return list(d)
+
+
+def categories_in_scope(state) -> list[dict]:
+    """In-scope categories that have verified items, in rubric order: each one must get a brief sentence."""
+    scope = scope_criteria(state.run.depth)
+    have = {i.category for i in state.items.values() if i.verification.status in PASSING}
+    out = []
+    for c in RUBRIC["categories"]:
+        crits = [k for k in c["criteria"] if k in scope]
+        if crits and c["id"] in have:
+            out.append({"category": c["label"], "criteria": [criterion_label(k) for k in crits]})
+    return out
 
 
 def _sort_key(it: m.Item) -> tuple:
@@ -200,14 +296,16 @@ def _sort_key(it: m.Item) -> tuple:
     return (_KIND_ORDER.get(it.kind, 9), cat, it.id)
 
 
-def report_payload(state, *, word_budget: int) -> dict:
-    """Everything the summarizer may use: verified items only (pass or fixed), the rollup and the holes."""
+def report_payload(state, *, word_budget: int, gap_summary: list[dict] | None = None) -> dict:
+    """Everything the summarizer may use: verified items only (pass or fixed), the rollup, the holes, the
+    categories it must cover and the gap sentences code wrote."""
     run = state.run
     items = sorted((i for i in state.items.values() if i.verification.status in PASSING), key=_sort_key)
     return {"company": run.company, "ticker": run.ticker, "depth": run.depth,
             "as_of": state.as_of or run.created_at[:10], "fiscal_note": state.fiscal_note,
-            "word_budget": word_budget, "items": [item_view(i) for i in items],
-            "rollup": rollup_view(state.rollup), "holes": [hole_view(h) for h in state.holes]}
+            "word_budget": word_budget, "categories_in_scope": categories_in_scope(state),
+            "items": [item_view(i) for i in items], "rollup": rollup_view(state.rollup),
+            "holes": [hole_view(h) for h in state.holes], "gap_summary": list(gap_summary or [])}
 
 
 def _inputs(it: m.Item) -> list[str]:
@@ -222,9 +320,12 @@ def _inputs(it: m.Item) -> list[str]:
 
 def evidence_for(refs: list[str], items: dict[str, m.Item], holes: list[m.Hole], rollup: m.Rollup | None,
                  *, limit: int = EVIDENCE_LIMIT) -> list[dict]:
-    """The cited refs first, then their inputs (E to C to D, G to refs), each once. Nothing else."""
+    """The cited refs first, then their inputs (E to C to D, G to refs), each once. Nothing else, except a
+    code-made count over the cited holes when there are two or more (it comes first, so no limit cuts it)."""
     by_hole = {h.hole_id: h for h in holes}
-    queue, seen, out = list(refs), set(), []
+    cited = [by_hole[b] for b in dict.fromkeys(r.split(":")[0] for r in refs) if b in by_hole]
+    queue, seen = list(refs), set()
+    out: list[dict] = [hole_tally(cited, items)] if len(cited) > 1 else []
     while queue and len(out) < limit:
         base = queue.pop(0).split(":")[0]
         if base in seen:
@@ -234,7 +335,7 @@ def evidence_for(refs: list[str], items: dict[str, m.Item], holes: list[m.Hole],
             if rollup is not None:
                 out.append({"id": "rollup", "kind": "rollup", **rollup_view(rollup)})
         elif base in by_hole:
-            out.append(hole_view(by_hole[base]))
+            out.append(hole_view(by_hole[base], items))
         elif base in items:
             out.append(item_view(items[base], with_status=True))
             queue.extend(_inputs(items[base]))
@@ -253,26 +354,20 @@ def _tagged(text: str, tag: str) -> Any:
     return json.loads(text[start + len(tag) + 2:end])
 
 
-def _plain_label(label: str | None) -> str:
-    """'ROTIC level (10y)' -> 'ROTIC level', so a fake hole sentence carries no stray number."""
-    return re.sub(r"\s*\([^)]*\)", "", label or "").strip() or "A criterion"
-
-
 def _s(text: str, refs: list[str], mode: str = "derived") -> dict:
     return {"text": text, "mode": mode, "derived_from": refs}
 
 
-def _hole_sentence(h: dict) -> dict:
-    refs = [h["id"]] + ([h["item_id"]] if h.get("item_id") else [])
-    if h.get("criterion"):
-        return _s(f"{_plain_label(h.get('criterion_label'))} is not scored in this run.", refs)
-    if h.get("item_id"):
-        return _s("One report claim failed verification and is left out of the scores.", refs)
-    return _s("One planned source could not be used in this run.", refs)
+FAKE_MAX_WORDS = 60          # the fake copies short items only, as a summarizer keeps sentences short
+
+
+def _short(item: dict) -> bool:
+    return len(item["text"].split()) <= FAKE_MAX_WORDS
 
 
 def fake_brief(system: str, user: str, schema: dict) -> dict:
-    """A deterministic brief: the rollup line, copied conclusions and scores, charts, scorecard, holes."""
+    """A deterministic brief: the rollup line, copied conclusions and scores, charts, scorecard, and the
+    gap summary copied from the prompt, as the prompt asks."""
     p = _tagged(user, "report") or {}
     items = p.get("items", [])
     sections: list[dict] = []
@@ -282,7 +377,7 @@ def fake_brief(system: str, user: str, schema: dict) -> dict:
         bottom.append(_s(f"{p.get('company', 'The company')} scores {r['weighted_average']:+.2f} on the BOFFIN "
                          f"{p.get('depth', 'screen')}, with {r['scored']} of {r['in_scope']} criteria scored.",
                          ["rollup"]))
-    scored = [i for i in items if i["kind"] == "extrapolation" and i.get("score") is not None]
+    scored = [i for i in items if i["kind"] == "extrapolation" and i.get("score") is not None and _short(i)]
     lead = scored[0] if scored else None
     if lead is not None:
         bottom.append(_s(lead["text"], [lead["id"]], "copied"))
@@ -291,7 +386,7 @@ def fake_brief(system: str, user: str, schema: dict) -> dict:
     charts_left = 2
     for cat in _CATEGORY_ORDER:
         mine = [i for i in items if i["category"] == cat]
-        concl = [_s(i["text"], [i["id"]], "copied") for i in mine if i["kind"] == "conclusion"][:3]
+        concl = [_s(i["text"], [i["id"]], "copied") for i in mine if i["kind"] == "conclusion" and _short(i)][:3]
         scores = [_s(i["text"], [i["id"]], "copied") for i in scored if i["category"] == cat and i is not lead]
         blocks: list[dict] = []
         if concl:
@@ -302,13 +397,16 @@ def fake_brief(system: str, user: str, schema: dict) -> dict:
             if charts_left:
                 charts_left -= 1
                 blocks.append({"type": "chart", "chart_id": g["id"], "caption": _s(g["text"], [g["id"]], "copied")})
+        if not blocks and mine:      # every category gets a sentence: its shortest score, conclusion or data text
+            pick = min(mine, key=lambda i: (_KIND_ORDER.get(i["kind"], 9) if _short(i) else 9, len(i["text"])))
+            blocks.append({"type": "paragraph", "sentences": [_s(pick["text"], [pick["id"]], "copied")]})
         if blocks:
             sections.append({"heading": _CATEGORY_LABEL[cat], "blocks": blocks})
     if r:
         sections.append({"heading": "Scorecard", "blocks": [{"type": "scorecard"}]})
-    holes = [_hole_sentence(h) for h in p.get("holes", [])]
-    if holes:
-        sections.append({"heading": "What we could not determine", "blocks": [{"type": "bullets", "sentences": holes}]})
+    gaps = [_s(g["text"], list(g["derived_from"])) for g in p.get("gap_summary", [])]
+    if gaps:
+        sections.append({"heading": "What we could not determine", "blocks": [{"type": "bullets", "sentences": gaps}]})
     return {"sections": sections}
 
 
