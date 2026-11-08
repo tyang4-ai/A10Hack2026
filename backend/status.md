@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2). B-baseline (W3). B-fix-extract, B-fix-draft (R0 fixes). Verifier (G3). W1 is 5/5 done.
+- Running: A-deploy (W2). B-fix-extract, B-fix-draft (R0 fixes). Verifier (G3). W1 is 5/5 done.
 - Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -31,7 +31,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-extract | builder | R0 fix | running | | value verbatim, unit and period context, table recite |
 | B-fix-draft | builder | R0 fix | running | | score ROTIC from available years, peers, declared computations |
 | B-live | builder | W3 | done | 131 passed, 2 live rehearsals | every A10 beat PASS live twice ($0.10): links blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks. Commands in DEMO.md |
-| B-baseline | builder | W3 | running | | plain Claude report vs harness, same checks, labeled experiment |
+| B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
 | B-p1 | builder | W3 | todo | | |
 
 ## Gates
@@ -59,7 +59,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Decisions
 
-- Sat 8:52 PM: for the live demo, set `DEMO_PACING=2` and `MAX_CONCURRENCY_SMALL=8` on the instance (fewer metered calls discarded at STOP). Keep 32 for the full SHL run.
+- Sat 8:49 PM: for the live demo, set `DEMO_PACING=2` and `MAX_CONCURRENCY_SMALL=8` on the instance (fewer metered calls discarded at STOP). Keep 32 for the full SHL run.
 
 - Sat 7:15 PM: start S1 right after G0 instead of at 8:00 PM (Gordon's call). Cutoffs stay at their clock times.
 - Sat 7:15 PM: venv is Python 3.12 via uv (no pip inside, so installs use `uv pip install --python .venv/Scripts/python.exe`). Code targets 3.11 for EC2.
@@ -96,7 +96,9 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
-- (8:52 PM, contract change, additive) Add `"source_revoked"` to `ItemUpdatedData.reason` in `contract/models.py` (it allows repair, comment, user_edit, demo_injection today). Why: when a source is revoked mid-run, the items citing it turn blocked, and the cascade should say why in an `item.updated` event. Until then it sends `item.verified` only, which already carries the blocked status and the detail "Source revoked: S-006". The backend switches over by itself once the reason exists. Say yes and I'll make the change on main at a gate (models.py, types.ts, mock, CHANGELOG, VERSION), then you tell Tong.
+- (8:55 PM, pitch wording) Baseline result (`backend/data/baseline/results.md`, labeled experiment): a plain Claude report's **quotes were all exact** (0 of 59 failed our quote check). Don't say "plain Claude makes up numbers". The honest line: on the same pages, the plain report's **reasoning and scores went unchecked**. It scored research_stage +1 from an invented coverage history and called €2.7bn of free cash flow enough to cover €6.2bn of maturities. 12 of its 59 claims also fail the period check. Our checks caught 24 of 25 planted errors in the harness report. There are also 20 key numbers in results.md for you to hand-check.
+
+- (8:49 PM, contract change, additive) Add `"source_revoked"` to `ItemUpdatedData.reason` in `contract/models.py` (it allows repair, comment, user_edit, demo_injection today). Why: when a source is revoked mid-run, the items citing it turn blocked, and the cascade should say why in an `item.updated` event. Until then it sends `item.verified` only, which already carries the blocked status and the detail "Source revoked: S-006". The backend switches over by itself once the reason exists. Say yes and I'll make the change on main at a gate (models.py, types.ts, mock, CHANGELOG, VERSION), then you tell Tong.
 
 - (8:18 PM, pass to Tong) The CLI prints a run link as `PUBLIC_UI_URL?run=<run_id>` (or `PUBLIC_UI_URL` with `{run_id}` replaced). The UI has no run deep link yet. If Tong adds one, tell me the URL shape and I'll set `PUBLIC_UI_URL`.
 
@@ -120,5 +122,6 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
 - Sat 8:26 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
 - Sat 8:32 PM: B-reason done (W2 6/7, only A-deploy left). G3: live presmoke ok through every stage, $0.80. Verifier on W2 running.
-- Sat 8:52 PM: B-live done. All demo beats pass live. DEMO.md written. Tail shows NEXT lines by default (orchestrator, cli.py), "Source revoked: S-006" capitalization fixed (checks.py).
+- Sat 8:55 PM: B-baseline done ($0.56). Added S-002 p.6 to N-01 and N-06 in plan.json (FY2026 adjusted EBIT and free cash flow, found by the baseline).
+- Sat 8:49 PM: B-live done. All demo beats pass live. DEMO.md written. Tail shows NEXT lines by default (orchestrator, cli.py), "Source revoked: S-006" capitalization fixed (checks.py).
 - Sat 8:38 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.
