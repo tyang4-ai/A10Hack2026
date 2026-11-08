@@ -165,7 +165,7 @@ def code_checks(state: RunState, item: m.Item) -> list[m.CheckResult]:
     if item.kind == "extrapolation":
         return checks.check_extrapolation(item, items, RUBRIC, sources=sources)
     if item.kind == "chart":
-        return checks.check_chart(item, items)
+        return checks.check_chart(item, items, sources=sources)  # a chart behind a revoked source is blocked
     return list(item.verification.checks)
 
 

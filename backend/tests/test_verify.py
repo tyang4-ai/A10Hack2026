@@ -636,3 +636,182 @@ def test_fixture_rotic_conclusion_scores_chart_and_brief(fx: dict) -> None:
         s = m.SummarySentence.model_validate(raw)
         res = checks.check_sentence(s, items, holes, rollup=rollup)
         assert checks.status_from(res) == "pass", (s.id, [c.detail for c in res if c.result != "pass"])
+
+
+# ---------------------------------------------------------------------------
+# B-fix-cite: exact span text, headers on the evidence's page, signed numbers_traced, charts and sources
+# ---------------------------------------------------------------------------
+
+# Real SHL text, cut short: the Q4 FY2026 release's stored pages 6 and 13 (recorded run R0b). The same
+# "Revenue 23,630 23,375" is a whole row on page 6 but sits behind two Q4 cells on page 13.
+SHL_REL_P6 = ("Quarterly Statement \n Q4 Fiscal Year 2026 | Siemens Healthineers \n6 \nBusiness Development Fiscal Year "
+              "2026 \nSiemens Healthineers \n \n \n \n \n \nFiscal year \nFiscal year \n% Change \n(in millions of €) \n"
+              "2026 \n2025 \nAct. \nComp.¹ \nRevenue \n23,630 \n23,375 \n1.1% \n4.0% \n")
+SHL_REL_P13 = ("Quarterly Statement \n Q4 Fiscal Year 2026 | Siemens Healthineers \n13 \nConsolidated statements of income "
+               "\n \n \n \n \n \n \nQ4 \nQ4 \nFiscal year \nFiscal year \n(in millions of €, earnings per share in €) \n2026 "
+               "\n2025 \n2026 \n2025 \nRevenue \n6,784 \n6,322 \n23,630 \n23,375 \n")
+# Real SHL text: the release's cover page (R0b stored page 1), then a simulated later page that names no period.
+SHL_REL_COVER = (" \n \nSiemens Healthineers ends 2026 fiscal year with strong \nfourth quarter \n \nNovember 5, 2026 – "
+                 "Siemens Healthineers AG today announces its results for the fourth quarter of fiscal year 2026 ended \n")
+LATER_PAGE = "Orders (simulated) \nBook-to-bill was 1.14 for the period.\n"
+
+
+def _at(pages: list[str], page: int, quote: str, role: str = "evidence", doc: str = "DOC-001") -> m.Citation:
+    """A citation of quote where it is on that page (exact characters), or at (0, 5) when it is not there."""
+    hit = text.find_quote(pages[page - 1], quote)
+    s, e = hit if hit else (0, 5)
+    return m.Citation(doc_id=doc, locator=m.TextLocator(page=page, char_start=s, char_end=e), quote=quote, role=role)
+
+
+def test_passing_quote_becomes_the_exact_span_text() -> None:
+    pages = {"DOC-001": [SHL_REL_P13, SHL_REL_P6]}
+    here = _at(pages["DOC-001"], 2, "Revenue 23,630 23,375")
+    item = _data("Revenue was 23,630.", [here], None)
+    res = checks.check_data_item(item, pages, SOURCES)
+    assert _by(res, "quote_exact").result == "pass" and _by(res, "quote_exact").closest_locator is None
+    exact = checks.with_fixed_locators(item, res, pages_by_doc=pages)
+    loc = exact.citations[0].locator
+    assert exact.citations[0].quote == "Revenue \n23,630 \n23,375" == SHL_REL_P6[loc.char_start:loc.char_end]
+    assert checks.with_fixed_locators(item, res).citations[0].quote == "Revenue 23,630 23,375"  # no pages: locators only
+    moved = _data("Revenue was 23,630.", [_at(pages["DOC-001"], 1, "Revenue 23,630 23,375")], None)
+    res = checks.check_data_item(moved, pages, SOURCES)
+    qe = _by(res, "quote_exact")
+    assert qe.result == "pass" and qe.closest_locator.page == 2 and "Page corrected to 2" in qe.detail
+    fixed = checks.with_fixed_locators(moved, res, pages_by_doc=pages).citations[0]
+    assert (fixed.locator.page, fixed.quote) == (2, checks.span_text(pages, "DOC-001", fixed.locator))
+    bad = _data("Revenue was 23,603.", [_at(pages["DOC-001"], 2, "Revenue 23,603 23,375")], None)
+    res = checks.check_data_item(bad, pages, SOURCES)
+    kept = checks.with_fixed_locators(bad, res, pages_by_doc=pages).citations[0]
+    assert _by(res, "quote_exact").result == "fail" and kept.quote == "Revenue 23,603 23,375"  # the agent's text stays
+
+
+def test_headers_count_only_on_the_evidence_page() -> None:
+    """R0b D-135: the evidence was found on page 6 while its headers stayed on page 13 (another table)."""
+    pages = {"DOC-001": [SHL_REL_P13, SHL_REL_P6]}
+    p = pages["DOC-001"]
+    ev = _at(p, 2, "Revenue 23,630 23,375")
+    v = m.Value(number=23630, as_reported="23,630", unit="EUR", scale="million", period="FY2026")
+    off = _data("Revenue was €23,630 million in fiscal year 2026.",
+                [ev, _at(p, 1, "(in millions of €, earnings per share in €)", "unit_context"),
+                 _at(p, 1, "2026 \n2025 \n2026 \n2025", "period_context")], v)
+    res = checks.check_data_item(off, pages, SOURCES)
+    ev_qe, unit_qe, period_qe = [c for c in res if c.check == "quote_exact"]
+    assert ev_qe.result == "pass"
+    for qe in (unit_qe, period_qe):
+        assert qe.result == "fail" and "is on DOC-001 page 1, not on the evidence's page 2" in qe.detail
+    assert checks.status_from(res) == "fail"
+    same = off.model_copy(update={"citations": [ev, _at(p, 2, "(in millions of €)", "unit_context"),
+                                                _at(p, 2, "2026 \n2025", "period_context")]})
+    assert checks.status_from(checks.check_data_item(same, pages, SOURCES)) == "pass"
+    # Evidence cited on page 1 but found on page 2: the headers are looked for on page 2, where it is.
+    moved = same.model_copy(update={"citations": [_at(p, 1, "Revenue 23,630 23,375")] + same.citations[1:]})
+    res = checks.check_data_item(moved, pages, SOURCES)
+    assert [c.result for c in res if c.check == "quote_exact"] == ["pass", "pass", "pass"]
+
+
+def test_release_cover_period_counts_for_a_later_page() -> None:
+    pages = {"DOC-001": [SHL_REL_COVER, LATER_PAGE]}
+    p = pages["DOC-001"]
+    v = m.Value(number=1.14, as_reported="1.14", unit="x", scale="one", period="Q4 FY2026")
+    item = _data("Book-to-bill was 1.14 in Q4 FY2026.",
+                 [_at(p, 2, "Book-to-bill was 1.14 for the period."),
+                  _at(p, 1, "fourth quarter of fiscal year 2026", "period_context")], v)
+    release = {"S-001": _src(kind="company_ir", title="Q4 FY2026 earnings release")}
+    res = checks.check_data_item(item, pages, release)
+    assert checks.status_from(res) == "pass", [c.detail for c in res if c.result != "pass"]
+    res = checks.check_data_item(item, pages, SOURCES)  # an annual report heads its own tables
+    assert [c.result for c in res if c.check == "quote_exact"] == ["pass", "fail"]
+    assert checks.is_release(release["S-001"]) and not checks.is_release(SOURCES["S-001"])
+
+
+# Simulated figures for the sign rule.
+SIGN_PAGE = ("Cash flow summary (simulated)\n(in millions of €)\nFiscal year 2025 2024\nFree cash flow (1,710) 2,446\n"
+             "Income tax expenses (646) (686)\nIncome before income taxes (526) 1,954\n")
+
+
+def _signed_item(iid: str, statement: str, number: float, as_reported: str, status: str = "pass") -> m.DataItem:
+    v = m.Value(number=number, as_reported=as_reported, unit="EUR", scale="million", period="FY2025")
+    cit = m.Citation(doc_id="DOC-009", locator=m.TextLocator(page=1, char_start=0, char_end=4), quote="Cash",
+                     role="evidence")
+    return _data(statement, [cit], v, iid=iid, verification=m.Verification(status=status))
+
+
+SIGNED = {
+    "D-123": _signed_item("D-123", "Free cash flow was −€1,710 million in fiscal year 2025.", -1710, "(1,710)"),
+    "D-124": _signed_item("D-124", "Income tax expenses were €646 million in fiscal year 2025.", -646, "(646)"),
+    "D-125": _signed_item("D-125", "Income before income taxes was −€526 million in fiscal year 2025.", -526, "(526)"),
+    "D-126": _signed_item("D-126", "Free cash flow was €1,710 million in fiscal year 2025.", -1710, "– 1,710"),
+}
+
+
+def _traced(text_: str, refs: list[str]) -> m.CheckResult:
+    c = m.Conclusion(id="C-001", category="financial_strength", criteria=["liquidity"], text=text_, data_ids=refs,
+                     verification=m.Verification(status="pending"))
+    return _by(checks.check_conclusion(c, SIGNED, SOURCES), "numbers_traced")
+
+
+def test_numbers_traced_needs_the_minus_of_a_negative_value() -> None:
+    dropped = _traced("Free cash flow was €1,710 million in fiscal year 2025.", ["D-123"])
+    assert dropped.result == "fail"
+    assert dropped.detail == "'€1,710 million' is shown without its minus sign: D-123 is -1,710"
+    assert dropped.unsupported_spans == ["€1,710 million"]
+    for ok in ("Free cash flow was −€1,710 million in fiscal year 2025.",        # unicode minus
+               "Free cash flow was -€1,710 million in fiscal year 2025.",        # hyphen
+               "Free cash flow was (€1,710 million) in fiscal year 2025.",       # brackets
+               "Free cash flow showed an outflow of €1,710 million.",            # a word that carries the sign
+               "The company had a negative free cash flow of €1,710 million.",
+               "Free cash flow fell by €1,710 million.",
+               "Free cash flow was €1,710 million lower."):
+        assert _traced(ok, ["D-123"]).result == "pass", ok
+    assert _traced("Free cash flow fell to €1,710 million.", ["D-123"]).result == "fail"   # a level, not a fall
+    # The word must sit right next to the number, not elsewhere in the sentence.
+    assert _traced("Despite higher costs, free cash flow was €1,710 million.", ["D-123"]).result == "fail"
+    assert _traced("Costs rose; free cash flow was €1,710 million.", ["D-123"]).result == "fail"
+    assert _traced("Free cash flow showed a loss of approx. €1,710 million.", ["D-123"]).result == "pass"
+    # A cost line printed negative may be stated as its size: the line's name carries the sign.
+    assert _traced("Income tax expenses were €646 million.", ["D-124"]).result == "pass"
+    assert _traced("Tax of €646 million cut net income.", ["D-124"]).result == "pass"
+    # Income before income taxes is not a cost line: a loss stated as a profit fails.
+    assert _traced("Income before income taxes was €526 million.", ["D-125"]).result == "fail"
+    # A spaced dash ("– 1,710") may be a range dash, so either reading passes (the B-verify known limit).
+    assert _traced("Free cash flow was €1,710 million.", ["D-126"]).result == "pass"
+    both = _traced("Free cash flow was €1,710 million and tax was €999 million.", ["D-123", "D-124"])
+    assert both.result == "fail" and both.detail.startswith("'€999 million' does not match")
+    assert "'€1,710 million' is shown without its minus sign: D-123 is -1,710" in both.detail
+
+
+def test_sign_rule_covers_statements_and_brief_sentences() -> None:
+    pages = {"DOC-009": [SIGN_PAGE]}
+    v = m.Value(number=-1710, as_reported="(1,710)", unit="EUR", scale="million", period="FY2025")
+    cits = [_at(pages["DOC-009"], 1, "Free cash flow (1,710) 2,446", doc="DOC-009"),
+            _at(pages["DOC-009"], 1, "(in millions of €)", "unit_context", doc="DOC-009"),
+            _at(pages["DOC-009"], 1, "Fiscal year 2025 2024", "period_context", doc="DOC-009")]
+    own = _data("Free cash flow was €1,710 million in fiscal year 2025.", cits, v)
+    res = checks.check_data_item(own, pages, SOURCES)
+    assert _by(res, "numbers_traced").result == "fail" and "minus sign" in _by(res, "numbers_traced").detail
+    good = own.model_copy(update={"statement": "Free cash flow was −€1,710 million in fiscal year 2025."})
+    assert checks.status_from(checks.check_data_item(good, pages, SOURCES)) == "pass"
+    s = m.SummarySentence(id="H-001", text="Free cash flow was €1,710 million.", mode="derived",
+                          derived_from=["D-123"], verification=m.Verification(status="pending"))
+    assert _by(checks.check_sentence(s, SIGNED, []), "numbers_traced").result == "fail"
+
+
+def test_chart_behind_a_revoked_source_is_blocked() -> None:
+    from types import SimpleNamespace
+
+    from backend.axelrod.stages import verify as verify_stage
+
+    d = _data("Revenue was €22,363 million.", [_cit("Revenue 22,363 21,680")],
+              m.Value(number=22363, as_reported="22,363", unit="EUR", scale="million", period="FY2025"),
+              verification=m.Verification(status="pass"))
+    g = m.Chart(id="G-001", category="compounder", title="Revenue", chart_type="bar", unit="EUR", scale="million",
+                series=[m.ChartSeries(name="Revenue", points=[m.ChartPoint(x="FY2025", y=22363.0, ref="D-001")])],
+                refs=["D-001"], verification=m.Verification(status="pending"))
+    items = {"D-001": d, "G-001": g}
+    assert checks.status_from(checks.check_chart(g, items)) == "pass"         # without sources: inputs' status only
+    revoked = {"S-001": _src(status="revoked")}
+    cr = _by(checks.check_chart(g, items, sources=revoked), "citations_resolve")
+    assert cr.result == "blocked" and "source revoked: S-001" in cr.detail
+    assert checks.status_from(checks.check_item(g, items=items, sources=revoked)) == "blocked"
+    state = SimpleNamespace(items=items, sources_by_id=lambda: revoked)
+    assert checks.status_from(verify_stage.code_checks(state, g)) == "blocked"

@@ -229,6 +229,15 @@ CASES = [
               period="fiscal year 2025")),
 ]
 
+# B-fix-cite: a negative amount stated without its minus. "Financial income, net (148)" is not a cost line,
+# so "€148 million" for D-907 (-148) fails numbers_traced, while "−€148 million" traces.
+BASE["D-907"] = verified(data("D-907", "Financial income, net was −€148 million in fiscal year 2025.",
+                              "Financial income, net (148) (171)", eur_m(-148, "(148)"), unit=INCOME_UNIT,
+                              period=INCOME_HEADER))
+CASES.append(Case("minus sign dropped in a conclusion", "numbers_traced",
+                  conclusion("C-913", "Financial income, net was −€148 million in fiscal year 2025.", ["D-907"]),
+                  conclusion("C-913", "Financial income, net was €148 million in fiscal year 2025.", ["D-907"])))
+
 
 def _outcome(case: Case) -> tuple[bool, bool, str]:
     clean = case.run(case.clean)

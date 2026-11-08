@@ -22,7 +22,15 @@ What numbers_traced accepts: a cited data item's value (after scale, rounded hal
 decimals), a cited computation's display, the criterion's rubric numbers, the BOFFIN scale (-1, 0, +1)
 for scores, rollup numbers for "rollup", chart points for charts, and the numbers in the verified
 quote of a cited data item that has no value. A data item's own statement may also use any number in
-its evidence quote. Years, fiscal-year labels, dates and ids are never counted as numbers.
+its evidence quote. Years, fiscal-year labels, dates and ids are never counted as numbers. A negative
+value traces only when the text shows it as negative: a minus, brackets, or a word next to it that
+carries the sign ("a loss of", "fell by", "outflow"). A cost or outflow line ("Income tax expenses",
+printed −646) may be stated as its size, since the line's name carries the sign.
+
+Quote fidelity: a text citation's quote is the exact characters at its span. quote_exact compares after
+normalization, so with_fixed_locators(item, checks, pages_by_doc=...) also writes the exact span text
+into every passing quote. A unit or period header counts only on its evidence's page (a release may give
+its period on its cover page), so quote_exact looks for a header there and nowhere else.
 """
 from __future__ import annotations
 
@@ -121,18 +129,65 @@ def json_pointer_get(doc, pointer: str):
     return cur
 
 
-def with_fixed_locators(item: m.DataItem, checks: list[m.CheckResult]) -> m.DataItem:
+def span_text(pages_by_doc: dict[str, list[str]] | None, doc_id: str, loc: m.TextLocator) -> str | None:
+    """The exact stored characters at a text locator, or None when the page or offsets do not exist."""
+    pages = (pages_by_doc or {}).get(doc_id) or []
+    if not 1 <= loc.page <= len(pages):
+        return None
+    page = pages[loc.page - 1]
+    if not 0 <= loc.char_start < loc.char_end <= len(page):
+        return None
+    return page[loc.char_start:loc.char_end]
+
+
+def with_fixed_locators(item: m.DataItem, checks: list[m.CheckResult], *,
+                        pages_by_doc: dict[str, list[str]] | None = None) -> m.DataItem:
     """A copy of item with the locators that passing quote_exact checks corrected (quote found on
-    another page or at other offsets). quote_exact results come one per text citation, in order."""
+    another page or at other offsets). quote_exact results come one per text citation, in order.
+
+    With pages_by_doc, every passing quote also becomes the exact characters at its span, so
+    quote == page[char_start:char_end] holds (quote_exact compares after normalization, so a quote
+    written "Revenue 23,630 23,375" passes on "Revenue \\n23,630 \\n23,375"). A failing quote keeps the
+    agent's text: its diff is in the failed check. Without pages_by_doc only the locators move."""
     text_idx = [i for i, c in enumerate(item.citations) if isinstance(c.locator, m.TextLocator)]
     qe = [c for c in checks if c.check == "quote_exact"]
     if len(qe) != len(text_idx):
         return item
     new = item.model_copy(deep=True)
     for i, c in zip(text_idx, qe):
-        if c.result == "pass" and c.closest_locator is not None:
-            new.citations[i] = new.citations[i].model_copy(update={"locator": c.closest_locator})
+        if c.result != "pass":
+            continue
+        cit = new.citations[i]
+        update: dict = {}
+        if c.closest_locator is not None:
+            update["locator"] = c.closest_locator
+        real = span_text(pages_by_doc, cit.doc_id, update.get("locator", cit.locator)) if pages_by_doc else None
+        if real is not None and real != cit.quote and text.normalize(real) == text.normalize(cit.quote):
+            update["quote"] = real
+        if update:
+            new.citations[i] = cit.model_copy(update=update)
     return new
+
+
+_RELEASE = re.compile(r"release|quarterly|interim|half[- ]year|results", re.IGNORECASE)
+
+
+def is_release(src: m.Source | None) -> bool:
+    """A results release (company IR, quarterly statement) names its period once, on its cover page, so a
+    period header on page 1 may label a value on a later page. An annual report heads every table itself."""
+    return src is not None and (src.kind == "company_ir" or bool(_RELEASE.search(src.title)))
+
+
+def context_pages(cit: m.Citation, evidence_pages: dict[str, list[int]] | None,
+                  src: m.Source | None) -> list[int] | None:
+    """The pages a unit or period header may sit on: its evidence's pages in the same document, plus page 1
+    for a release's period. None for an evidence quote, or an item with no text evidence (no restriction)."""
+    if cit.role == "evidence" or not evidence_pages:
+        return None
+    pages = list(evidence_pages.get(cit.doc_id, []))
+    if cit.role == "period_context" and is_release(src) and 1 not in pages and pages:
+        pages.append(1)
+    return pages
 
 
 def _source_issue(src: m.Source | None) -> str | None:
@@ -218,33 +273,51 @@ def _resolve(refs: list[str], items: dict, sources: dict | None, *, kinds: tuple
 
 @dataclass(frozen=True)
 class _Cand:
-    """A number a text may use: as shown or reported (number) and in base units when known (base)."""
+    """A number a text may use: as shown or reported (number) and in base units when known (base).
+    sign_free: a negative candidate that may still be shown without a minus, because its source writes a
+    spaced dash ("– 658", a minus or a range dash) or it is a cost or outflow line (see _cost_line)."""
     number: Decimal
     base: Decimal | None
     pct: bool
     label: str
+    sign_free: bool = False
 
 
 _SCORE_CANDS = [_Cand(Decimal(n), None, False, "BOFFIN scale") for n in (-1, 0, 1)]
+_SPACED_DASH = re.compile(r"\s*[-−‒–]\s")
+# A cost or outflow line. Statements print these negative and prose states their size: "Income tax
+# expenses −646" is "income tax expenses of €646 million". Income before taxes is not a cost line.
+_COST_LINE = re.compile(r"\b(?:expenses?|expenditures?|costs?|paid|payments?|repayments?|additions|purchases?|"
+                        r"acquisitions?|dividends|amorti[sz]ation|depreciation|impairments?|charges?|outflows?|"
+                        r"write-?downs?|tax(?:es)?)\b", re.IGNORECASE)
+_PRE_TAX = re.compile(r"\bbefore\s+(?:income\s+)?tax(?:es)?\b|\bpre-?tax\b", re.IGNORECASE)
 
 
-def _text_cands(label: str, s: str | None) -> list[_Cand]:
+def _cost_line(statement: str) -> bool:
+    """The item's own statement names a cost or outflow line, so its sign is the line's, not the text's."""
+    return bool(_COST_LINE.search(_PRE_TAX.sub(" ", statement or "")))
+
+
+def _text_cands(label: str, s: str | None, *, cost: bool = False) -> list[_Cand]:
     if not s:
         return []
-    return [_Cand(t.number, t.value if t.word else None, t.pct, label) for t in scan_numbers(text.normalize(s))]
+    return [_Cand(t.number, t.value if t.word else None, t.pct, label, t.sign_ambiguous or cost)
+            for t in scan_numbers(text.normalize(s))]
 
 
-def _value_cands(iid: str, v: m.Value) -> list[_Cand]:
+def _value_cands(iid: str, v: m.Value, *, cost: bool = False) -> list[_Cand]:
     n, pct = _dec(v.number), v.unit == "%"
-    return [_Cand(n, None if pct else to_base(n, v.scale), pct, iid)]
+    spaced = bool(_SPACED_DASH.match(text.normalize(v.as_reported or "")))
+    return [_Cand(n, None if pct else to_base(n, v.scale), pct, iid, spaced or cost)]
 
 
 def _data_cands(it: m.DataItem, *, quotes: bool) -> list[_Cand]:
-    out = _value_cands(it.id, it.value) if it.value is not None else []
+    cost = _cost_line(it.statement)
+    out = _value_cands(it.id, it.value, cost=cost) if it.value is not None else []
     if quotes or it.value is None:
         for cit in it.citations:
             if cit.role == "evidence" and isinstance(cit.locator, m.TextLocator):
-                out += _text_cands(f"{it.id} quote", cit.quote)
+                out += _text_cands(f"{it.id} quote", cit.quote, cost=cost)
     return out
 
 
@@ -314,38 +387,109 @@ def _pool(refs: list[str], items: dict, *, rubric: dict, rollup: m.Rollup | None
     return out
 
 
-def _traced(t: NumToken, cands: list[_Cand]) -> str | None:
-    """The label of the candidate that shows this number at its precision, or None."""
-    shown = abs(t.number)
+def _same_size(t: NumToken, c: _Cand) -> bool:
+    """c shows as t's digits at t's precision, sign aside."""
+    if c.pct != t.pct:
+        return False
+    if t.word:
+        if c.base is None:
+            return False
+        x = abs(c.base) / WORD_FACTOR[t.word]
+    else:
+        x = abs(c.number)
+    return Decimal(half_up(x, t.places)) == abs(t.number)
+
+
+def _negative(t: NumToken, c: _Cand) -> bool:
+    """c is a negative amount that must be shown as negative (a definite minus, not a cost line)."""
+    v = c.base if t.word else c.number
+    return v is not None and v < 0 and not c.sign_free
+
+
+def _traced(t: NumToken, cands: list[_Cand], negative_shown: bool = True) -> str | None:
+    """The label of the candidate that shows this number at its precision, or None. A negative candidate
+    traces only when the text shows the number as negative (negative_shown)."""
     for c in cands:
-        if c.pct != t.pct:
-            continue
-        if t.word:
-            if c.base is None:
-                continue
-            x = abs(c.base) / WORD_FACTOR[t.word]
-        else:
-            x = abs(c.number)
-        if Decimal(half_up(x, t.places)) == shown:
+        if _same_size(t, c) and (negative_shown or not _negative(t, c)):
             return c.label
     return None
 
 
+# Words that carry a negative amount's sign in prose, so the number itself may be written without a minus:
+# losses, outflows and costs ("a loss of €1,710 million", "an outflow of €1.7 billion") and moves down ("a
+# decline of 4.2%", "fell by 4.2%"). A move down to a level ("fell to €1,710 million") names a level, not a
+# negative amount.
+_NEG_WORDS = re.compile(r"\b(?:loss(?:es)?|outflows?|deficits?|shortfalls?|negative|minus|expenses?|expenditures?|"
+                        r"costs?|paid|payments?|repaid|repayments?|spent|spending|charges?|impairments?|"
+                        r"write-?downs?|additions|purchases?|acquisitions?)\b", re.IGNORECASE)
+_DOWN_WORDS = re.compile(r"\b(?:declin(?:e|ed|es|ing)|decreas(?:e|ed|es|ing)|fell|fall(?:s|ing)?|drop(?:s|ped)?|"
+                         r"down|lower|reduc(?:ed|es|ing|tion)|shr[au]nk|contract(?:ed|ion))\b", re.IGNORECASE)
+_TO_LEVEL = re.compile(r"\bto\s*$", re.IGNORECASE)
+_NEG_AFTER = re.compile(r"\s*(?:[\w-]+\s+)?(?:outflows?|loss(?:es)?|deficit|shortfall|lower|less|declines?|"
+                        r"decreases?|drop)\b", re.IGNORECASE)
+# Where the words in front of a number stop belonging to it: a comma, colon or semicolon, or a sentence end
+# ("approx. €5" is no sentence end).
+_CLAUSE_STOP = re.compile(r"[,;:]|[.!?](?=\s+[A-Z\"“(]|\s*$)")
+NEG_WORD_WINDOW = 5  # words right before the number that may carry its sign ("a negative free cash flow of")
+
+
+def _shows_negative(s: str, t: NumToken, prev_end: int) -> bool:
+    """The text shows t as negative: a minus or brackets, or a sign-carrying word right next to it (in the
+    few words before it, since the previous number and the last clause break, or the word after it)."""
+    if t.number < 0:
+        return True
+    lo = prev_end
+    for mm in _CLAUSE_STOP.finditer(s, prev_end):  # the whole text, so "$" means its real end
+        if mm.start() >= t.start:
+            break
+        lo = mm.end()
+    before = " ".join(s[lo:t.start].split()[-NEG_WORD_WINDOW:])
+    if _NEG_WORDS.search(before) or (_DOWN_WORDS.search(before) and not _TO_LEVEL.search(before)):
+        return True
+    return bool(_NEG_AFTER.match(s, t.end))
+
+
+def _signed(c: _Cand) -> str:
+    n = format(c.number.normalize(), ",f")
+    return n + ("%" if c.pct else "")
+
+
+def _sign_detail(t: NumToken, cands: list[_Cand]) -> str | None:
+    """'1,710 is shown without its minus sign: D-123 is -1,710', when t matches a negative candidate by size."""
+    c = next((c for c in cands if _same_size(t, c) and _negative(t, c)), None)
+    if c is None:
+        return None
+    who = f"{c.label[:-len(' quote')]}'s quote shows" if c.label.endswith(" quote") else f"{c.label} is"
+    return f"'{t.raw}' is shown without its minus sign: {who} {_signed(c)}"
+
+
 def _numbers_traced(s: str, cands: list[_Cand], *, what: str, blocked_reason: str | None = None) -> m.CheckResult:
-    toks = scan_numbers(text.normalize(s))
+    norm = text.normalize(s)
+    toks = scan_numbers(norm)
     if not toks:
         return _cr("numbers_traced", "pass", "No numbers to trace")
-    untraced = [t for t in toks if _traced(t, cands) is None]
+    untraced: list[NumToken] = []
+    signs: list[str] = []
+    other: list[str] = []
+    prev = 0
+    for t in toks:
+        neg = _shows_negative(norm, t, prev)
+        prev = t.end
+        if _traced(t, cands, neg) is None:
+            untraced.append(t)
+            why = None if neg else _sign_detail(t, cands)
+            (signs if why else other).append(why or f"'{t.raw}'")
     if not untraced:
         return _cr("numbers_traced", "pass",
                    f"Every number in the {what} traces to a cited value or computation ({len(toks)} checked)")
     if blocked_reason:
         return _cr("numbers_traced", "blocked", blocked_reason)
-    shown = [f"'{t.raw}'" for t in untraced]
-    verb = "does" if len(shown) == 1 else "do"
-    return _cr("numbers_traced", "fail",
-               f"{_and(shown)} {verb} not match any cited value, computation display or rubric threshold",
-               unsupported_spans=[t.raw for t in untraced])
+    parts = []
+    if other:
+        verb = "does" if len(other) == 1 else "do"
+        parts.append(f"{_and(other)} {verb} not match any cited value, computation display or rubric threshold")
+    parts += signs
+    return _cr("numbers_traced", "fail", "; ".join(parts), unsupported_spans=[t.raw for t in untraced])
 
 
 # ---------------------------------------------------------------------------
@@ -353,7 +497,50 @@ def _numbers_traced(s: str, cands: list[_Cand], *, what: str, blocked_reason: st
 # ---------------------------------------------------------------------------
 
 
-def _quote_exact(cit: m.Citation, pages_by_doc: dict[str, list[str]]) -> m.CheckResult:
+def _quote_exact_on(cit: m.Citation, pages: list[str], allowed: list[int]) -> m.CheckResult:
+    """quote_exact for a unit or period header, which counts only on the allowed pages (its evidence's page,
+    and a release's cover page for a period). A header found only elsewhere fails and says where it is."""
+    loc = cit.locator
+    role = cit.role.replace("_", " ")
+    allowed = [p for p in dict.fromkeys(allowed) if 1 <= p <= len(pages)]
+    if not allowed:
+        return _cr("quote_exact", "fail", f"{role.capitalize()} quote has no evidence quote in {cit.doc_id} to label")
+    order = sorted(allowed, key=lambda p: (p != loc.page, abs(p - loc.page), p))
+    where = "the evidence's " + (f"page {order[0]}" if len(order) == 1 else "pages " + _and([str(p) for p in order]))
+    for p in order:
+        hit = text.find_quote(pages[p - 1], cit.quote)
+        if hit is None:
+            continue
+        s, e = hit
+        if p == loc.page:
+            detail = (f"Warning: {role} quote found verbatim on {cit.doc_id} page {p} at chars {s}-{e}, "
+                      f"not at the cited chars {loc.char_start}-{loc.char_end}. Offsets corrected.")
+        else:
+            detail = (f"Warning: {role} quote found verbatim on {cit.doc_id} page {p}, not the cited page "
+                      f"{loc.page}. Page corrected to {p}.")
+        return _cr("quote_exact", "pass", detail, closest_locator=m.TextLocator(page=p, char_start=s, char_end=e))
+    elsewhere = text.locate(pages, cit.quote, loc.page)
+    sub = [pages[p - 1] for p in order]
+    best = text.closest_span(sub, cit.quote, 1)
+    if elsewhere is not None:
+        head = (f"{role.capitalize()} quote is on {cit.doc_id} page {elsewhere[0]}, not on {where}. A header "
+                f"counts only on the page of the value it labels")
+    else:
+        head = f"{role.capitalize()} quote not found on {where} in {cit.doc_id}"
+    if best is None or best[3] == 0:
+        return _cr("quote_exact", "fail", head + ", and no similar text exists there")
+    k, diff, (s, e), _ = best
+    p = order[k - 1]
+    return _cr("quote_exact", "fail",
+               f"{head}. The closest span there is on page {p} (chars {s}-{e}) and differs by "
+               f"{text.changed_chars(diff)} character(s): '{_short(pages[p - 1][s:e])}'",
+               diff=diff, closest_locator=m.TextLocator(page=p, char_start=s, char_end=e))
+
+
+def _quote_exact(cit: m.Citation, pages_by_doc: dict[str, list[str]],
+                 allowed: list[int] | None = None) -> m.CheckResult:
+    """One quote against the stored pages. allowed (a header's pages, see context_pages) limits where a
+    unit or period header may be found. None searches the whole document, hint page first."""
     pages = pages_by_doc.get(cit.doc_id)
     loc = cit.locator
     if not pages:
@@ -363,12 +550,14 @@ def _quote_exact(cit: m.Citation, pages_by_doc: dict[str, list[str]]) -> m.Check
     if not nq.strip():
         return _cr("quote_exact", "fail", "The quote is empty")
     role = cit.role.replace("_", " ")
-    if 1 <= loc.page <= len(pages):
+    if 1 <= loc.page <= len(pages) and (allowed is None or loc.page in allowed):
         page = pages[loc.page - 1]
         if 0 <= loc.char_start < loc.char_end <= len(page) and text.normalize(page[loc.char_start:loc.char_end]) == nq:
             return _cr("quote_exact", "pass",
                        f"{role.capitalize()} quote found verbatim at {cit.doc_id} page {loc.page}, "
                        f"chars {loc.char_start}-{loc.char_end}")
+    if allowed is not None:
+        return _quote_exact_on(cit, pages, allowed)
     hit = text.locate(pages, cit.quote, loc.page)
     if hit is not None:
         p, s, e = hit
@@ -839,15 +1028,49 @@ def _source_resolves(item: m.DataItem, sources: dict[str, m.Source]) -> m.CheckR
     return _cr("citations_resolve", "pass", f"Source {src.source_id} is {src.approval.replace('_', ' ')} and not revoked")
 
 
+def evidence_pages(item: m.DataItem, results: dict[int, m.CheckResult] | None = None) -> dict[str, list[int]]:
+    """Each document's pages that hold a text evidence quote of the item: where its quote_exact found it
+    (results, by citation index), else where it is cited."""
+    out: dict[str, list[int]] = {}
+    for i, cit in enumerate(item.citations):
+        if cit.role != "evidence" or not isinstance(cit.locator, m.TextLocator):
+            continue
+        res = (results or {}).get(i)
+        page = res.closest_locator.page if res is not None and res.result == "pass" and res.closest_locator \
+            else cit.locator.page
+        pages = out.setdefault(cit.doc_id, [])
+        if page not in pages:
+            pages.append(page)
+    return out
+
+
+def _text_quote_results(item: m.DataItem, pages_by_doc: dict[str, list[str]],
+                        sources: dict[str, m.Source]) -> dict[int, m.CheckResult]:
+    """quote_exact per text citation index. Evidence first, so each unit or period header is then looked
+    for only on the page where its evidence was found (see context_pages)."""
+    out: dict[int, m.CheckResult] = {}
+    for i, cit in enumerate(item.citations):
+        if cit.role == "evidence" and isinstance(cit.locator, m.TextLocator):
+            out[i] = _quote_exact(cit, pages_by_doc)
+    ev_pages = evidence_pages(item, out)
+    src = sources.get(item.source_id) if sources else None
+    for i, cit in enumerate(item.citations):
+        if i not in out and isinstance(cit.locator, m.TextLocator):
+            out[i] = _quote_exact(cit, pages_by_doc, context_pages(cit, ev_pages, src))
+    return out
+
+
 def check_data_item(item: m.DataItem, pages_by_doc: dict[str, list[str]],
                     sources: dict[str, m.Source]) -> list[m.CheckResult]:
-    """pages_by_doc maps doc_id to page texts (page n at index n-1). Leave quarantined documents out."""
+    """pages_by_doc maps doc_id to page texts (page n at index n-1). Leave quarantined documents out.
+    Unit and period headers are looked for only where the evidence was found (context_pages)."""
     out: list[m.CheckResult] = []
     roles: dict[str, list[str]] = {"evidence": [], "unit_context": [], "period_context": []}
     json_docs: list[tuple[m.Citation, object]] = []
-    for cit in item.citations:
+    quotes = _text_quote_results(item, pages_by_doc, sources)
+    for i, cit in enumerate(item.citations):
         if isinstance(cit.locator, m.TextLocator):
-            out.append(_quote_exact(cit, pages_by_doc))
+            out.append(quotes[i])
             roles[cit.role].append(text.normalize(cit.quote))
         else:
             res, doc = _json_value(item, cit, pages_by_doc)
@@ -1223,8 +1446,10 @@ def _chart_expected(g: m.Chart, ref: str, items: dict, envs: dict) -> tuple[Deci
     return None, f"{ref} is a {it.kind} item; charts read data values and computations"
 
 
-def check_chart(g: m.Chart, items: dict[str, m.Item]) -> list[m.CheckResult]:
-    out = [_resolve(g.refs, items, None, kinds=("data", "conclusion"))]
+def check_chart(g: m.Chart, items: dict[str, m.Item], *,
+                sources: dict[str, m.Source] | None = None) -> list[m.CheckResult]:
+    """Pass sources, so a chart resting on a revoked, quarantined or rejected source comes back blocked."""
+    out = [_resolve(g.refs, items, sources, kinds=("data", "conclusion"))]
     problems: list[str] = []
     envs: dict[str, dict[str, Decimal]] = {}
     n = 0
@@ -1393,4 +1618,4 @@ def check_item(item, *, items: dict[str, m.Item], sources: dict[str, m.Source],
         return check_conclusion(item, items, sources, rubric=rubric)
     if item.kind == "extrapolation":
         return check_extrapolation(item, items, rubric, sources=sources)
-    return check_chart(item, items)
+    return check_chart(item, items, sources=sources)

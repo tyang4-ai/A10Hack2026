@@ -970,6 +970,114 @@ def test_restate_and_row_span_units():
 
 
 # ---------------------------------------------------------------------------
+# G3 findings (B-fix-cite). The page excerpts below are REAL SHL TEXT, copied short from the stored pages
+# of the rehearsal runs R0 (run_20261108_0bsu0o) and R0b (run_20261108_whhj0d). The extractor answers are
+# fakes (simulated) that repeat what the live model answered in those runs.
+# ---------------------------------------------------------------------------
+
+# Real SHL text: S-002 (Q4 FY2026 release) cover, page 6 (business development) and page 13 (income statement).
+G3_REL_COVER = (" \n \nSiemens Healthineers ends 2026 fiscal year with strong \nfourth quarter \n \nNovember 5, 2026 – "
+                "Siemens Healthineers AG today announces its results for the fourth quarter of fiscal year 2026 ended \n")
+G3_REL_P6 = ("Quarterly Statement \n Q4 Fiscal Year 2026 | Siemens Healthineers \n6 \nBusiness Development Fiscal Year "
+             "2026 \nSiemens Healthineers \n \n \n \n \n \nFiscal year \nFiscal year \n% Change \n(in millions of €) \n"
+             "2026 \n2025 \nAct. \nComp.¹ \nRevenue \n23,630 \n23,375 \n1.1% \n4.0% \n")
+G3_REL_P13 = ("Quarterly Statement \n Q4 Fiscal Year 2026 | Siemens Healthineers \n13 \nConsolidated statements of income "
+              "\n \n \n \n \n \n \nQ4 \nQ4 \nFiscal year \nFiscal year \n(in millions of €, earnings per share in €) \n2026 "
+              "\n2025 \n2026 \n2025 \nRevenue \n6,784 \n6,322 \n23,630 \n23,375 \n")
+# Real SHL text: S-003 (FY2023 annual report) page 95 (share matching table) and page 99 (EBIT reconciliation).
+G3_AR23_P95 = ("The development of outstanding matching shares from plans of the Share Matching program described below "
+               "was as follows: \n \n \n \n \nFiscal year \nFiscal year \n \n2023 \n2022 \nOutstanding at beginning of "
+               "fiscal year \n832,415 \n863,492 \n")
+G3_AR23_P99 = ("The reconciliation of total segments’ adjusted EBIT to Siemens Healthineers’ income before income taxes is "
+               "given in the table \nbelow: \n \n \n \n \n \n \nFiscal year \n \nFiscal year \n \n(in millions of €) \n2023 "
+               "\n \n2022 \n \nTotal segments‘ adjusted EBIT \n3,302\n3,8932 \nCentrally carried pension service and "
+               "administration expenses \n3 \n−8 \nAmortization, depreciation and other effects from IFRS 3 purchase "
+               "price allocation adjustments \n−393\n−609\n")
+PPA_ROW = "Amortization, depreciation and other effects from IFRS 3 purchase price allocation adjustments −393 −609"
+
+
+def exact_and_on_page(it: m.DataItem, pages: list[str]) -> bool:
+    """quote == page[char_start:char_end] for every citation, and every header on the evidence's page."""
+    ev_page = it.citations[0].locator.page
+    return all(pages[c.locator.page - 1][c.locator.char_start:c.locator.char_end] == c.quote
+               and c.locator.page == ev_page for c in it.citations)
+
+
+async def test_moved_evidence_takes_its_headers_from_its_new_page(settings):
+    """R0b D-135 and D-159: the extractor read page 13, where 'Revenue 23,630 23,375' skips two Q4 cells. The
+    quote is verbatim on page 6, so the checker moved the evidence there, but the headers stayed on page 13.
+    Now code picks the headers again on page 6 (here page 2) and stores the exact page characters."""
+    answers = [dict(item("Revenue 23,630 23,375", v, period=p, unit_quote="(in millions of €, earnings per share in €)",
+                         period_quote="Fiscal year 2026 2025", statement=f"Revenue was €{v} million in fiscal year {p[2:]}.",
+                         need_ids=("N-01",))) for v, p in (("23,630", "FY2026"), ("23,375", "FY2025"))]
+    register_fake(ex.TOOL, fake_items(*answers))
+    src = source("S-902", kind="company_ir", title="Q4 FY2026 earnings release (real SHL text excerpts)")
+    pages = [G3_REL_COVER, G3_REL_P6, G3_REL_P13]
+    ctx = make_ctx(settings, [(src, [("DOC-902", pages, "pdf", False)])], extract_pages={"S-902": [[3, 3]]})
+    await st.run(ctx)
+    for it in data(ctx):
+        assert it.verification.status == "fixed", bad_checks(it)
+        assert exact_and_on_page(it, pages) and it.citations[0].locator.page == 2
+        assert roles(it) == {"evidence": "Revenue \n23,630 \n23,375", "unit_context": "(in millions of €)",
+                             "period_context": "2026 \n2025"}
+        first = it.verification.attempts[0]
+        assert first.action == "recite" and "page 2" in first.note and "page 3" in first.note
+        assert [c.result for c in first.checks if c.check == "quote_exact"] == ["pass", "fail", "fail"]
+
+
+async def test_agent_period_header_from_another_page_never_counts(settings):
+    """R0 D-108 to D-110: the model's period header 'Fiscal year 2023 2022' is verbatim only on page 95 (a share
+    table), not on page 99 where the value is. Code cites page 99's own year header instead."""
+    register_fake(ex.TOOL, fake_items(item(PPA_ROW, "−393", period="FY2023", period_quote="Fiscal year 2023 2022",
+                                           statement="PPA effects were −€393 million in FY2023.")))
+    src = source("S-903", title="Annual Report FY2023 (real SHL text excerpts)")
+    pages = [G3_AR23_P95, G3_AR23_P99]
+    ctx = make_ctx(settings, [(src, [("DOC-903", pages, "pdf", False)])], extract_pages={"S-903": [[2, 2]]})
+    await st.run(ctx)
+    (it,) = data(ctx)
+    assert it.verification.status == "pass", bad_checks(it)
+    assert exact_and_on_page(it, pages) and it.citations[0].locator.page == 2
+    assert roles(it)["period_context"] == "2023 \n \n2022"
+
+
+async def test_header_only_on_another_page_fails_instead_of_moving(settings):
+    """The same, on a copy of page 99 with its year cells cut out (simulated edit of real SHL text): the
+    model's header is still verbatim on page 95, but it labels another table, so the period check cannot
+    borrow it. Before B-fix-cite the checker moved the header to page 95 and the period passed."""
+    no_years = G3_AR23_P99.replace("2023 \n \n2022 \n \n", "")
+    register_fake(ex.TOOL, fake_items(item(PPA_ROW, "−393", period="FY2023", period_quote="Fiscal year 2023 2022",
+                                           statement="PPA effects were −€393 million in FY2023.")))
+    src = source("S-903", title="Annual Report FY2023 (real SHL text excerpts, years cut out)")
+    pages = [G3_AR23_P95, no_years]
+    ctx = make_ctx(settings, [(src, [("DOC-903", pages, "pdf", False)])], extract_pages={"S-903": [[2, 2]]})
+    await st.run(ctx)
+    (it,) = data(ctx)
+    assert it.verification.status == "fail"
+    assert {c.locator.page for c in it.citations} == {2}                   # nothing left on page 1 (page 95)
+    period_qe = [c for c in it.verification.checks if c.check == "quote_exact"][-1]
+    assert period_qe.result == "fail" and "is on DOC-903 page 1, not on the evidence's page 2" in period_qe.detail
+    pc = next(c for c in it.citations if c.role == "period_context")
+    assert pc.quote == "Fiscal year 2023 2022"     # a failing quote keeps the agent's text, the diff is in the check
+
+
+def test_recite_similarity_is_rounded_half_up(monkeypatch):
+    """98.5% shows as 99% (round half up), not 98% (Python's round goes to even)."""
+    page = PLANTED[1]
+    quote = "Long-term financal debt 11,592 12,047"
+    cit = st.cite_on_page("DOC-901", PLANTED, 2, quote, "evidence")
+    di = m.DataItem(id="D-001", category="financial_strength", criteria=["leverage"], statement="s",
+                    value=m.Value(number=11592, as_reported="11,592", unit="EUR", scale="million", period="FY2025"),
+                    citations=[cit], source_id="S-901", source_tier="priority", extracted_by="agent",
+                    verification=m.Verification(status="pending"))
+    res = checks.check_data_item(di, {"DOC-901": PLANTED}, {})
+    monkeypatch.setattr(st, "row_span", lambda *a, **k: None)
+    monkeypatch.setattr(st, "similarity", lambda diff: 0.985)
+    _, _, after, note = st.recite(di, res, {"DOC-901": PLANTED}, None)
+    assert "99% similar" in note and round(98.5) == 98
+    assert after in page
+
+
+# ---------------------------------------------------------------------------
 # Live: one real S-001 page through presmoke (AXELROD_LIVE=1, costs about a cent)
 # ---------------------------------------------------------------------------
 

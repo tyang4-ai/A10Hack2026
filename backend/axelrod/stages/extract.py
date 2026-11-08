@@ -507,7 +507,6 @@ _COMPARE_LEFT = re.compile(r"\b(?:over|than|versus|vs\.?|against|compared\s+(?:w
 _QUARTER_LEFT = re.compile(r"(?:\bQ[1-4]\s?|\b(?:first|second|third|fourth)[\s-]quarter(?:\s+of)?(?:\s+the)?\s+)$",
                            re.IGNORECASE)
 _BARE_YEAR = re.compile(r"(?:19|20)\d{2}")
-_RELEASE = re.compile(r"release|quarterly|interim|half[- ]year|results", re.IGNORECASE)
 MAX_HEADING_CHARS = 80
 
 
@@ -568,7 +567,7 @@ def _anchor_above(doc_id: str, page_text: str, page: int, before: int) -> m.Cita
 
 def _cover_period(doc_id: str, pages: list[str], source: m.Source | None, page: int) -> m.Citation | None:
     """A release's cover page states the period it reports on: its first heading or period mention."""
-    if source is None or page <= 1 or not pages or not (source.kind == "company_ir" or _RELEASE.search(source.title)):
+    if page <= 1 or not pages or not checks.is_release(source):
         return None
     cover = pages[0]
     for pos, body, _ in _lines(cover, len(cover)):
@@ -724,11 +723,12 @@ def verify_item(item: m.DataItem, pages_by_doc: dict[str, list[str]],
                 sources: dict[str, m.Source]) -> m.DataItem:
     """Run the data checks. On a failure, code makes one fix toward the source and checks again (status
     fixed when that passes): a near-miss quote is re-cited from the real span on the page the extractor
-    read (a whole table row when the agent skipped cells), and a value the agent decorated ("~37",
-    "(4.2%)" for a printed "4.2%", "–607" for "– 607") is restated as printed. Pure: returns a new item.
-    Runs in a worker thread."""
+    read (a whole table row when the agent skipped cells), headers left on another page than a moved
+    evidence quote are picked again on its page, and a value the agent decorated ("~37", "(4.2%)" for a
+    printed "4.2%", "–607" for "– 607") is restated as printed. Every passing quote is stored as the exact
+    page characters at its span. Pure: returns a new item. Runs in a worker thread."""
     first = checks.check_data_item(item, pages_by_doc, sources)
-    item = checks.with_fixed_locators(item, first)
+    item = checks.with_fixed_locators(item, first, pages_by_doc=pages_by_doc)
     status = checks.status_from(first)
     if status != "fail":
         return _set_verification(item, m.Verification(status=status, checks=first, verified_at=now_iso()))
@@ -737,7 +737,7 @@ def verify_item(item: m.DataItem, pages_by_doc: dict[str, list[str]],
         return _set_verification(item, m.Verification(status="fail", checks=first, verified_at=now_iso()))
     new_item, before, after, note = recited
     second = checks.check_data_item(new_item, pages_by_doc, sources)
-    new_item = checks.with_fixed_locators(new_item, second)
+    new_item = checks.with_fixed_locators(new_item, second, pages_by_doc=pages_by_doc)
     after_status = checks.status_from(second)
     final = "fixed" if after_status == "pass" else after_status
     if final == "fixed":
@@ -762,7 +762,8 @@ def _set_verification(item: m.DataItem, v: m.Verification) -> m.DataItem:
 
 def code_fix(item: m.DataItem, results: list[m.CheckResult], pages_by_doc: dict[str, list[str]],
              source: m.Source | None = None) -> tuple[m.DataItem, str, str, str] | None:
-    """One fix toward the source: re-cite failed quotes, then restate a value the page prints plainer.
+    """One fix toward the source: re-cite failed quotes, pick the unit and period headers again when one
+    sits on another page than the evidence, then restate a value the page prints plainer.
     (item, before, after, note), or None when code has nothing to fix."""
     new = item
     before: list[str] = []
@@ -774,8 +775,14 @@ def code_fix(item: m.DataItem, results: list[m.CheckResult], pages_by_doc: dict[
         before.append(b)
         after.append(a)
         notes.append(n)
+    moved = realign(new, pages_by_doc, source)
+    if moved is not None:
+        new, b, a, n = moved
+        before.append(b)
+        after.append(a)
+        notes.append(n)
     value_failed = any(c.check == "value_in_quote" and c.result == "fail" for c in results)
-    if new.value is not None and (value_failed or rec is not None):
+    if new.value is not None and (value_failed or rec is not None or moved is not None):
         ev = [text.normalize(c.quote) for c in new.citations
               if c.role == "evidence" and isinstance(c.locator, m.TextLocator)]
         rs = restate_value(new, ev)
@@ -805,11 +812,15 @@ def recite(item: m.DataItem, results: list[m.CheckResult], pages_by_doc: dict[st
     after: list[str] = []
     notes: list[str] = []
     moved = False
+    ev_pages = checks.evidence_pages(item)
     for i, res in zip(text_idx, qe):
         cit = new.citations[i]
         page_text = _page(pages_by_doc.get(cit.doc_id) or [], cit.locator.page)
         if res.result != "fail" or not page_text:
             continue
+        allowed = checks.context_pages(cit, ev_pages, source)
+        if allowed is not None and cit.locator.page not in allowed:
+            continue  # a header on another page than its evidence: realign picks it again
         row = cit.role == "evidence" and new.value is not None
         span = row_span(page_text, cit.quote, new.value, near=cit.locator.char_start) if row else None
         how = "the whole table row"
@@ -817,7 +828,7 @@ def recite(item: m.DataItem, results: list[m.CheckResult], pages_by_doc: dict[st
             diff, near = text.near_miss(page_text, cit.quote)
             sim = similarity(diff)
             if sim >= MIN_RECITE_SIMILARITY:
-                span, how = near, f"the closest real span, {round(sim * 100)}% similar"
+                span, how = near, f"the closest real span, {half_up(Decimal(repr(sim)) * 100, 0)}% similar"
             elif row:  # last: a row label with a column header in front of it
                 span = row_span(page_text, cit.quote, new.value, near=cit.locator.char_start, tails=True)
         if span is None:
@@ -840,19 +851,61 @@ def recite(item: m.DataItem, results: list[m.CheckResult], pages_by_doc: dict[st
 
 
 def recontext(item: m.DataItem, pages_by_doc: dict[str, list[str]], source: m.Source | None) -> m.DataItem:
-    """Pick the unit and period headers again for a re-cited evidence quote, with the old header quotes
-    as the hints (an agent header stays when it still sits above the evidence)."""
+    """Pick the unit and period headers again for a re-cited or moved evidence quote, on the evidence's
+    page. The old header quotes on that page are the hints (an agent header stays when it still sits above
+    the evidence). A header from another page is no hint: it labels another table."""
     ev = next((c for c in item.citations if c.role == "evidence" and isinstance(c.locator, m.TextLocator)), None)
     pages = pages_by_doc.get(ev.doc_id) if ev is not None else None
     if ev is None or not pages:
         return item
-    old = {c.role: c.quote for c in reversed(item.citations) if isinstance(c.locator, m.TextLocator)}
+    ev_pages = {ev.doc_id: [ev.locator.page]}
+    old = {c.role: c.quote for c in reversed(item.citations) if isinstance(c.locator, m.TextLocator)
+           and c.role != "evidence" and c.locator.page in (checks.context_pages(c, ev_pages, source) or [])}
     hint = ExtractedItem(statement=item.statement or "-", quote=ev.quote, unit_quote=old.get("unit_context", ""),
                          period_quote=old.get("period_context", ""))
     value = scale_from_evidence(pages, ev, item.value)
     rest = [c for c in item.citations if c.role == "evidence" and c is not ev]
     cits = [ev] + context_citations(ev.doc_id, pages, ev, hint, value, source=source) + rest
     return item.model_copy(update={"citations": cits, "value": value})
+
+
+def off_page_headers(item: m.DataItem, source: m.Source | None = None) -> list[m.Citation]:
+    """Unit and period headers that sit on another page than the item's evidence (a release's cover-page
+    period aside). The checker does not count them, so code picks the headers again."""
+    ev_pages = checks.evidence_pages(item)
+    out = []
+    for c in item.citations:
+        allowed = checks.context_pages(c, ev_pages, source) if isinstance(c.locator, m.TextLocator) else None
+        if allowed is not None and c.locator.page not in allowed:
+            out.append(c)
+    return out
+
+
+def realign(item: m.DataItem, pages_by_doc: dict[str, list[str]],
+            source: m.Source | None = None) -> tuple[m.DataItem, str, str, str] | None:
+    """The quote was found on another page than the extractor read, so its unit and period headers are
+    picked again on the evidence's page. Nothing found there means the unit or period check fails, as it
+    would for any value without a header. (item, before, after, note), or None when every header is in place."""
+    off = off_page_headers(item, source)
+    ev = next((c for c in item.citations if c.role == "evidence" and isinstance(c.locator, m.TextLocator)), None)
+    if not off or ev is None:
+        return None
+    new = recontext(item, pages_by_doc, source)
+    if new is item:
+        return None
+
+    def headers(it: m.DataItem) -> str:
+        return " | ".join(c.quote for c in it.citations if c.role != "evidence") or "(no header)"
+
+    was = _and_pages(sorted({c.locator.page for c in off}))
+    note = (f"The evidence quote is on {ev.doc_id} page {ev.locator.page}, but its header was on {was}. Code "
+            f"picked the unit and period headers again on page {ev.locator.page}. The source wins.")
+    return new, headers(item), headers(new), note
+
+
+def _and_pages(pages: list[int]) -> str:
+    return f"page {pages[0]}" if len(pages) == 1 else "pages " + ", ".join(str(p) for p in pages[:-1]) + \
+        f" and {pages[-1]}"
 
 
 # A line that holds only table cells: numbers, notes, nil dashes and blanks.
