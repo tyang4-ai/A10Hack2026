@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V2-gateway, V3-rework, V7-chat.
+- Running: V2-gateway, V3-rework.
 - Next: V6-resume (after V3) and V8-fork (after V2). Then R2 on EC2 and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -19,7 +19,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V4-archive | 7 | builder + aws-operator | done | 16 passed | uploaded: archive/shl/ 930 objects (988 MB), cache/docs/ 928 entries. Idempotent rerun skipped everything. EC2 role reads and writes the cache already. LSEG and TED CSVs excluded |
 | V5-plan2 | 8 | builder | done | 43 passed (suite 662) | S-011 to S-016: SHL annual reports FY2024, FY2022, FY2020, FY2018 (ten ROTIC years FY2017 to FY2026) and Philips 2025, 2023. 30 new pages, all checked against the PDFs. S-006 now fetches 14th, still before S-009 and S-010 |
 | V6-resume | 9 | builder | todo | | |
-| V7-chat | 10 | builder | running | | |
+| V7-chat | 10 | builder | done | 23 passed, 2 live | chat with any goon or Bobby through the gateway, read only, labeled not checked. About $0.003 (Haiku) and $0.006 (Sonnet), 2 to 4 s |
 | V8-fork | 11 | builder | todo | | rerun from a step, model cache (cut first if late) |
 | R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
 
@@ -80,6 +80,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Needs Gordon
 
+- (12:10 AM, contract, additive, not blocking) `AgentMessage` has no field for why a chat reply failed, so the reason lives only in the `agent.message` event's message line. An optional `error: str | None` would let the UI show it. Say yes and I'll add it on main at a gate.
+
 - (11:48 PM, archive) The importer leaves out **100 LSEG transcripts and slides**, whose sidecars say "Licensed third-party content. Private research use; do not redistribute", plus **3 TED-EU CSVs** with no sidecar, URL or date (possibly derived data). My default: both stay out of S3, since the demo shows vault files to judges. Say "include LSEG" to add them with `--include-licensed` (1,029 files, 1.09 GB).
 
 - (11:45 PM, not blocking) Facts without a number ("strong growth in fiscal year 2025") are not year-checked, because their statements add the report's own year, which no quote repeats (checking them wrongly flagged 13 items). Say if you want them checked against the source's period instead.
@@ -101,4 +103,5 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sat 11:36 PM: B-fix-yield partial and committed. B-fix-judge started.
 - Sat 11:58 PM: V1-shapes done and committed. Wave 2 launched: V2, V3, V7 and the archive upload.
 - Sun 12:00 AM: V5-plan2 done and committed (6 archive sources, 30 pages).
-- Sun 12:05 AM: archive uploaded to S3 (929 files plus manifest, 928 cache entries).
+- Sun 12:01 AM: archive uploaded to S3 (929 files plus manifest, 928 cache entries).
+- Sun 12:10 AM: V7-chat done and committed.
