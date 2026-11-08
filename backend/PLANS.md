@@ -531,6 +531,26 @@ Written loosely on purpose. The orchestrator sharpens them after G5 with what th
 
 **B-p1** (builder). In this order, only while time allows: the `context` check (three judges see the quote, its paragraph and the statement), cross-source contradictions (P2), comments that trigger a revision and a re-check (reviser role).
 
+
+### W3 plans, sharpened 2026-11-07 8:27 PM (started early, before G5, by Gordon's no-wait call)
+
+**B-live** (builder). The A10 live segment works on the first try, in the PLAN.md demo order.
+- Owns: `axelrod/cascade.py` (new), `axelrod/api.py` (revoke route only: call the cascade after `gateway.revoke`), `axelrod/stages/collect.py`, `axelrod/verify/checks.py` (`_period_text` only), `scripts/demo_live.py` (new), `tests/test_live_demo.py` (new).
+- 1. Revoke cascade (`cascade.py`): after a revoke, re-run `citations_resolve` on every item citing that source, then on its dependents (D to C to E and G, then brief sentences if a summary exists). Each item that changes emits `item.updated` with reason `source_revoked` and then `item.verified`, and goes `blocked` with the detail "source revoked: S-006". Recompute certainty for the changed items. If the report is already final, mark the affected rollup criteria in the item details, but don't re-run finalize. Revoke before an item exists means it is never extracted (collect blocks the fetch).
+- 2. Live order (`collect.py`): keep S-006 late in collect (it is 8th now). Make `DEMO_PACING` apply before each source fetch, and also before each link-follow, so the presenter has time to say "revoke" while collect runs. Emit an `agent.log` line before each fetch ("next: S-006 Reuters via Euronext") so the CLI tail shows what's coming.
+- 3. `scripts/demo_live.py --api <url> [--pacing-check]`: drives the whole A10 segment over HTTP like a presenter would (create run with `created_via: "cli"`, approve per plan.json, revoke S-006 as soon as collect starts, STOP once extract has made its first model calls) and asserts each beat from the events: allowed traffic with tokens and cost, the S-009 link-follow blocked by default deny, the next S-006 request blocked by `R-revoke-S-006`, S-010 flagged and its document quarantined, and after STOP the next model call blocked with nothing allowed afterwards. It prints PASS or FAIL per beat and the exact CLI commands for each beat (for `backend/DEMO.md`). It must pass locally against `uvicorn` with `STORE=local`, live Bedrock and `TEST_PAGE_URL=http://127.0.0.1:<port>/test-pages/injection.html`. Keep live cost under $0.50 (STOP early).
+- 4. `_period_text` fix: in a mixed row (amounts and % change columns under a year header), align % tokens to year columns only when the row has no amounts, so "23,375 22,363 4.5% 5.9%" under "2025 2024 Act. Comp." reads 4.5% as a change, not as 2024. Add tests. Don't change other checks.
+- Acceptance: tests green offline. `demo_live.py` PASS on every beat locally, live. REPORT gives the exact presenter commands.
+
+**B-baseline** (builder). BACKEND.md section 11 "Baseline evaluation", labeled as an experiment.
+- Owns: `scripts/baseline.py` (new), `data/baseline/` (new), `tests/test_baseline.py` (new).
+- 1. Inputs: the same SHL page texts the harness reads (the `extract_pages` of S-001 to S-005 from `data/shl/plan.json`), ingested through the real gateway into a throwaway local run (`STORE=local`). No PDFs committed.
+- 2. Baseline: one plain large-model call (Sonnet, through `AgentRunner`/the gateway, so it's metered) with all those page texts and a prompt like an analyst would write: "write a BOFFIN screen of Siemens Healthineers from these pages, cite page numbers and quote the numbers you use". Ask for structured output (claims with value, unit, period, page, quote) so our checkers can run on it.
+- 3. Run our code checks (`quote_exact`, `value_in_quote`, `unit_context`, `period_match`) on every baseline claim. Run the harness's extract on the same pages (or reuse a finished run's items if one exists under DATA_DIR). Plant the same errors in both (the B-verify planted set: digit swap, dropped minus, wrong year, wrong scale, flipped "not"), and count what each side catches.
+- 4. Record time and token cost for each side from the gateway's usage.
+- 5. Write `data/baseline/results.md`: a headline line ("our checks caught X of Y planted errors in the harness report; a plain Claude report gave Z claims, of which W failed our own quote check"), the table of counts, time and cost, and a list of about 20 key SHL numbers with page and quote for Gordon to hand-check. Label it "Experiment, run on <date>, not part of the demo run".
+- Acceptance: the script runs end to end live for under $2. Offline tests with fake models cover the counting logic. REPORT gives the headline numbers.
+
 ---
 
 ## Interface notes
@@ -623,7 +643,7 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - JSON sources S-007 and S-008: 9 ROTIC input concepts (us-gaap or ifrs-full), `extracted_by: "code"`. Period is `FYyyyy` for income lines and an ISO date for balances. The latest filing wins when a year is restated.
 - A failed extractor page records no Hole. finalize declares it (sent to B-reason). Items still failing after the code recite stay `fail` for repair.
 
-**2026-11-07 8:27 PM, B-g2fix REPORT. This supersedes part of the 8:07 PM note.**
+**2026-11-07 8:24 PM, B-g2fix REPORT. This supersedes part of the 8:07 PM note.**
 - Untrusted sources are released only on a `clean` scan. `skipped` (no guardrail) and `error` quarantine them, and a Document can show `scan.verdict: "skipped"` with `quarantined: true`. Offline tests and presmoke runs that need news or forum pages must register a fake scan (`bedrock.register_fake_scan`) or set `GUARDRAIL_ID`.
 - `Gateway.decide` blocks link-local hosts before any allow rule: 169.254.0.0/16, fe80::/10, fd00:ec2::254, mapped and numeric forms, and the instance-data names. The block has `rule_id` None. Loopback and private addresses still pass. Not caught: a DNS name that resolves to link-local (IMDSv2 covers that).
 - `gateway.base_policy(run_id, settings, *, budget_usd, at, as_of_seq=0, kill_switch=False)` is the pre-approval policy, used by both `RunState.policy_view(settings=None)` and the gateway. Also `gateway.is_link_local(host)`, `gateway.host_ip(host)`, `ingest.held_scan(scan)`, `ingest.HELD_REASONS`, `store.FAKE_MODELS_NOTE`.

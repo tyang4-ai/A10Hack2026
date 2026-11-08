@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: B-reason, A-deploy (W2). W1 is 5/5 done.
+- Running: B-reason, A-deploy (W2). B-live, B-baseline (W3, started early). W1 is 5/5 done.
 - Next: G3 (presmoke with live Bedrock) when B-extract, B-reason and B-brief land. G4 when A-deploy lands.
 
 ## Plans
@@ -26,8 +26,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | A-deploy | aws-operator | W2 | running | | |
 | B-g2fix | builder | W2 | done | suite 366 passed | skipped scan now quarantines, link-local blocked (metadata URL too), pre-approval policy shows system rules, fake runs labeled |
 | B-testpage | builder | W2 | done | 41 passed | /test-pages/injection.html served by our API (simulated header). Full path tested: allowed, flagged, quarantined, link blocked |
-| B-live | builder | W3 | todo | | |
-| B-baseline | builder | W3 | todo | | |
+| B-live | builder | W3 | running | | revoke cascade, demo pacing, demo_live.py rehearsal, % column fix |
+| B-baseline | builder | W3 | running | | plain Claude report vs harness, same checks, labeled experiment |
 | B-p1 | builder | W3 | todo | | |
 
 ## Gates
@@ -105,3 +105,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:01 PM: W2 launched early (6 agents). G2 checks 3 to 5 pass. Verifier running on the 4 finished W1 plans.
 - Sat 8:01 PM: B-verify done. W1 5/5. Planted test 12/12.
 - Sat 8:15 PM: G2 pass (verifier). B-g2fix launched for the one major finding plus three minor ones.
+- Sat 8:28 PM: B-brief, B-cli, B-extract, B-g2fix done (W2 5/7). B-live and B-baseline started early. G3 waits on B-reason.
