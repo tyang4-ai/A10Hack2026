@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { count, fmtTime, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 
-const STATUS_CLS = { queued: "text-desk-muted", working: "text-desk-link", done: "text-desk-good", failed: "text-desk-bad", stopped: "text-desk-warn" } as const;
+const STATUS_CLS = { queued: "text-desk-muted", working: "text-desk-link", done: "text-desk-good", failed: "text-desk-bad", stopped: "text-desk-bad" } as const;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

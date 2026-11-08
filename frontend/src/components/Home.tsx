@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Run } from "@contract/types";
 import { api, ApiError } from "@/lib/api";
-import { CACHE_HELP, CACHE_LABEL, STAGE_LABEL, usd } from "@/lib/format";
+import { STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { forgetRunPages } from "./SourcePage";
 import { ago, STATUS_DOT, STATUS_WORD, ThemeSwitcher } from "./Switchers";
@@ -372,11 +372,6 @@ function RunRow({ r, msg, onDelete, onDismiss }: { r: Run; msg: string | null; o
             {r.run_id}
           </Link>
           <Lineage r={r} />
-          {r.cache_mode !== "off" && (
-            <span title={CACHE_HELP[r.cache_mode]} className="mt-0.5 ml-1 inline-block rounded-[3px] border border-warn px-1 font-mono text-[10px] font-semibold text-warn">
-              {CACHE_LABEL}
-            </span>
-          )}
         </td>
         <td className="px-2 py-2 whitespace-nowrap">
           <span className="flex items-center gap-1.5">

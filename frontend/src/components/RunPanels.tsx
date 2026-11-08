@@ -61,7 +61,6 @@ export function Traffic() {
                 </td>
                 <td className="px-2 font-semibold whitespace-nowrap">
                   {d.decision.toUpperCase()}
-                  {d.cache === "hit" && <span className="ml-1.5 font-normal text-desk-warn" title={`Served from the cache${d.cached_at ? `, saved ${d.cached_at}` : ""}`}>cached</span>}
                 </td>
                 <td className="px-2 whitespace-nowrap text-desk-muted">{d.rule_id ?? (/kill|stop/i.test(d.reason) ? "stopped" : "default deny")}</td>
                 <td className="px-2 text-right tabular-nums">{d.latency_ms}</td>
@@ -88,7 +87,7 @@ export function Traffic() {
 const ROLES: AgentRole[] = ["orchestrator", "planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer", "reviser"];
 const GOON_ROLES = ROLES.filter((r) => r !== "orchestrator");
 const CALL_CLS = { proceed: "text-desk-good", rework: "text-desk-warn", escalate: "text-desk-bad" } as const;
-const AGENT_CLS = { queued: "bg-desk-line-strong", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-accent" } as const;
+const AGENT_CLS = { queued: "bg-desk-line-strong", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-desk-bad" } as const;
 
 // Click an agent to open its chat window, where you can talk to it or stop it.
 export function Agents() {

@@ -4,7 +4,7 @@
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { useEffect, useMemo, useState } from "react";
 import type { Citation, DocumentPage, Item, Run, Source, SourceDecision, Stage, SummarySentence } from "../../../contract/types.ts";
-import { CACHE_LABEL, STAGES, STAGE_LABEL, formatValue, usd } from "../../src/lib/format.ts";
+import { STAGES, STAGE_LABEL, formatValue, usd } from "../../src/lib/format.ts";
 import { API_BASE, ApiError, api } from "./api.ts";
 import { useRun } from "./useRun.ts";
 
@@ -276,7 +276,6 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
       <Box justifyContent="space-between" flexDirection={cols >= 110 ? "row" : "column"}>
         <Text wrap="truncate-end">
           <Text bold>Axelrod</Text>  <Text bold color="white">{run.company}</Text> <Text color="gray">{run.run_id.split("_").pop()}</Text>
-          {run.cache_mode !== "off" && <Text color="yellow"> {CACHE_LABEL}</Text>}
           {run.status !== "done" && <Text color={sc}>  ● {sw}</Text>}
         </Text>
         <Text color="gray" wrap="truncate-end">
@@ -461,7 +460,7 @@ function TrafficPane({ data, height, width }: { data: RunData; height: number; w
 // Agents: who is working, by role
 // ---------------------------------------------------------------------------
 
-const AGENT_COLOR = { queued: "gray", working: "cyan", done: "green", failed: "red", stopped: "yellow" } as const;
+const AGENT_COLOR = { queued: "gray", working: "cyan", done: "green", failed: "red", stopped: "red" } as const;
 const CALL_COLOR = { proceed: "green", rework: "yellow", escalate: "red" } as const;
 
 // Bobby (the orchestrator) first, then his goons by role, then his calls.

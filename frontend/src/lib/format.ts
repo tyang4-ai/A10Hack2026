@@ -86,12 +86,4 @@ export const STATUS_TEXT: Record<VerificationStatus, string> = {
 
 export const CERTAINTY_HELP = "Support from checked evidence. Not the chance it's true.";
 
-// Runs served partly from a cache are labelled too (contract v0.2, demo cache labels).
-export const CACHE_LABEL = "CACHED";
-export const CACHE_HELP: Record<"off" | "documents" | "documents_and_models", string> = {
-  off: "",
-  documents: "Cached: documents come from a saved copy, not fetched live.",
-  documents_and_models: "Cached: documents and model answers come from a saved copy.",
-};
-
 export const human = (s: string) => s.replace(/_/g, " ");
