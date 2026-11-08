@@ -562,6 +562,16 @@ Added 2026-11-07 9:17 PM from B-fix-extract's REPORT.
 4. Each fix gets a test, plus a planted case for task 1 (a comparative claimed as the current year must fail). `planted` must stay N/N caught and `clean` M/M pass.
 **Acceptance.** `.venv/Scripts/python -m pytest -q backend/tests -m "not live"` green, and the planted line still shows every planted error caught.
 
+### B-fix-repair
+Added 2026-11-07 9:22 PM from B-fix-draft's REPORT.
+**Owns.** `axelrod/stages/repair.py`, `axelrod/agents/repairer.py`, `tests/test_repair_rules.py` (new).
+**Problem.** Seen live: a threshold score's input displayed as 10.0% (exact 9.996%). Code recomputed the score as -1 against the 10% bar, then the repairer moved it back to 0, the item failed, and the criterion became N/A. Repair must only weaken, and must never contradict code.
+**Tasks.**
+1. In `_apply_extrapolation` (and anywhere repair can set a score), refuse a score that disagrees with `threshold_rule`'s recomputation for threshold criteria. Code's recomputed score wins. The repairer may only weaken the claim around it (lower confidence, narrow the text, or set N/A with a reason). Record the refusal in the attempt note.
+2. Judgment criteria (no threshold): the repairer may lower `confidence` or move the score toward 0 or N/A, never away from 0.
+3. Tests with fake models: the 9.996% case keeps -1, a repairer trying to raise a score is refused, and a lowering edit is accepted.
+**Acceptance.** `.venv/Scripts/python -m pytest -q backend/tests -m "not live"` green.
+
 ### B-fix-draft
 **Owns.** `axelrod/agents/drafter.py`, `axelrod/stages/draft.py`, `tests/test_reason.py` (only add tests).
 **Problem.** rotic_level and rotic_vs_peers came out N/A because the drafter wanted a complete ten-year NOPAT and average-TICAP series and refused. The demo story (docs/PLAN.md) is the opposite: score ROTIC from the years we have, and let code lower the certainty because SHL has fewer than ten years of reports since listing (`finalize` already marks data coverage low). liquidity is N/A because C-015 failed `numbers_traced` (`'(€13,499 million)', '€4.5 billion' and '14.3%' do not match any cited value`), and C-001 failed the same way (`'€1,525 million'`).
@@ -717,3 +727,11 @@ Dated notes from the orchestrator when an interface changes during the build. Ne
 - `context_citations(doc_id, pages, ev, raw, value, *, source=None)`. `recite(item, results, pages_by_doc, source=None)` now re-cites on the cited page only (in r0 the recite jumped to other pages). New helpers: `code_fix`, `recontext`, `row_span`, `restate_value`, `scale_from_evidence`.
 - Period context is chosen by code by position on the page (table header above the row, nearest period line above, the release cover page, or the sentence's leading phrase), never from the model's claimed period. A scale word next to the number sets the scale and is cited as unit context. A decorated value ("~37", ">31", "(4.2%)") is restated as printed. A sign the page prints is never added.
 - Presmoke: use `--budget 1.0` for multi-page runs, because the gateway holds 8192 output tokens per call as the worst case.
+
+**2026-11-07 9:22 PM, B-fix-draft REPORT.**
+- The drafter scores from every fiscal year the inputs allow (N/A only when none), with declared computations for every derived number. Rows carry `expr_value` from `checks.base_value`. The ROTIC group also gets `inputs_by_year`, a code-built table of which D-ids hold each NOPAT and TICAP input per company and year. `MAX_ROWS=400` per group (ROTIC has 159).
+- Code pre-check: before a draft is final, the verify stage's code checks run on it, and the problems go back to the drafter once (up to 2 Sonnet calls per group). A computation that types a plain number other than a whole number up to 100 is dropped.
+- Coverage counts the fiscal years behind the rule-input computation, and only ever lowers it. A log line says which years a score rests on.
+- `drafter.draft_prompt(company, criteria, rows, metrics=None, needs=None, index=None)`, `drafter.revise_prompt`, `drafter.REVISE`. New in draft.py: `group_items`, `group_rows`, `inputs_index`, `precheck`, `merge_revision`, `fill_displays`, and others. `Builder._coverage(criterion, confidence, cids, rule_input=None, *, scored=True)`.
+- Live (one run, final code, R0 data copy): rotic_level -1 (low confidence, 9.8% mean over FY2023, FY2025 and FY2026), rotic_vs_peers -1 (FY2025: SHL 11.0%, GE HealthCare 25.2%, Philips 18.1%), secular_growth 0, leverage 0, liquidity -1 (coverage 0.6x), research_stage N/A. Weighted average -0.70. Draft, verify and repair cost $0.77 to $1.11.
+- ROTIC results vary between runs (earlier code gave N/A in 3 of 9 tuning runs). Not yet caught: averages over non-adjacent year-ends (sent to B-fix-checks), and the repairer undoing a code-recomputed score (B-fix-repair).
