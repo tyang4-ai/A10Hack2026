@@ -59,26 +59,41 @@ async def run_pipeline(ctx: RunContext) -> None:
     await _run_stages(ctx, list(STAGES), skip_done=False)
 
 
-async def start_from(ctx: RunContext, stage: str) -> None:
+async def start_from(ctx: RunContext, stage: str, *, runners: dict[str, StageRunner] | None = None) -> None:
     """Run the pipeline from `stage` to the end: a fork starts at its rerun_from (V8), a resumed run at the
     stage STOP cut into (V6). Stages before `stage` are never run, and a stage whose result is already in the
     state (stage_done) is skipped with its gate, so finished work is never done twice. Inside a stage the
-    stage's own code skips finished work (extract never reads a source twice). Never raises, except
-    cancellation. Raises ValueError for a stage the pipeline doesn't have."""
+    stage's own code skips finished work (extract never reads a source twice). `runners` swaps in another
+    entry for a stage the pipeline has (resume reads extract page by page), other keys are ignored. Never
+    raises, except cancellation. Raises ValueError for a start stage the pipeline doesn't have."""
     names = [s for s, _ in STAGES]
     if stage not in names:
         raise ValueError(f"no pipeline stage {stage!r}")
-    await _run_stages(ctx, list(STAGES[names.index(stage):]), skip_done=True)
+    stages =[(s, (runners or {}).get(s, mod)) for s, mod in STAGES[names.index(stage):]]
+    await _run_stages(ctx, stages, skip_done=True)
+
+
+def approval_committed(state: RunState) -> bool:
+    """The analyst's approval is in: POST /approval stored its request (a fork copies it). A policy alone is
+    not proof, because STOP before approval stores a kill-switch policy too."""
+    if state.approval_request is not None:
+        return True
+    if any(e.type == "approval.committed" for e in state.events):
+        return True
+    return state.policy is not None and any(r.source_id for r in state.policy.rules if r.origin != "user_agent_stop")
 
 
 def stage_done(state: RunState, stage: str) -> bool:
     """True when the stage's result is already in the state, so start_from must not run it again: the plan is
-    ready, the approval was committed (a policy exists), the report is final, the brief was drafted, or the
-    brief was checked. Other stages always run and skip their own finished work."""
+    ready, the approval was committed, the draft's scores exist (draft builds every item at once, after all its
+    drafters answered), the report is final, the brief was drafted, or the brief was checked. Other stages
+    always run and skip their own finished work."""
     if stage == "plan":
         return state.plan_ready and bool(state.sources)
     if stage == "approve":
-        return state.policy is not None
+        return approval_committed(state)
+    if stage == "draft":
+        return bool(state.extrapolations())
     if stage == "repair":
         return state.report_ready
     if stage == "summarize":

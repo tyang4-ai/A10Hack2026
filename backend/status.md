@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V6-resume, B-fix-s015, B-rehearse, B-fix-score2.
+- Running: B-fix-s015, B-rehearse, B-fix-score2.
 - Next: deploy, then R2 on EC2 (`CACHE_MODELS=record`) and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -18,7 +18,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V3-rework | 3, 4, 5 | builder | done | 37 passed (suite 757), 1 live | rerun one agent (extractor, drafter, summarizer, repairer; rerun of a rerun), Bobby at 4 gates (code validates, $0.005 and 2.3 s per gate live), comments resolved by Bobby |
 | V4-archive | 7 | builder + aws-operator | done | 16 passed | uploaded: archive/shl/ 930 objects (988 MB), cache/docs/ 928 entries. Idempotent rerun skipped everything. EC2 role reads and writes the cache already. LSEG and TED CSVs excluded |
 | V5-plan2 | 8 | builder | done | 43 passed (suite 662) | S-011 to S-016: SHL annual reports FY2024, FY2022, FY2020, FY2018 (ten ROTIC years FY2017 to FY2026) and Philips 2025, 2023. 30 new pages, all checked against the PDFs. S-006 now fetches 14th, still before S-009 and S-010 |
-| V6-resume | 9 | builder | running | | resume after STOP through `start_from`, `_set_status` guard |
+| V6-resume | 9 | builder | done | 16 passed (suite 860) | resume only from stopped: cancels the old task with the kill switch still on, kill switch off (version bump), `run.resumed`, running. Restarts the cut stage, extract page by page, nothing finished redone. Analyst-stopped goons stay stopped, Bobby comes back unless R-stop-bobby. A terminal status is final (`revive_orchestrator` is the one exit, Bobby only) |
 | V7-chat | 10 | builder | done | 23 passed, 2 live | chat with any goon or Bobby through the gateway, read only, labeled not checked. About $0.003 (Haiku) and $0.006 (Sonnet), 2 to 4 s |
 | V8-fork | 11 | builder | done | 41 passed (suite 798) | rerun from a step (new run, own policy and log, ids kept, parent unchanged), `orchestrator.start_from`, model cache (`CACHE_MODELS=record/replay`, decision first, a hit costs $0, the n-th identical call gets its own record) |
 | pre-R2 | 12 | orchestrator | done | | run_20261108_5zqdvb on EC2, cache_mode documents, 16 sources (13 cache hits, 10 from the archive). 659 items (522 pass, 88 fixed, 49 fail = 92.6%), 52 holes, certainty 93, rollup +0.4 (4 of 6: rotic_level 0, rotic_vs_peers +1, secular_growth +1, leverage -1), brief 2.8 pages, $3.03, 6 min. Bobby: plan escalate, extract rework (S-015 extractors), repair proceed, brief proceed. **Bug: rotic_vs_peers +1 while its text says SHL trails both peers.** Fixes: B-fix-score, B-fix-s015 |
@@ -74,6 +74,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- Resume inside draft asks a drafter again if it finished inside the STOP cut, because draft builds items only after every drafter answers. A few cents, no wrong data.
 - Plan v2 has 13 priority sources (was 7), and 6 more paced fetches come before S-006. Retune `DEMO_PACING` at G6b for the 55 s launch-to-STOP. The ROTIC drafter group should be about 310 rows against MAX_ROWS=400.
 
 - Runs vary: R0b scored 4 of 6, pin2ve 3 of 6, G5b 1 of 6 (coarse conclusions, being fixed).
@@ -88,6 +89,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Guard quirk: a redirect or pipe after `git push` (or any `>`, `2>&1` in a git command) is read as a path or push target. Use plain git commands.
 
 ## Needs Gordon
+
+- (1:03 AM, mock, not blocking) On resume we emit `policy.updated`, `run.resumed`, `run.status` running, as CONTRACT.md 13 reads. `mock/mock_server.py` emits `run.resumed`, `run.status`, `policy.updated`. The frontend shouldn't care about the order. Say which way and I'll align the mock or the doc on main.
 
 - (12:13 AM, contract, additive, not blocking) `AgentMessage` has no field for why a chat reply failed, so the reason lives only in the `agent.message` event's message line. An optional `error: str | None` would let the UI show it. Say yes and I'll add it on main at a gate.
 
@@ -121,3 +124,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:46 AM: V8-fork done and committed (fork, start_from, model cache). Two stale stub tests updated. V6-resume started.
 - Sun 12:50 AM: B-rehearse started (webapp beats for the G6b rehearsal).
 - Sun 12:58 AM: B-fix-score done and committed. B-fix-score2 started (its three follow-ups, before R2).
+- Sun 1:03 AM: V6-resume done and committed. Its gates.py follow-up (only analyst-stopped goons count as stopped by the analyst) went to B-fix-score2.

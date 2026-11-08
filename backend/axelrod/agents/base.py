@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import BaseModel, ValidationError
 
 from ..contract import m
-from ..gateway import Blocked, InvokeResult, ToolSpec, register_fake, register_fake_scan
+from ..gateway import Blocked, InvokeResult, ToolSpec, register_fake, register_fake_scan, stop_rule
 from ..ids import now_iso
 from ..runtime import StopRequested
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from ..runtime import RunContext
 
 __all__ = ["AgentRunner", "AgentOutputError", "tool_name", "tool_spec", "coerce_json_strings", "register_fake",
-           "register_fake_scan", "instructions_block"]
+           "register_fake_scan", "instructions_block", "revive_orchestrator"]
 
 TERMINAL = ("done", "failed", "stopped")
 _PREVIOUS_INPUT_CHARS = 4000
@@ -36,6 +36,29 @@ NO_RUN_INSTRUCTIONS = ("verifier",)
 
 class AgentOutputError(ValueError):
     """The model's tool input failed validation on both tries."""
+
+
+ORCHESTRATOR_ROLE = "orchestrator"
+
+
+def revive_orchestrator(ctx: RunContext, agent_id: str) -> m.Agent:
+    """Resume's one way out of a terminal status (CONTRACT.md 13): a whole-run STOP stops Bobby first, and a
+    resumed run gets him back as working. Only the orchestrator, only from stopped, and never when the
+    analyst stopped him on his own (his R-stop rule): every other terminal status stays final.
+    Raises KeyError for an unknown agent and ValueError for anything else."""
+    agent = ctx.state.agents[agent_id]
+    if agent.role != ORCHESTRATOR_ROLE:
+        raise ValueError(f"{agent_id} is a {agent.role}: only the orchestrator comes back on resume")
+    if agent.status != "stopped":
+        raise ValueError(f"{agent_id} is {agent.status}, not stopped")
+    if stop_rule(ctx.state.policy, agent_id) is not None:
+        raise ValueError(f"{agent_id} was stopped by the analyst and stays stopped")
+    agent.status, agent.finished_at = "working", None
+    agent.started_at = agent.started_at or now_iso()
+    ctx.emit("agent.status", m.AgentStatusData(agent_id=agent_id, status="working", task=agent.task,
+                                               usage=agent.usage.model_copy()),
+             message=f"{agent_id} working: the run resumed", agent_id=agent_id)
+    return agent
 
 
 # ---------------------------------------------------------------------------
@@ -382,8 +405,11 @@ class AgentRunner:
                       message=f"{a.agent_id} {a.status}", agent_id=a.agent_id)
 
     def _set_status(self, status: str) -> None:
+        """Move the agent to `status`. A terminal status (done, failed, stopped) is final: ask() on an agent
+        the analyst stopped while it was queued must not flip it back to working. The one way back is
+        revive_orchestrator, which resume uses for Bobby."""
         a = self.agent
-        if a.status == status or not self._track:
+        if a.status == status or not self._track or a.status in TERMINAL:
             return
         a.status = status
         if status == "working" and a.started_at is None:

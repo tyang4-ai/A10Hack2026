@@ -452,13 +452,14 @@ def test_a_stopped_run_rejects_the_controls_and_bobby_stops_first(api):
     assert "Resume it to talk" in err(client.post(f"{r}/agents/bobby/messages", json={"text": "hi"}), 409)
     assert "Resume it before rerunning" in err(client.post(f"{r}/agents/extractor-01/rerun",
                                                            json={"instructions": "x"}), 409)
-    assert err(client.post(f"{r}/resume"), 409) == "not built yet (V6-resume)"
     assert "Nothing to rerun after complete" in err(client.post(f"{r}/rerun", json={"from_stage": "complete",
                                                                                      "instructions": "x"}), 409)
     assert err(client.post(f"{r}/rerun", json={"from_stage": "repair", "instructions": "x"}), 409) == \
         f"{state.run.run_id} never reached repair"
     fork = client.post(f"{r}/rerun", json={"from_stage": "extract", "instructions": "x"})  # V8: a stopped run forks
     assert fork.status_code == 201 and fork.json()["parent_run_id"] == state.run.run_id
+    got = client.post(f"{r}/resume")                       # V6: last, since the run goes on
+    assert got.status_code == 200 and m.Run.model_validate(got.json()).status == "running"
 
 
 def test_routes_return_what_the_real_modules_return(api, monkeypatch, settings):
