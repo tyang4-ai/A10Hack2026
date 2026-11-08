@@ -94,10 +94,31 @@ export interface RunEvent {
   tokens: number | null;
 }
 
+// Generative UI: the agent picks a chart type and the claims to plot. Points
+// name claim ids, never raw numbers; the dashboard looks up each verified value.
+export type ChartType = "line" | "waterfall" | "fan" | "stacked_bar";
+
+export interface ChartPoint {
+  label: string;
+  claim_id: string;
+  role?: "total" | "delta" | "start" | "bull" | "base" | "bear";
+}
+
+export interface ChartSpec {
+  id: string;
+  type: ChartType;
+  title: string;
+  unit: string;
+  caption: string;
+  points: ChartPoint[];
+  lint: { check: string; ok: boolean }[];
+}
+
 export interface Report {
   title: string;
   generated_at: string;
   sections: { heading: string; paragraphs: { text: string; claim_ids: string[] }[] }[];
+  charts: ChartSpec[];
 }
 
 export interface Api {

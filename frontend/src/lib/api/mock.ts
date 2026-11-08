@@ -60,6 +60,24 @@ const clone = <T,>(x: T): T => structuredClone(x);
 
 class StoppedError extends Error {}
 
+// Extra data claims that back the generated charts (all mock).
+const chartClaims: [string, string, string, string, number][] = [
+  ["C13", "Q1 FY2025 comparable growth was 4.2%.", "4.2", "Q1 comparable revenue growth of 4.2%", 4100],
+  ["C14", "Q2 FY2025 comparable growth was 4.8%.", "4.8", "Q2 comparable revenue growth of 4.8%", 4180],
+  ["C15", "Q3 FY2025 comparable growth was 5.3%.", "5.3", "Q3 comparable revenue growth of 5.3%", 4260],
+  ["C16", "Q4 FY2025 comparable growth was 5.9%.", "5.9", "Q4 comparable revenue growth of 5.9%", 4340],
+  ["C17", "FY2024 adjusted EBIT margin was 15.8%.", "15.8", "prior-year margin of 15.8%", 2290],
+  ["C18", "Imaging added 1.0 point to the margin.", "+1.0", "Imaging contributed 1.0 percentage point", 2700],
+  ["C19", "Varian added 0.6 points to the margin.", "+0.6", "Varian contributed 0.6 percentage points", 2760],
+  ["C20", "Diagnostics reduced the margin by 0.4 points.", "-0.4", "Diagnostics reduced margin by 0.4 percentage points", 2820],
+  ["C21", "Other items added 0.2 points to the margin.", "+0.2", "other effects of 0.2 percentage points", 2880],
+  ["C22", "Imaging was 48% of revenue.", "48", "Imaging accounted for 48% of revenue", 5400],
+  ["C23", "Diagnostics was 19% of revenue.", "19", "Diagnostics accounted for 19% of revenue", 5460],
+  ["C24", "Varian was 18% of revenue.", "18", "Varian accounted for 18% of revenue", 5520],
+  ["C25", "Advanced Therapies was 9% of revenue.", "9", "Advanced Therapies accounted for 9% of revenue", 5580],
+  ["C26", "Other businesses were 6% of revenue.", "6", "other businesses accounted for 6% of revenue", 5640],
+];
+
 export function mockApi(): Api {
   const runs = new Map<string, State>();
   let runCounter = 41;
@@ -155,8 +173,8 @@ export function mockApi(): Api {
       c("C2", "data", "Comparable revenue growth was 5.1% for FY2025.", "5.1%", [["S2", "comparable revenue growth of 5.1%", 1420]]),
       c("C3", "data", "Adjusted EBIT margin reached 17.2%.", "17.2%", [["S2", "adjusted EBIT margin of 17.2%", 2210]]),
       c("C4", "data", "Diagnostics revenue fell 3% year over year.", "3%", [["S9", "diagnostics down like 3% again", 311]]),
-      c("C5", "data", "Free cash flow was €2.1 billion.", "2.1", [["S1", "free cash flow of €2.1 billion", 40112]]),
-      c("C6", "data", "Book-to-bill ratio stayed above 1.1.", "1.1", [["S3", "book-to-bill above 1.1", 8890]]),
+      c("C5", "data", "Free cash flow was €2.1 billion.", "€2.1bn", [["S1", "free cash flow of €2.1 billion", 40112]]),
+      c("C6", "data", "Book-to-bill ratio stayed above 1.1.", ">1.1", [["S3", "book-to-bill above 1.1", 8890]]),
       c("C7", "conclusion", "Margin expansion was driven mainly by Imaging and the Oncology segment.", null,
         [["S2", "Imaging and Oncology were the main contributors to margin improvement", 2604], ["S8", "oncology unit posted its strongest quarter", 940]]),
       c("C8", "conclusion", "The Diagnostics turnaround is complete.", null,
@@ -169,6 +187,7 @@ export function mockApi(): Api {
         [["S2", "outlook of 5 to 6% comparable revenue growth for FY2026", 3105]], "base"),
       c("C12", "extrapolation", "Bear case: comparable revenue growth of 3% in FY2026 if tariffs escalate.", "3%",
         [["S7", "tariffs could shave up to one percentage point off imaging margins", 3310], ["S2", "outlook of 5 to 6%", 3105]], "bear"),
+      ...chartClaims.map(([id, text, value, quote, start]) => c(id, "data", text, value, [["S2", quote, start]])),
     ];
   }
 
@@ -371,6 +390,40 @@ export function mockApi(): Api {
             para(`Base: 5.5%, in line with company guidance ${cite("C11")}.`, ["C11"]),
             para(`Bear: 3% if tariffs escalate ${cite("C12")}.`, ["C12"]),
           ]),
+        },
+      ],
+      charts: [
+        {
+          id: "F1", type: "line", title: "Comparable growth by quarter", unit: "%",
+          caption: "Each point is a verified claim from quarterly releases.",
+          points: [["Q1", "C13"], ["Q2", "C14"], ["Q3", "C15"], ["Q4", "C16"]].map(([label, claim_id]) => ({ label, claim_id })),
+          lint: [{ check: "cited 4/4", ok: true }, { check: "zero baseline", ok: true }, { check: "one unit", ok: true }],
+        },
+        {
+          id: "F2", type: "waterfall", title: "Adj. EBIT margin bridge", unit: "%",
+          caption: "What moved the margin. Steps sum to the total.",
+          points: [
+            { label: "FY24", claim_id: "C17", role: "start" }, { label: "Imaging", claim_id: "C18", role: "delta" },
+            { label: "Varian", claim_id: "C19", role: "delta" }, { label: "Diagn.", claim_id: "C20", role: "delta" },
+            { label: "Other", claim_id: "C21", role: "delta" }, { label: "FY25", claim_id: "C3", role: "total" },
+          ],
+          lint: [{ check: "cited 6/6", ok: true }, { check: "sums match", ok: true }, { check: "axis starts at 14, marked", ok: false }],
+        },
+        {
+          id: "F3", type: "fan", title: "FY2026 scenarios · comparable growth", unit: "%",
+          caption: "Scenarios, not forecasts. Each end point names its assumption and source.",
+          points: [
+            { label: "FY25 actual", claim_id: "C2", role: "start" }, { label: "Bull", claim_id: "C10", role: "bull" },
+            { label: "Base", claim_id: "C11", role: "base" }, { label: "Bear", claim_id: "C12", role: "bear" },
+          ],
+          lint: [{ check: "cited 4/4", ok: true }, { check: "bear ≤ base ≤ bull", ok: true }, { check: "zero baseline", ok: true }],
+        },
+        {
+          id: "F4", type: "stacked_bar", title: "Revenue mix by segment", unit: "%",
+          caption: "Share of FY2025 revenue by segment.",
+          points: [["Imaging", "C22"], ["Diagnostics", "C23"], ["Varian", "C24"], ["Advanced Therapies", "C25"], ["Other", "C26"]]
+            .map(([label, claim_id]) => ({ label, claim_id })),
+          lint: [{ check: "cited 5/5", ok: true }, { check: "shares sum to 100", ok: true }],
         },
       ],
     };
