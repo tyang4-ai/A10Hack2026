@@ -26,7 +26,7 @@ import pytest
 import uvicorn
 from fastapi.testclient import TestClient
 
-from backend.axelrod import bedrock, cascade
+from backend.axelrod import bedrock, cascade, orchestrator
 from backend.axelrod.agents import extractor
 from backend.axelrod.api import create_app
 from backend.axelrod.config import BACKEND_DIR, Settings
@@ -238,7 +238,7 @@ def test_revoke_route_runs_the_cascade(settings, fixture_bundle):
 
 
 # ---------------------------------------------------------------------------
-# collect: S-006 late, "next:" lines, pacing before every request
+# collect: S-006 late, "next:" lines before every request, STAGE_PACING before collect
 # ---------------------------------------------------------------------------
 
 PDF_URL = "https://ir.example.com/annual-report-2025.pdf"
@@ -288,8 +288,8 @@ def source(sid: str, url: str, *, kind: str, tier: str, rank: int, title: str) -
                     approval="approved", status="queued")
 
 
-def collect_ctx(settings: Settings, pacing: float) -> RunContext:
-    store = Store(settings.model_copy(update={"demo_pacing": pacing}))
+def collect_ctx(settings: Settings, pacing: float = 0.0) -> RunContext:
+    store = Store(settings.model_copy(update={"stage_pacing": pacing}))
     state = store.create_run(m.CreateRunRequest(company="Siemens Healthineers AG", ticker="SHL", created_via="api"))
     state.sources = [
         source("S-009", BLOG_URL, kind="other", tier="tier_3", rank=1, title="Simulated blog post on SHL"),
@@ -351,9 +351,8 @@ def test_s006_stays_late_in_the_shl_plan():
     assert order.index("S-009") > pos and order.index("S-010") > order.index("S-009")
 
 
-async def test_every_request_is_announced_and_paced(settings, canned):
-    pacing = 0.25
-    ctx = collect_ctx(settings, pacing)
+async def test_every_request_is_announced(settings, canned):
+    ctx = collect_ctx(settings)
     await collect.run(ctx)
     evs = ctx.state.events
     logs = [e for e in evs if e.type == "agent.log" and e.data.text.startswith("next: ")]
@@ -363,20 +362,22 @@ async def test_every_request_is_announced_and_paced(settings, canned):
     assert len(logs) == len(reqs) == 6                        # 3 sources and 3 links, each announced, then decided
     for log, req in zip(logs, reqs):
         assert log.seq < req.seq
-        assert _t(req) - _t(log) >= pacing - 0.03, (log.data.text, req.data.target)
     links = [r.data for r in reqs if r.data.reason.startswith("link found in page")]
     assert [x.target for x in links] == BLOG_LINKS and all(x.decision == "blocked" for x in links)
     assert all(x.rule_id is None and "Default deny" in x.reason for x in links)
     assert [u for u, _ in canned] == [PDF_URL, NEWS_URL, BLOG_URL]   # links never left the gateway
 
 
-async def test_a_revoke_during_the_pacing_wait_blocks_that_very_request(settings, canned):
+async def test_a_revoke_during_the_collect_pause_blocks_s006(settings, canned, monkeypatch):
+    """STAGE_PACING holds collect after its run.status, so a revoke sent when collect shows blocks S-006."""
+    monkeypatch.setattr(orchestrator, "STAGES", [("collect", "collect")])
     ctx = collect_ctx(settings, 0.4)
-    task = asyncio.create_task(collect.run(ctx))
+    task = asyncio.create_task(orchestrator.run_pipeline(ctx))
     deadline = time.monotonic() + 10
-    while not any(e.type == "agent.log" and e.data.text.startswith("next: S-006 ") for e in ctx.state.events):
+    while not any(e.type == "run.status" and e.data.stage == "collect" for e in ctx.state.events):
         assert time.monotonic() < deadline and not task.done()
         await asyncio.sleep(0.01)
+    assert not any(e.type == "gateway.request" for e in ctx.state.events)     # still in the pause
     ctx.gateway.revoke("S-006", "presenter revoked it")
     cascade.revoke_cascade(ctx, "S-006")
     await task
@@ -524,13 +525,15 @@ def rehearsal_world(tmp_path, monkeypatch):
     bedrock.register_fake_scan(None)
 
 
-@pytest.mark.parametrize("pacing_check", [False, True])
+# DEMO_PACING is gone, so demo_live's --pacing-check (a gap between "next: S-006" and its request) has nothing
+# left to measure. The default rehearsal revokes when collect starts, which STAGE_PACING leaves time for.
+@pytest.mark.parametrize("pacing_check", [False])
 def test_demo_live_passes_every_beat_offline(settings, rehearsal_world, pacing_check):
-    pacing = 0.6 if pacing_check else 0.1
+    pacing = 0.5
     prices = {settings.model_small: {"in": 1.0, "out": 5.0}, settings.model_large: {"in": 3.0, "out": 15.0}}
 
     def settings_for(base: str) -> Settings:
-        return settings.model_copy(update={"demo_pacing": pacing, "test_page_url": base + ROUTE,
+        return settings.model_copy(update={"stage_pacing": pacing, "test_page_url": base + ROUTE,
                                            "max_concurrency_small": 2, "prices": prices})
 
     opts = demo_live.Options(pacing_check=pacing_check, min_gap_s=0.4, timeout_s=90, settle_s=30, poll_s=0.05,
@@ -803,7 +806,7 @@ def test_demo_live_webapp_passes_every_beat_offline(settings, rehearsal_world):
     """The webapp's calls against a real uvicorn: cached documents (simulated, prefilled), fake models."""
     from backend.axelrod.cache import DocCache
 
-    pacing = 0.1
+    pacing = 0.5                                       # STAGE_PACING: time to revoke as collect shows
     prices = {settings.model_small: {"in": 1.0, "out": 5.0}, settings.model_large: {"in": 3.0, "out": 15.0}}
     plan = json.loads(plan_stage.PLAN_FILE.read_text(encoding="utf-8"))
     cached = settings.model_copy(update={"cache_documents": True})
@@ -813,7 +816,7 @@ def test_demo_live_webapp_passes_every_beat_offline(settings, rehearsal_world):
             DocCache(cached).put(url, body, ctype)
 
     def settings_for(base: str) -> Settings:
-        return cached.model_copy(update={"demo_pacing": pacing, "test_page_url": base + ROUTE,
+        return cached.model_copy(update={"stage_pacing": pacing, "test_page_url": base + ROUTE,
                                          "max_concurrency_small": 2, "prices": prices})
 
     opts = demo_live.Options(webapp=True, timeout_s=90, settle_s=30, poll_s=0.05, approve_wait_s=30,

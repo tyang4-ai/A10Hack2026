@@ -6,12 +6,16 @@ extract, repair and verify_summary the loop calls gates.after_stage, his gate. A
 an error there is logged and the run proceeds, as if he had said proceed.
 
 start_from(ctx, stage) runs the same loop from a later stage (a fork from a step, a resume) and skips any
-stage whose result is already in the state."""
+stage whose result is already in the state.
+
+STAGE_PACING (seconds, default 0) pauses at the start of every stage but approve, right after its run.status,
+so a presenter has time to act. STOP ends the pause at once."""
 from __future__ import annotations
 
 import asyncio
 import importlib
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
@@ -38,6 +42,8 @@ STAGES: list[tuple[str, str | StageRunner]] = [
     ("complete", "finalize"),
 ]
 SHUTDOWN = "Interrupted: the API shut down while this run was in progress"
+UNPACED_STAGES = ("approve",)        # approve already waits on the analyst
+PACE_SLICE_S = 0.05                  # STAGE_PACING sleeps in slices this short, so STOP ends it at once
 
 
 class StageNotBuilt(RuntimeError):
@@ -123,6 +129,7 @@ async def _run_stages(ctx: RunContext, stages: list[tuple[str, str | StageRunner
             ctx.emit("run.status", {"status": "running", "stage": stage}, stage=stage, message=f"Stage {stage}")
             gates.spawn_bobby(ctx)                  # once: the first agent of the run
             _bobby_first(ctx)
+            await pace(ctx, stage)
             await _run_stage(ctx, stage, module)
             if stage in gates.GATE_STAGES:
                 await _gate(ctx, stage)
@@ -147,6 +154,20 @@ async def _run_stages(ctx: RunContext, stages: list[tuple[str, str | StageRunner
             log.exception("run %s failed at %s", ctx.run_id, ctx.state.run.stage)
             _on_fail(ctx, describe(e))
     await ctx.store.save_async(ctx.state)
+
+
+async def pace(ctx: RunContext, stage: str) -> None:
+    """STAGE_PACING: pause at the start of a stage, after its run.status, so the presenter can show the stage
+    and act on it (revoke a source before collect fetches it). Never at approve, which waits on the analyst.
+    Sleeps in short slices that check the kill switch, so STOP ends the pause within PACE_SLICE_S."""
+    seconds = float(getattr(ctx.settings, "stage_pacing", 0) or 0)
+    if seconds <= 0 or stage in UNPACED_STAGES:
+        return
+    end = time.monotonic() + seconds
+    while (left := end - time.monotonic()) > 0:
+        ctx.check_stop()
+        await asyncio.sleep(min(PACE_SLICE_S, left))
+    ctx.check_stop()
 
 
 async def _run_stage(ctx: RunContext, stage: str, module: str | StageRunner) -> None:

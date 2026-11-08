@@ -100,7 +100,7 @@ def build_context(plan: dict | None, source, data_dir: Path):
     settings = load_settings().model_copy(update={
         "store": "local", "data_dir": data_dir, "fake_models": True, "guardrail_id": None,
         "guardrail_version": None, "vault_bucket": None, "runs_table": None, "events_table": None,
-        "demo_pacing": 0.0,
+        "stage_pacing": 0.0,
     })
     store = Store(settings)
     state = store.create_run(m.CreateRunRequest(

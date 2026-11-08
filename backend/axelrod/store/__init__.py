@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
+import shutil
 import threading
 from pathlib import Path
 from typing import Any
@@ -18,10 +20,10 @@ from ..cache import run_cache_mode
 from ..config import BACKEND_DIR, Settings
 from ..contract import m
 from ..ids import new_run_id, now_iso
-from .events import (DynamoEvents, append_event, dynamo_item_for, event_line, gapless, lock_for, parse_jsonl,
-                     to_jsonl)
+from .events import (DynamoEvents, append_event, batch_delete, dynamo_item_for, event_line, gapless, lock_for,
+                     parse_jsonl, to_jsonl)
 from .state import TERMINAL_STATUSES, RunState
-from .vault import Vault, data_root, is_text, register_replay, register_run
+from .vault import Vault, data_root, is_text, register_replay, register_run, unregister_run
 
 __all__ = ["Store", "RunState", "Vault", "REPLAY_DIR", "INTERRUPTED"]
 
@@ -33,6 +35,8 @@ EVENTS_REL = "00-Meta/events.jsonl"
 INTERRUPTED = "Interrupted: the API restarted while this run was in progress"
 FAKE_MODELS_NOTE = "Simulated: model answers come from offline fakes (FAKE_MODELS=1)"
 FLUSH_DELAY_S = 0.2
+S3_DELETE_BATCH = 1000            # delete_objects takes at most 1000 keys
+RUN_ID_RE = re.compile(r"run_[A-Za-z0-9_]+")
 
 
 class Store:
@@ -46,6 +50,7 @@ class Store:
         self._pending: dict[str, list[dict]] = {}
         self._flushers: dict[str, asyncio.Task] = {}
         self._secrets: dict[str, str] = {}
+        self._deleted: set[str] = set()          # DELETE /runs tombstones: nothing persists for them again
         self._lock = threading.Lock()
 
     # -- runs in memory -------------------------------------------------------------------
@@ -78,7 +83,7 @@ class Store:
     def fresh_run_id(self) -> str:
         """A new run id no run in this store has (a fork needs one too)."""
         run_id = new_run_id()
-        while run_id in self._runs:
+        while run_id in self._runs or run_id in self._deleted:
             run_id = new_run_id()
         return run_id
 
@@ -115,6 +120,8 @@ class Store:
 
     def on_event(self, state: RunState, event: m.Event) -> None:
         """Persist one event: a line in the local events.jsonl, or a queued DynamoDB write."""
+        if state.run.run_id in self._deleted:
+            return                      # a late emit for a deleted run must not recreate its files or rows
         if not self.aws:
             path = data_root(self.settings) / self.vault.root(state.run.run_id) / EVENTS_REL
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -182,6 +189,8 @@ class Store:
 
     def save(self, state: RunState) -> None:
         """Snapshot the state now. Sync: in aws mode this calls S3 and DynamoDB in the calling thread."""
+        if state.run.run_id in self._deleted:
+            return
         snapshot = self._snapshot(state)
         if not self.aws:
             self._write_local_state(state.run.run_id, snapshot)
@@ -194,6 +203,8 @@ class Store:
 
     async def save_async(self, state: RunState) -> None:
         """save() for the pipeline: serialize on the loop (no torn reads), upload in a thread, never raise."""
+        if state.run.run_id in self._deleted:
+            return
         try:
             snapshot = self._snapshot(state)
             if not self.aws:
@@ -385,6 +396,135 @@ class Store:
         except Exception as e:  # NoSuchKey, AccessDenied: fall back to read and write (which raises KeyError)
             log.debug("S3 copy of %s failed (%s), reading and writing instead", src, type(e).__name__)
             return False
+
+    # -- delete (v0.3.1, DELETE /runs/{run_id}) --------------------------------------------
+
+    async def quiesce(self, run_id: str) -> None:
+        """Write the run's queued DynamoDB events and wait for its flusher, so no event write lands after
+        the delete has listed the rows it removes."""
+        await self.flush_events(run_id)
+        task = self._flushers.get(run_id)
+        if task is not None and not task.done():
+            await asyncio.gather(task, return_exceptions=True)
+
+    async def remove_run(self, run_id: str) -> tuple[int, int]:
+        """DELETE /runs: quiesce, delete the stored data (in a worker thread in aws mode), then forget the run
+        on the event loop. Returns (event rows, vault files) removed."""
+        await self.quiesce(run_id)
+        if self.aws:
+            counts = await asyncio.to_thread(self.delete_run_data, run_id)
+        else:
+            counts = self.delete_run_data(run_id)
+        self.forget(run_id)
+        return counts
+
+    def delete_run_data(self, run_id: str) -> tuple[int, int]:
+        """Remove one run's stored data and return (event rows, vault files) removed. forget() then drops it
+        from memory.
+
+        Order is vault files, then event rows, then the run record (state.json, the runs-table row), so a
+        delete that fails half way leaves the run listed and a retry finishes it. Every key or path is under
+        runs/<run_id>/, so the shared caches (cache/docs/, cache/models/, archive/) are never touched. Holds
+        the run's lock throughout. Sync: in aws mode call it from a worker thread."""
+        if not RUN_ID_RE.fullmatch(run_id):
+            raise ValueError(f"bad run id {run_id!r}")
+        with lock_for(run_id):
+            self._deleted.add(run_id)
+            try:
+                self._take_pending(run_id)
+                if self.aws:
+                    files = self._delete_s3_vault(run_id)
+                    events = self.events_table().delete_all(run_id)
+                    self._delete_aws_record(run_id)
+                else:
+                    events = self._local_event_count(run_id)
+                    files = self._delete_local_run(run_id)
+            except BaseException:
+                self._deleted.discard(run_id)     # still listed: the retry persists and deletes again
+                raise
+        return events, files
+
+    def forget(self, run_id: str) -> None:
+        """Drop a deleted run from memory, so GET /runs skips it and GET /runs/{id} answers 404. Called on the
+        event loop, so no listing iterates the runs while one goes."""
+        with lock_for(run_id):
+            self._runs.pop(run_id, None)
+            self._flushers.pop(run_id, None)
+        unregister_run(run_id)
+
+    @staticmethod
+    def _run_prefix(run_id: str) -> str:
+        return f"runs/{run_id}/"
+
+    def _delete_s3_vault(self, run_id: str) -> int:
+        """Every object under runs/<run_id>/ but state.json (the record goes last)."""
+        prefix = self._run_prefix(run_id)
+        keys = [k for k in self._s3_keys(prefix) if k != prefix + STATE_FILE]
+        self._s3_delete(run_id, keys)
+        return len(keys)
+
+    def _delete_aws_record(self, run_id: str) -> None:
+        self._s3_delete(run_id, [self._run_prefix(run_id) + STATE_FILE])
+        batch_delete(self.dynamodb(), self._runs_table(), [{"run_id": {"S": run_id}}])
+
+    def _s3_keys(self, prefix: str) -> list[str]:
+        keys: list[str] = []
+        kwargs: dict[str, Any] = {"Bucket": self.vault.bucket, "Prefix": prefix}
+        while True:
+            resp = self.vault.s3().list_objects_v2(**kwargs)
+            keys += [obj["Key"] for obj in resp.get("Contents", [])]
+            if not resp.get("IsTruncated"):
+                return keys
+            kwargs["ContinuationToken"] = resp["NextContinuationToken"]
+
+    def _s3_delete(self, run_id: str, keys: list[str]) -> None:
+        """delete_objects in batches of at most 1000. Refuses any key outside runs/<run_id>/, and raises on
+        any per-key error, so the run record stays for a retry."""
+        prefix = self._run_prefix(run_id)
+        stray = [k for k in keys if not k.startswith(prefix)]
+        if stray:
+            raise ValueError(f"refusing to delete {stray[0]}: not under {prefix}")
+        for i in range(0, len(keys), S3_DELETE_BATCH):
+            chunk = keys[i:i + S3_DELETE_BATCH]
+            resp = self.vault.s3().delete_objects(Bucket=self.vault.bucket, Delete={
+                "Objects": [{"Key": k} for k in chunk], "Quiet": True})
+            errors = resp.get("Errors") or []
+            if errors:
+                first = errors[0]
+                raise RuntimeError(f"S3 did not delete {len(errors)} objects of {run_id} "
+                                   f"({first.get('Code')}: {first.get('Key')})")
+
+    def _local_run_dir(self, run_id: str) -> Path:
+        runs = (data_root(self.settings) / "runs").resolve()
+        base = (runs / run_id).resolve()
+        if base.parent != runs:
+            raise ValueError(f"bad run id {run_id!r}")
+        return base
+
+    def _local_event_count(self, run_id: str) -> int:
+        path = data_root(self.settings) / self.vault.root(run_id) / EVENTS_REL
+        if not path.is_file():
+            return 0
+        with path.open(encoding="utf-8") as f:
+            return sum(1 for line in f if line.strip())
+
+    def _delete_local_run(self, run_id: str) -> int:
+        """DATA_DIR/runs/<run_id>/: the vault folders (events.jsonl is inside) first, state.json last."""
+        base = self._local_run_dir(run_id)
+        if not base.is_dir():
+            return 0
+        files = 0
+        for child in base.iterdir():
+            if child.name.startswith(STATE_FILE):
+                continue
+            if child.is_dir():
+                files += sum(1 for p in child.rglob("*") if p.is_file() and not p.name.endswith(".tmp"))
+                shutil.rmtree(child)
+            else:
+                files += 0 if child.name.endswith(".tmp") else 1
+                child.unlink()
+        shutil.rmtree(base)
+        return files
 
     # -- export -----------------------------------------------------------------------------
 

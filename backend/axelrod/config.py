@@ -37,7 +37,8 @@ ENV_VARS: dict[str, str] = {
     "http_user_agent": "HTTP_USER_AGENT",
     "api_key": "AXELROD_API_KEY",
     "public_ui_url": "PUBLIC_UI_URL",
-    "demo_pacing": "DEMO_PACING",
+    "stage_pacing": "STAGE_PACING",
+    "protected_runs": "PROTECTED_RUNS",
     "test_page_url": "TEST_PAGE_URL",
     "cache_documents": "CACHE_DOCUMENTS",
     "cache_models": "CACHE_MODELS",
@@ -63,7 +64,8 @@ class Settings(BaseModel):
     http_user_agent: str = "Axelrod/0.1 (hackathon research harness)"   # HTTP_USER_AGENT
     api_key: str | None = None                               # AXELROD_API_KEY
     public_ui_url: str | None = None                         # PUBLIC_UI_URL (CLI prints run links)
-    demo_pacing: float = 0.0                                 # DEMO_PACING (seconds between fetches in the live demo)
+    stage_pacing: float = 0.0                                # STAGE_PACING (seconds of pause at the start of each stage)
+    protected_runs: list[str] = []                           # PROTECTED_RUNS comma-separated run ids DELETE refuses
     test_page_url: str | None = None                         # TEST_PAGE_URL (planted page S-010, served by our own API)
     cache_documents: bool = False                            # CACHE_DOCUMENTS on/off: serve fetch bodies from the S3 cache
     cache_models: Literal["off", "record", "replay"] = "off"  # CACHE_MODELS: record or replay model answers
@@ -101,6 +103,8 @@ def load_settings(env_file: Path | None = ENV_FILE, environ: Mapping[str, str] |
                 raise ValueError(f"PRICES_JSON is not valid JSON: {e}") from e
         elif field in ("store", "cache_models", "cache_documents"):
             values[field] = value.lower()
+        elif field == "protected_runs":
+            values[field] = [x.strip() for x in value.split(",") if x.strip()]
         else:
             values[field] = value
     return Settings.model_validate(values)

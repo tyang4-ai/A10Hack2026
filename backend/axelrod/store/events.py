@@ -206,5 +206,41 @@ class DynamoEvents:
         return events, oversize
 
 
+    def keys(self, run_id: str) -> list[dict]:
+        """Every (run_id, seq) key the table holds for a run, oversize rows included (DELETE /runs)."""
+        out: list[dict] = []
+        kwargs: dict[str, Any] = {"TableName": self.table, "KeyConditionExpression": "run_id = :r",
+                                  "ExpressionAttributeValues": {":r": {"S": run_id}}, "ConsistentRead": True,
+                                  "ProjectionExpression": "run_id, #s", "ExpressionAttributeNames": {"#s": "seq"}}
+        while True:
+            resp = self.client.query(**kwargs)
+            out += [{"run_id": it["run_id"], "seq": it["seq"]} for it in resp.get("Items", [])]
+            if not resp.get("LastEvaluatedKey"):
+                return out
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+    def delete_all(self, run_id: str) -> int:
+        """Delete every event row of one run with BatchWriteItem (the EC2 role has no DeleteItem). Returns the
+        row count. Raises when DynamoDB leaves rows unprocessed, so the caller keeps the run record and a
+        retry finishes the job."""
+        keys = self.keys(run_id)
+        batch_delete(self.client, self.table, keys)
+        return len(keys)
+
+
+def batch_delete(client: Any, table: str, keys: list[dict]) -> None:
+    """BatchWriteItem delete requests in chunks of 25, retrying unprocessed ones with a short backoff."""
+    for i in range(0, len(keys), 25):
+        requests = [{"DeleteRequest": {"Key": k}} for k in keys[i:i + 25]]
+        for attempt in range(8):
+            resp = client.batch_write_item(RequestItems={table: requests})
+            requests = (resp.get("UnprocessedItems") or {}).get(table) or []
+            if not requests:
+                break
+            time.sleep(0.05 * 2 ** attempt)
+        if requests:
+            raise RuntimeError(f"DynamoDB left {len(requests)} deletes unprocessed in {table}")
+
+
 def dynamo_item_for(event: m.Event) -> dict:
     return DynamoEvents.item(event.run_id, event.seq, event.type, event.ts, event_line(event))

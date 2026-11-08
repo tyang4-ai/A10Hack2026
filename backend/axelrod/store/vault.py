@@ -51,6 +51,12 @@ def register_run(run_id: str, company: str) -> str:
     return root
 
 
+def unregister_run(run_id: str) -> None:
+    """Forget a deleted run's vault root, so nothing serves or rediscovers it from memory."""
+    with _registry_lock:
+        _roots.pop(run_id, None)
+
+
 def register_replay(run_id: str, folder: Path) -> None:
     """A replay's vault files are read from its folder under backend/data/replay (read-only)."""
     with _registry_lock:
