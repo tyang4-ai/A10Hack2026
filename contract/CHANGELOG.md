@@ -2,6 +2,13 @@
 
 Newest first. Every shape change gets a line here and a bump in `contract/VERSION`.
 
+## 0.3.1 (Sun Nov 8, 2026, 2:25 AM)
+
+Additive, asked for in the backend session (delete runs from the home page, real PDF pages in the viewer).
+- `DELETE /runs/{run_id}` returns `RunDeleted` (`run_id`, `events`, `vault_files`, `note`). Only a finished run. 409 while it runs, for replays and for protected runs. The shared document cache and recorded model answers stay.
+- `GET /runs/{run_id}/documents/{doc_id}/pages/{page}/image?item_id=` returns `image/png`: the stored PDF page with the item's quotes highlighted. 404 when no PDF is stored, and always in the mock, so the viewer falls back to the text page.
+- The mock answers both routes. Event types: 29 (unchanged).
+
 ## 0.3.0 (Sat Nov 7, 2026, 11:45 PM)
 
 All additive, from Gordon's notes and Tong's request to rerun one agent (`frontend/CONTRACT_REQUESTS.md` section 4).

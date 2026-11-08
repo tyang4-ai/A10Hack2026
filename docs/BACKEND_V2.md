@@ -10,7 +10,7 @@ For the backend orchestrator. Gordon approved all of this on Sat Nov 7 between 1
 4. **`source_revoked` is approved** (`item.updated` reason). Switch the revoke cascade over to it.
 5. **The demo runs on cached documents.** Gordon's summer 2026 archive of SHL source documents goes into S3, plus copies of everything Axelrod fetched tonight. The gateway still decides every request, then serves the body from the cache. Everything cached is labeled (`Run.cache_mode`, `gateway.request.cache`, `Document.origin`).
 6. **The demo is 3 minutes, webapp first.** The CLI is on screen for about 10 seconds. Script: `docs/PLAN.md`, "Demo script: 3 minutes".
-7. **When you finish, a second Claude Code session integrates and deploys** (`docs/INTEGRATE.md`). You hand over with READY FOR INTEGRATION (step 13).
+7. **Integration runs next to you from Sun 1 AM** (`docs/INTEGRATE.md`, Gordon's call). You keep `backend/`, the `axelrod` service on port 8000 and its env. The integrator owns the webapp, its `axelrod-web` service on port 3000 and one new API Gateway route. Neither touches the other's. There is no READY FOR INTEGRATION handover: you post the demo run instead (step 13).
 8. **Credentials are logged.** Any credential you create or use (an API key, a token, a key pair) gets a line in `backend/AWS_RESOURCES.md` under "Credentials": name, where it lives, how to revoke it. Never the value. Gordon deletes everything right after the hackathon.
 
 ## Work, in order
@@ -57,17 +57,12 @@ Verify every `extract_pages` index against the PDF. Mark archive sources "collec
 
 **11. Rerun from a step and the model cache.** `POST /runs/{id}/rerun` forks a run as in CONTRACT.md section 13: fork the state up to `from_stage`, keep item ids, give the fork its own policy and event log, and pass the instructions to every agent from `from_stage` on. Model cache: `CACHE_MODELS=off|record|replay`, keyed on the model id, prompts, tool schema and max tokens, after stripping run ids, agent ids and timestamps. On a hit, tokens are as recorded, `cost_usd` is 0 and `cache` is `hit`.
 
-**12. R2, then the timed rehearsal.**
+**12. R2.**
 - **R2:** the full run on the full corpus. On EC2 with `CACHE_DOCUMENTS=on` (and `CACHE_MODELS=record` if step 11 landed). Compare it with `run_20261108_pin2ve`: items, pass or fixed, scores, mean certainty, coverage, cost, minutes, Bobby's calls. Put both in status.md for Gordon, and don't pick silently. If R2 holds up, export it as a replay, commit it, and `git tag demo-ok-2`.
-- **G6b:** the 3-minute demo in the webapp. With cached documents and live model calls, tune `DEMO_PACING` so launch to STOP takes at most 55 seconds, with time to revoke S-006 and stop one goon. Rehearse twice against EC2 with a stopwatch, then rewrite `backend/DEMO.md` for the webapp: what to click, when, and what should appear.
+- **No scripted rehearsal** (Gordon, Sun 1 AM: we demo in person and click it ourselves). Cut B-rehearse and G6b. Keep `DEMO_PACING` as an env setting, so the fetches don't finish before the presenter can revoke S-006 and stop one goon. Set the value Gordon or the integrator asks for after the in-person rehearsal.
+- No new runs on EC2 from anyone else while R2 runs. Say "R2 running" and "R2 done" in status.md.
 
-**13. Hand over.** Put READY FOR INTEGRATION at the top of `backend/status.md`. Include:
-- the invoke URL and the finished run id
-- the server env values the demo needs
-- the frontend env values (`NEXT_PUBLIC_API_BASE`, and the API key if Gordon wants one)
-- anything you cut
-
-Push, and stop starting new work. Tell Gordon to end this session before the integrator starts, so two sessions never deploy to the same instance.
+**13. Post the demo run.** When you've picked, make this the first line of `backend/status.md`: `DEMO RUN: <run id> (picked <time>)`. Under it: the server env values the demo needs, and anything you cut. Push. The integrator merges `origin/backend` when it sees that line. Before each deploy, note it in status.md, since the integrator shares the instance.
 
 ## Parallel work and cutoffs
 
@@ -75,10 +70,9 @@ Do step 1 first and alone. The gateway is touched by steps 2, 4 (Bobby's role sc
 
 - **1:45 AM:** steps 1 to 6 done.
 - **2:30 AM:** steps 7 to 10 done.
-- **3:15 AM:** R2 done.
-- **4:00 AM:** G6b done, READY FOR INTEGRATION.
+- **3:15 AM:** R2 done and the DEMO RUN line posted.
 
-Gordon approved everything, so cut only at a cutoff, and tell him first. Cut order: step 11, then chat, then resume. Never cut Bobby, rerun one agent, stop one agent, the document cache, the archive and plan v2, or the timed rehearsal.
+Gordon approved everything, so cut only at a cutoff, and tell him first. Cut order: step 11, then chat, then resume. Never cut Bobby, rerun one agent, stop one agent, the document cache, the archive and plan v2, or R2.
 
 ## Labels on stage and on Devpost
 
