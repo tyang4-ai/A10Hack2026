@@ -10,6 +10,8 @@ The v0.2 and v0.3 routes are covered too: Bobby first in /agents and every agent
 agent chat, rerun one agent, resume and rerun from a step, with their 404, 409 and 422 answers. A real API
 whose control module is still a stub answers 409 invalid_state "not built yet (<plan>)": that passes, and
 the plan is listed in the notes.
+v0.3.1 DELETE /runs/{id}, only on one more run the smoke creates for it: 409 while it runs, then stop it, 200
+RunDeleted, then 404 and gone from GET /runs. The smoke never deletes a run it didn't create.
 With --run: read an existing run through every GET route.
 Uses only the standard library for HTTP. The key comes from --key or AXELROD_API_KEY and is never printed.
 """
@@ -25,6 +27,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, so `backend.axelrod` imports
 
@@ -266,6 +270,47 @@ class Smoke:
         self.read_everything(rid)
         self.agent_controls(rid)
         self.stop_flow(rid, company, ticker, wait_s)
+        self.delete_flow(company, ticker, wait_s)
+
+    def delete_flow(self, company: str, ticker: str | None, wait_s: float) -> None:
+        """v0.3.1 DELETE /runs/{id}, only ever on a run this smoke creates here: 409 while it runs, then stop
+        it, 200 RunDeleted, and 404 after (GET and a second DELETE), and GET /runs no longer lists it."""
+        run = self.check("POST runs (for delete)", "POST", "/runs", m.Run, status=201,
+                         body={"company": company, "ticker": ticker, "created_via": "api",
+                               "notes": "contract smoke, delete check"})
+        if run is None:
+            return
+        rid, r = run.run_id, f"/runs/{run.run_id}"
+        code, data = self.call("DELETE", r)
+        if code == 405:
+            self.note("DELETE /runs/{id} is not served here (contract before 0.3.1), delete not checked")
+            self.call("POST", f"{r}/stop", {"reason": "contract smoke cleanup"})
+            return
+        now = self.check("GET run (for delete)", "GET", r, m.Run, quiet=True)
+        if code == 200:
+            self.fail("DELETE a running run", f"answered 200 for a run that was {run.status}")
+            return
+        err = _error_body(data)
+        if code == 409 and err is not None and err.code == "invalid_state":
+            self.ok(f"DELETE a running run -> 409 invalid_state ({err.message})")
+        elif now is not None and now.status in FINISHED:
+            self.note(f"{rid} finished before the 409 check ({now.status}), so it was skipped")
+        else:
+            self.fail("DELETE a running run", f"HTTP {code}, expected 409 invalid_state: {str(data)[:300]}")
+        if now is not None and now.status not in FINISHED:
+            self.call("POST", f"{r}/stop", {"reason": "contract smoke, delete check"})
+        if self.wait_status(rid, FINISHED, wait_s) is None:
+            return
+        model = getattr(m, "RunDeleted", None)
+        gone = self.check_or_stub("DELETE a stopped run", "DELETE", r, model or _RunDeletedShape)
+        if gone is None:
+            return
+        self.expect("RunDeleted names the run", gone.run_id == rid, f"run_id {gone.run_id}")
+        self.expect_error("GET a deleted run", "GET", r, 404, "not_found")
+        self.expect_error("DELETE a deleted run", "DELETE", r, 404, "not_found")
+        runs = self.check("GET runs after delete", "GET", "/runs", m.RunList, quiet=True)
+        if runs is not None:
+            self.expect("GET /runs no longer lists it", rid not in {x.run_id for x in runs.runs}, f"{rid} listed")
 
     def agent_controls(self, rid: str) -> None:
         """v0.2 and v0.3 routes on a live (or just finished) run: Bobby and his goons, stop one agent, chat,
@@ -428,6 +473,22 @@ class Smoke:
             return None
         self.ok("POST stop -> Run")
         return run
+
+
+class _RunDeletedShape(BaseModel):
+    """The RunDeleted shape, used only until contract 0.3.1 (m.RunDeleted) is merged in."""
+
+    run_id: str
+    events: int
+    vault_files: int
+    note: str
+
+
+def _error_body(data: Any) -> m.ErrorBody | None:
+    try:
+        return m.ErrorResponse.model_validate(data).error
+    except Exception:
+        return None
 
 
 def first_file(node: m.VaultNode) -> str | None:

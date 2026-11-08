@@ -44,6 +44,7 @@ sys.path.insert(0, str(REPO))  # repo root, so `backend.axelrod` imports
 from pydantic import ValidationError  # noqa: E402
 
 from backend.axelrod.contract import RUBRIC, m  # noqa: E402
+from backend.axelrod.faults import is_broken_download  # noqa: E402
 
 PLAN_PATH = REPO / "backend" / "data" / "shl" / "plan.json"
 TEST_PAGE_PATH = REPO / "backend" / "data" / "test_pages" / "injection.html"
@@ -224,9 +225,18 @@ def load_plan(path: Path = PLAN_PATH) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def is_planted_fault(source: m.Source | dict[str, Any]) -> bool:
+    """The planted broken download S-017 (DEMO_FAULTS=fetch, simulated): it never answers, serves no need and
+    is fetched last, so the demo-order, need and page checks leave it out and check_fault_source checks it."""
+    if isinstance(source, dict):
+        source = m.Source.model_construct(title=str(source.get("title", "")), url=str(source.get("url", "")))
+    return is_broken_download(source)
+
+
 def is_pdf(source: m.Source) -> bool:
-    """PDF sources get extract_pages. Everything else is read whole (HTML pseudo-pages) or by code (JSON)."""
-    return urlsplit(source.url).path.lower().endswith(".pdf")
+    """PDF sources get extract_pages. Everything else is read whole (HTML pseudo-pages) or by code (JSON).
+    The planted broken download ends in .pdf but never answers, so it has no pages."""
+    return urlsplit(source.url).path.lower().endswith(".pdf") and not is_planted_fault(source)
 
 
 def expand(ranges: list[list[int]]) -> list[int]:
@@ -297,6 +307,7 @@ def check_structure(plan: dict[str, Any]) -> list[Issue]:
     issues += check_coverage(plan.get("depth", "screen"), needs, sources)
     issues += check_pages(plan, needs, sources)
     issues += check_test_page_source(sources)
+    issues += check_fault_source(sources)
     return issues
 
 
@@ -386,6 +397,10 @@ def check_one_source(s: m.Source, need_criteria: dict[str, set[str]]) -> list[Is
              and not s.doc_ids and s.stats == m.SourceStats() and s.error is None)
     if not fresh:
         issues.append(err(where, "a frozen plan source must be planner-proposed, pending, proposed, with no docs"))
+    if not s.rationale.strip():
+        issues.append(err(where, "rationale is empty"))
+    if is_planted_fault(s):
+        return issues            # serves no need on purpose: check_fault_source checks it
     unknown = [n for n in s.need_ids if n not in need_criteria]
     if unknown or not s.need_ids:
         issues.append(err(where, f"need_ids must be known and non-empty: {unknown or 'empty'}"))
@@ -393,8 +408,6 @@ def check_one_source(s: m.Source, need_criteria: dict[str, set[str]]) -> list[Is
     stray = sorted(set(s.criteria) - served)
     if stray or not s.criteria:
         issues.append(err(where, f"criteria must come from its needs: {stray or 'empty'}"))
-    if not s.rationale.strip():
-        issues.append(err(where, "rationale is empty"))
     return issues
 
 
@@ -423,7 +436,7 @@ def check_revoke_target(sources: list[m.Source]) -> list[Issue]:
     issues: list[Issue] = []
     if target.tier != "tier_2" or target.kind != "news":
         issues.append(err(REVOKE_TARGET, f"must be a tier_2 news article, is {target.tier} {target.kind}"))
-    order = [s.source_id for s in collect_order(sources)]
+    order = [s.source_id for s in collect_order(sources) if not is_planted_fault(s)]
     pos = order.index(REVOKE_TARGET)
     if any(by_id[sid].tier == "priority" for sid in order[pos + 1:]):
         issues.append(err(REVOKE_TARGET, "a priority source is fetched after it"))
@@ -434,14 +447,20 @@ def check_revoke_target(sources: list[m.Source]) -> list[Issue]:
 
 def check_demo_order(sources: list[m.Source]) -> list[Issue]:
     """Sources added after S-010 must not reorder the demo: S-001 to S-010 keep their fetch order among
-    themselves, and S-006, S-009 and S-010 stay the last three fetched."""
-    order = [s.source_id for s in collect_order(sources)]
+    themselves, and S-006, S-009 and S-010 stay the last three fetched. The planted broken download (S-017,
+    simulated) is the one source allowed after them, and it must come after them all."""
+    full = collect_order(sources)
+    planted = [s.source_id for s in full if is_planted_fault(s)]
+    order = [s.source_id for s in full if not is_planted_fault(s)]
     demo = [sid for sid in order if sid in DEMO_SOURCES]
     issues: list[Issue] = []
     if demo != list(DEMO_FETCH_ORDER):
         issues.append(err("fetch order", f"S-001 to S-010 must be fetched as {list(DEMO_FETCH_ORDER)}, got {demo}"))
     if order[-len(DEMO_LAST):] != list(DEMO_LAST):
         issues.append(err("fetch order", f"{', '.join(DEMO_LAST)} must be fetched last, got {order[-3:]}"))
+    if planted and [s.source_id for s in full][-len(planted):] != planted:
+        issues.append(err("fetch order", f"the planted fault {', '.join(planted)} must be fetched after every "
+                                         "other source"))
     return issues
 
 
@@ -595,6 +614,23 @@ def check_test_page_source(sources: list[m.Source]) -> list[Issue]:
     return issues
 
 
+def check_fault_source(sources: list[m.Source]) -> list[Issue]:
+    """The planted broken download (optional): at most one, tier_3 with reliability 0.1 or less, labeled
+    SIMULATED in its rationale, never a priority source and mapped to no need, so nothing real depends on it."""
+    planted = [s for s in sources if is_planted_fault(s)]
+    issues: list[Issue] = []
+    if len(planted) > 1:
+        issues.append(err("planted fault", f"at most one broken download, got {[s.source_id for s in planted]}"))
+    for s in planted:
+        if s.tier != "tier_3" or s.scores.reliability > 0.1:
+            issues.append(err(s.source_id, "the planted fault must be tier_3 with reliability 0.1 or less"))
+        if "SIMULATED" not in s.rationale:
+            issues.append(err(s.source_id, "the planted fault must say SIMULATED in its rationale"))
+        if s.need_ids or s.criteria:
+            issues.append(err(s.source_id, "the planted fault must serve no need and no criterion"))
+    return issues
+
+
 def check_test_page_file(path: Path = TEST_PAGE_PATH) -> list[Issue]:
     """Title, a visible and a hidden injection, the simulated label and one link to example.org."""
     if not path.exists():
@@ -720,6 +756,10 @@ def check_urls(sources: list[m.Source], probe: Callable[[str], Probe],
             lines.append(f"  skip {s.source_id} s3 url, answers only from the document cache {s.url}")
             issues.append(warn(s.source_id, "s3:// archive copy: answers only from the document cache "
                                             "(CACHE_DOCUMENTS=on)"))
+            continue
+        if is_planted_fault(s):
+            lines.append(f"  skip {s.source_id} planted broken download (simulated): answers HTTP 503 on purpose, "
+                         f"in runs only with DEMO_FAULTS=fetch {s.url}")
             continue
         served = bool(test_page_url) and s.url == TEST_PAGE_URL
         url = test_page_url if served else s.url

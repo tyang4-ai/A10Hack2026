@@ -10,7 +10,7 @@ Read: `CLAUDE.md`, `backend/PLANS.md` ("Shared interfaces" and your plan), `docs
 
 ## Rules
 
-- First command, every time: `aws sts get-caller-identity --query Account --output text` must print `506556958358`. Anything else: stop and report.
+- First command, every time: `aws sts get-caller-identity --query Account --output text` must print the account in `AWS_EXPECTED_ACCOUNT` (backend/.env, gitignored). Anything else, or no such key: stop and report.
 - us-east-1 only. Never pass `--profile` (Gordon's personal account is configured on this machine). The guard blocks both mistakes.
 - Credentials come from the environment. Never print, read, copy or write them, never create IAM users or access keys (organizer rule). Use roles.
 - Create only what your plan lists. Name everything `axelrod-...` and tag it `project=axelrod`.

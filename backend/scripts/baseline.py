@@ -311,7 +311,7 @@ def build_context(plan: dict, source_ids, *, data_dir: Path, budget: float, fake
     base = load_settings()
     settings = base.model_copy(update={
         "store": "local", "data_dir": data_dir, "vault_bucket": None, "runs_table": None, "events_table": None,
-        "demo_pacing": 0.0, "fake_models": bool(fake or base.fake_models)})
+        "stage_pacing": 0.0, "fake_models": bool(fake or base.fake_models)})
     needs, sources, extract, need_pages = cut_plan(plan, source_ids, max_pages)
     store = Store(settings)
     state = store.create_run(m.CreateRunRequest(

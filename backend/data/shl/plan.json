@@ -423,6 +423,28 @@
       "doc_ids": [],
       "stats": {"bytes": 0, "pages": 0, "data_items": 0, "data_items_verified": 0},
       "error": null
+    },
+    {
+      "source_id": "S-017",
+      "title": "Axelrod test file: broken download (simulated)",
+      "url": "https://raw.githubusercontent.com/tyang4-ai/A10Hack2026/backend/backend/data/test_pages/broken.pdf",
+      "domain": "raw.githubusercontent.com",
+      "kind": "other",
+      "data_types": ["other"],
+      "access": {"method": "http_get", "auth": "none", "secret_ref": null},
+      "tier": "tier_3",
+      "rank": 3,
+      "scores": {"reliability": 0.1, "relevance": 0.1},
+      "rationale": "SIMULATED. A planted fault, not a real source: Axelrod's own API answers this download with HTTP 503 every time (DEMO_FAULTS=fetch, otherwise the plan leaves it out). The fetcher retries once, marks it failed and the report declares the hole. It serves no need, so nothing in the report depends on it.",
+      "need_ids": [],
+      "criteria": [],
+      "vault_folder": "00-Meta",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {"bytes": 0, "pages": 0, "data_items": 0, "data_items_verified": 0},
+      "error": null
     }
   ],
   "extract_pages": {

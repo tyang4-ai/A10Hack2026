@@ -79,6 +79,15 @@ class JudgeVerdict(BaseModel):
         return s if s in ("follows", "wrong") else None
 
 
+VERDICTS = ("SUPPORTED", "UNSUPPORTED")
+
+
+def malformed_verdict(tool_input: Any) -> bool:
+    """A judge answer whose verdict is missing or neither SUPPORTED nor UNSUPPORTED. Code never guesses a vote
+    from one: the judge is rerun once, and a second malformed answer is an abstention (stages/verify.py)."""
+    return not isinstance(tool_input, dict) or tool_input.get("verdict") not in VERDICTS
+
+
 def _block(tag: str, obj: Any) -> str:
     return f"<{tag}>\n{json.dumps(obj, ensure_ascii=False, indent=1)}\n</{tag}>"
 

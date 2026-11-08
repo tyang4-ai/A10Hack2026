@@ -588,6 +588,39 @@ def test_matches_aliases_and_tickers():
         assert not plan_stage.matches(plan, company, ticker), (company, ticker)
 
 
+def test_a_typo_in_the_company_name_still_finds_the_frozen_plan():
+    """The live failure at 1:58 AM: "siemens heathineers" with no ticker. One or two typos pass, another
+    company, a short name or a near-miss ticker never does."""
+    plan = json.loads(SAMPLE_PLAN.read_text(encoding="utf-8"))
+    for company in ("siemens heathineers", "Siemens Helthineers AG", "Seimens Healthineers", "siemenshealthineers",
+                    "healtineers", "Siemens Healthinneers"):
+        assert plan_stage.match_kind(plan, company, None) == "typo", company
+    assert plan_stage.match_kind(plan, "Siemens Healthineers", None) == "exact"
+    for company, ticker in (("NVIDIA", None), ("Nvidia Corp", "NVDA"), ("Siemens", None), ("Siemens AG", None),
+                            ("Siemens Energy", None), ("Healthineers Rival", None), ("GE HealthCare", "GEHC"),
+                            ("Philips Healthcare", None), ("Some Name", "SHW"), ("Some Name", "SH")):
+        assert plan_stage.match_kind(plan, company, ticker) is None, (company, ticker)
+    assert plan_stage.plan_name(plan) == "Siemens Healthineers"
+
+
+async def test_plan_stage_takes_the_plans_spelling_on_a_typo(settings, monkeypatch):
+    monkeypatch.setattr(plan_stage, "PLAN_FILE", SAMPLE_PLAN)
+    monkeypatch.setattr(plan_stage, "PACE_S", 0)
+    ctx = make_ctx(Store(settings), company="siemens heathineers", ticker=None)
+    await plan_stage.run(ctx)
+    run = ctx.state.run
+    assert (run.company, run.ticker) == ("Siemens Healthineers", "SHL")
+    assert "Company typed as 'siemens heathineers', read as Siemens Healthineers" in run.notes
+    assert ctx.state.plan_ready
+
+
+async def test_the_refusal_says_what_to_type(settings, monkeypatch):
+    monkeypatch.setattr(plan_stage, "PLAN_FILE", SAMPLE_PLAN)
+    ctx = make_ctx(Store(settings), company="NVIDIA", ticker=None)
+    with pytest.raises(plan_stage.PlanUnavailable, match=r"type Siemens Healthineers, or ticker SHL"):
+        await plan_stage.run(ctx)
+
+
 async def test_plan_stage_streams_the_frozen_plan(settings, monkeypatch):
     monkeypatch.setattr(plan_stage, "PLAN_FILE", SAMPLE_PLAN)
     monkeypatch.setattr(plan_stage, "PACE_S", 0)

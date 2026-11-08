@@ -18,13 +18,19 @@ The run carries on with what was stored, and finalize declares the stopped fetch
 
 Document cache (v0.2): the gateway decides every request first and then may serve it from the cache. The
 fetcher logs when a body came from the cache, and the Document carries origin and collected_at.
+
+Retry (B-faults): a source that answers 5xx or times out gets one more try after about a second, as a new
+gateway request. Failing twice marks it failed with both reasons, and finalize declares the hole. The planted
+broken download S-017 (DEMO_FAULTS=fetch, simulated) shows this live. A 5xx is never cached (cache.storable).
 """
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag, urlsplit
 
+from .. import faults
 from ..agentstop import is_stopped
 from ..contract import m
 from ..fetch.html import html_links
@@ -46,6 +52,11 @@ MAX_LINKS = 3
 LINK_WHY = "link found in page"
 NEXT_TITLE_CHARS = 60
 TERMINAL = ("done", "failed", "stopped")
+RETRY_DELAY_S = 1.0               # one retry after a 5xx or a timeout, about the planted page's Retry-After: 1
+RETRY_WHY = "approved source, retry after a failed first try"
+# Fail-closed gateway errors that a second try can fix: timeouts and network failures (httpx and asyncio names).
+TRANSIENT = re.compile(r"gateway error: (?:\w*Timeout\w*|ConnectError|ReadError|WriteError|RemoteProtocolError|"
+                       r"NetworkError|ConnectionResetError|ConnectionError)\b")
 
 
 async def run(ctx: RunContext) -> None:
@@ -81,10 +92,13 @@ async def collect_source(ctx: RunContext, agent: m.Agent, source: m.Source) -> m
     log(ctx, agent, next_source_text(source))
     if source.status != "revoked":
         set_status(ctx, agent, source, "fetching")
+    first: str | None = None                  # why the first try failed, when it was worth a retry
     try:
-        result = await ctx.gateway.fetch(agent, source.url, source_id=source.source_id)
+        result, first = await fetch_with_retry(ctx, agent, source)
     except Blocked as exc:
-        set_status(ctx, agent, source, blocked_status(exc), error=exc.reason, level="warn")
+        first = getattr(exc, "first_try", None)
+        error = retry_error(source, first, exc.reason) if exc.rule_id is None else exc.reason
+        set_status(ctx, agent, source, blocked_status(exc), error=error, level="warn")
         ctx.check_stop()  # a kill-switch block ends the stage
         return None
     except StopRequested:
@@ -94,7 +108,8 @@ async def collect_source(ctx: RunContext, agent: m.Agent, source: m.Source) -> m
         ctx.check_stop()
         return None
     if not 200 <= result.http_status < 300:
-        set_status(ctx, agent, source, "failed", error=f"HTTP {result.http_status}", level="warn")
+        set_status(ctx, agent, source, "failed", error=retry_error(source, first, f"HTTP {result.http_status}"),
+                   level="warn")
         return None
     try:
         doc = await ingest(ctx, source, result, agent=agent)
@@ -116,6 +131,62 @@ async def collect_source(ctx: RunContext, agent: m.Agent, source: m.Source) -> m
     if source.tier == "tier_3" and doc.content_type == "html":
         await follow_links(ctx, agent, source, result)
     return doc
+
+
+async def fetch_with_retry(ctx: RunContext, agent: m.Agent, source: m.Source) -> tuple[FetchResult, str | None]:
+    """The source's GET, and one retry after RETRY_DELAY_S when it answered 5xx or timed out (or the network
+    failed). The retry is a new gateway request, so traffic shows both tries and the policy decides it again (a
+    revoke or a stop that lands during the wait blocks it). Returns (result, why the first try failed or None).
+    Raises Blocked like gateway.fetch. Every source gets this, not only the planted S-017."""
+    try:
+        result = await ctx.gateway.fetch(agent, source.url, source_id=source.source_id)
+    except Blocked as exc:
+        if not transient_block(exc):
+            raise
+        first = failure(exc.reason)
+    else:
+        if not is_server_error(result.http_status):
+            return result, None
+        first = f"HTTP {result.http_status}"
+    note = f" ({faults.LABEL})" if faults.is_broken_download(source) else ""
+    log(ctx, agent, f"{source.source_id} failed on the first try ({first}){note}. Retrying once in "
+                    f"{RETRY_DELAY_S:g} s as a new request.", level="warn")
+    ctx.check_stop()
+    await asyncio.sleep(RETRY_DELAY_S)
+    ctx.check_stop()
+    try:
+        return await ctx.gateway.fetch(agent, source.url, source_id=source.source_id, why=RETRY_WHY), first
+    except Blocked as exc:
+        exc.first_try = first        # so the source's error names both tries
+        raise
+
+
+def failure(reason: str) -> str:
+    """A gateway error as shown in a source's error: "TimeoutError", "ConnectError: refused"."""
+    return reason.removeprefix("gateway error: ").strip().rstrip(":").strip()
+
+
+def is_server_error(status: int) -> bool:
+    return 500 <= status < 600
+
+
+def transient_block(exc: Blocked) -> bool:
+    """A fail-closed gateway error from a timeout or the network, worth one retry. Policy denies, the size cap and
+    the archive-only errors never are."""
+    return exc.rule_id is None and bool(TRANSIENT.match(exc.reason))
+
+
+def retry_error(source: m.Source, first: str | None, second: str) -> str:
+    """The failed source's error: "HTTP 503 twice: the download failed" when both tries failed the same way,
+    both reasons otherwise. The planted download says simulated."""
+    if first is None:
+        return faults.fetch_error(source, second)
+    shown = failure(second)
+    if shown == first:
+        error = f"{first} twice: the download failed"
+    else:
+        error = f"{first}, then on the retry {shown}: the download failed"
+    return faults.fetch_error(source, error)
 
 
 async def follow_links(ctx: RunContext, agent: m.Agent, source: m.Source, result: FetchResult) -> list[str]:

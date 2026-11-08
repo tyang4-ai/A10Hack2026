@@ -94,6 +94,16 @@ class RunContext:
         task.add_done_callback(self._side_task_done)
         return task
 
+    async def close(self) -> None:
+        """Cancel the pipeline task and every side task and wait for them to end, so nothing writes for the run
+        after DELETE /runs removed its data (the caller then drops this context)."""
+        me = asyncio.current_task()
+        tasks = [t for t in (self.task, *self.background) if t is not None and not t.done() and t is not me]
+        for t in tasks:
+            t.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
     def _side_task_done(self, task: asyncio.Task) -> None:
         self.background.discard(task)
         if task.cancelled():

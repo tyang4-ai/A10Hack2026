@@ -1,12 +1,16 @@
 DEMO RUN: run_20261108_rzpoj7 (picked 1:32 AM)
 
+- **Deploy at 2:06 AM:** the typo-tolerant company match ("siemens heathineers" failed run_20261108_mr8gct at 1:58 AM), `axelrod` service only. Then `BUDGET_USD=50`.
+- **Deploy at 2:57 AM:** 233bf5e to EC2, `axelrod` service only (contract 0.3.1: DELETE /runs/{id} and PDF page images, planted faults, STAGE_PACING). Then the three env values below. Delete on EC2 needs the role's `s3:DeleteObject` on `runs/*` (prepared in ec2_role.py, the user applies it). Until then DELETE answers 500 and deletes nothing.
 - **Run:** R2 on EC2, 647 items, 96.6% pass or fixed, 5 of 6 criteria scored, rollup -0.6, certainty 94 (report) and 74 (brief), brief 2.5 pages, $2.84. Tag `demo-ok-2`, replay in `backend/data/replay/run_20261108_rzpoj7`. Backup: demo-ok-1 run_20261108_pin2ve. The comparison is under Now.
 - **Deployed:** 4f10702 on EC2 (`axelrod` service, port 8000). Later commits are only this board, DEMO.md and the R2 replay, which EC2 doesn't need because a stored run wins over a replay with the same id. Invoke URL `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com`. Webapp: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`. No API key yet (Needs Gordon).
 - **Server env for the demo** (set 1:33 AM in `/etc/axelrod.env`):
   - `CACHE_DOCUMENTS=on`: the gateway decides every fetch, then serves it from the S3 cache.
   - `CACHE_MODELS=record`: model calls stay live and each answer is also recorded, so the in-person rehearsals record the demo path for the replay fallback. Runs say `cache_mode: documents`.
-  - `DEMO_PACING=0.8`: seconds before each fetch. In the scripted check, STOP landed at about 52 s with a 10 s approval, revoking S-006 right after the first fetches. Set what the in-person rehearsal needs: `bash backend/infra/remote.sh --set-env DEMO_PACING=<seconds>`, or ask this session.
-  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5` (per run), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
+  - `STAGE_PACING=3` (since 2:57 AM, replaces DEMO_PACING, which is gone from the code): a pause of that many seconds at the start of each stage, never at approve. STOP ends it at once. Change it with `bash backend/infra/remote.sh --set-env STAGE_PACING=<seconds>`.
+  - `DEMO_FAULTS=fetch,judge` (since 2:57 AM): the planted faults, both labeled simulated. S-017 (a broken download: 503, one retry, then failed and a hole) and one malformed judge verdict per run (flagged, the judge rerun).
+  - `PROTECTED_RUNS=run_20261108_rzpoj7,run_20261108_pin2ve` (since 2:57 AM): DELETE refuses the demo run and its backup.
+  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=50` (per run, since 2:06 AM, asked for in this session because $1 failed a rehearsal that ran past STOP: run_20261108_z7ddk1 ran out at draft. A full run costs about $3. The public URL still has no API key), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
 - **Fallback if Bedrock throttles:** `--set-env CACHE_MODELS=replay` serves recorded answers at $0, labeled `documents_and_models`. So far that's R2's 291 answers. It's untested on the live segment until a rehearsal has run with `record`.
 - **Cut:** the scripted G6b rehearsal and B-rehearse (Gordon, 1 AM). The script stays in the repo, unused. Nothing else: v2 steps 1 to 12 are built.
 
@@ -16,6 +20,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 ## Now
 
+- **New work (asked for at 2:15 AM in this session, after the 1:45 freeze):** delete a finished run from the home page (its own data only, the shared caches stay, the demo run protected), real PDF pages in the source viewer, planted faults (a broken download S-017 and one malformed judge verdict, both simulated, behind `DEMO_FAULTS`), and `STAGE_PACING` (a pause per stage) replacing `DEMO_PACING`. Running: B-delete-pace, B-pdfpage, B-faults. Contract 0.3.1 (DELETE route, page image route) is ready in a main worktree. The guard won't let this session push main or edit frontend/, so both wait on the user. The EC2 role needs `s3:DeleteObject` on run vault folders before delete works on EC2.
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, origin/main 69b40fc merged at 1:24 AM). Gordon's 1 AM change: the integrator runs next to us and shares EC2 (it owns `axelrod-web` on port 3000 and the `$default` route, we own the `axelrod` service on 8000 and its env). No scripted rehearsal, no READY FOR INTEGRATION. Cutoff: R2 done and the `DEMO RUN:` line posted by 3:15 AM.
 - **R2 done** at 1:29 AM: run_20261108_rzpoj7. EC2 is free for runs again.
 - **Env changed at 1:33 AM** (restarted the `axelrod` service only, no deploy): demo values `DEMO_PACING=0.8`, `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=5`, `CACHE_MODELS=record`, `CACHE_DOCUMENTS=on`.
@@ -27,7 +32,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | Code, corpus | v1, 10 sources, live fetches | v2, 16 sources (plan v2 plus the archive), `cache_mode` documents: 16 of 16 fetches from the cache |
 | Items | 374 (348 data, 15 conclusions, 6 scores, 5 charts) | 647 (592 data, 41 conclusions, 6 scores, 8 charts) |
 | Pass or fixed | 345 + 18 of 374 = **97.1%** | 570 + 55 of 647 = **96.6%** |
-| Failed (declared holes) | 11 (13 holes) | 22 (24 holes): 19 data, C-018 and C-019 (tier 3 only), C-026 (judges: year labels reversed) |
+| Failed (declared holes) | 11 (13 holes) | 22 (24 holes): 19 data, C-018 and C-019 (tier 3 only), C-026 (a judge error, see Known issues) |
 | Scores | rotic_level -1, rotic_vs_peers 0, liquidity -1. secular_growth and leverage failed. Research stage N/A | rotic_level -1, **rotic_vs_peers -1** (below GE HealthCare 24.6% and Philips 16.8%, text and sign agree), secular_growth +1, leverage -1, liquidity -1. Research stage N/A |
 | Coverage | 3 of 6 | **5 of 6** |
 | Rollup | -0.6 | -0.6 |
@@ -37,7 +42,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | Bobby's calls | none (before v2) | plan proceed, extract rework (3 extractors), repair proceed, brief proceed |
 
   **Picked R2**: the same pass rate on 1.7 times the items, 5 of 6 criteria scored instead of 3, every score's sign agrees with its text, and it shows Bobby, the cache and the archive. demo-ok-1 stays as the backup (tag and replay kept). Exported to `backend/data/replay/run_20261108_rzpoj7` (47.6 MB, text only), tagged `demo-ok-2`.
-  **For the pitch (docs/PLAN.md 1:20 to 2:35):** in R2 the judges rejected no score. All five scorable criteria are scored, and the gaps are 19 data items, two tier-3-only conclusions and C-026 (judges: year labels reversed). So "The judges rejected two scores" should become something like "the judges threw out a conclusion that reversed its years, so it shows as a gap". ROTIC still scores -1 with certainty flagged (54, four of ten years computable).
+  **For the pitch (docs/PLAN.md 1:20 to 2:35):** in R2 the judges rejected no score, and all five scorable criteria are scored, so "The judges rejected two scores" doesn't fit R2. Don't show C-026 as a caught error: its rejection is a judge error (Known issues). ROTIC still scores -1 with certainty flagged (54, four fiscal years computable).
 
 ## v2 plans
 
@@ -82,7 +87,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 - **Invoke URL: https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com** (API at `/api/v1`, health at `/healthz`, test page at `/test-pages/injection.html`). Frontend: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`.
 - Deploy: `bash backend/infra/deploy.sh` (committed HEAD through S3, prints the deployed sha). Env: `bash backend/infra/remote.sh --set-env KEY=VALUE`. Logs: `bash backend/infra/remote.sh 'journalctl -u axelrod --no-pager -n 50'`.
-- EC2 env now (12:30 AM, full-run settings): `CACHE_DOCUMENTS=on`, `BUDGET_USD=10`, `MAX_CONCURRENCY_SMALL=32`, `DEMO_PACING=0`, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`, `STORE=aws`. Deployed a4ab693 (contract 0.3.0). contract_smoke on EC2: 76/76.
+- EC2 env now: the demo values in the DEMO RUN block at the top (set 1:33 AM, BUDGET_USD=1 since 1:42 AM). Deployed 4f10702 (contract 0.3.0).
 - Models: large `us.anthropic.claude-sonnet-5`, small `us.anthropic.claude-haiku-4-5-20251001-v1:0` (the 5.5 models are denied by the workshop allowlist). Prices per Mtok: Sonnet 5 2.20 / 11.00, Haiku 4.5 1.10 / 5.50.
 - Live spend so far: about $25, all in the workshop account (runs about $2 each, plus tuning).
 
@@ -111,6 +116,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- Only the frozen SHL plan exists: any other company fails at the plan stage at $0, with a hint on what to type. Since the typo fix, one or two typos in the name still match, and the run takes the plan's spelling with a note. Tickers never match loosely.
+- **C-026's rejection in R2 is a judge error.** C-026 says €488 million at September 30, 2025 and €592 million at September 30, 2024, exactly as D-413 (FY2025) and D-424 (FY2024) state. Two of three judges said the years were reversed. It shows as a failed conclusion and a hole, so nobody shows it as a caught error.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere, so demo_live measures it from the events.
 - Resume inside draft asks a drafter again if it finished inside the STOP cut, because draft builds items only after every drafter answers. A few cents, no wrong data.
@@ -124,7 +131,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - An analyst edit (`PATCH /items`) keeps the old judge votes (marked) and doesn't update holes or the rollup.
 - Allow rules ignore scheme and port, and the path prefix has no segment boundary (same host only).
 - The gateway blocks link-local hosts, but a DNS name resolving to one isn't caught (EC2 requires IMDSv2).
-- The workshop account id is in RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md`. Scrub before the repo goes public if there's time.
+- The workshop account id is out of RUNBOOK.md, PLANS.md and `.claude/agents/aws-operator.md` (1:45 AM). They point at `AWS_EXPECTED_ACCOUNT` in backend/.env, which is gitignored. The deploy scripts still check `AWS_ACCOUNT_ID` in the same file (same value). It's still in `docs/INTEGRATE.md` line 29 (main, not ours) and in git history (not rewritten, Gordon's call).
 - Guard quirk: a redirect or pipe after `git push` (or any `>`, `2>&1` in a git command) is read as a path or push target. Use plain git commands.
 
 ## Needs Gordon
@@ -173,3 +180,10 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:29 AM: R2 done: run_20261108_rzpoj7, 647 items, 96.6% pass or fixed, 5 of 6 scored, $2.84, 3.4 min.
 - Sun 1:32 AM: picked R2 over demo-ok-1 (table in Now). Exported as a replay, tagged demo-ok-2.
 - Sun 1:33 AM: demo env set on EC2. DEMO RUN line posted: run_20261108_rzpoj7.
+- Sun 1:42 AM: BUDGET_USD=1 on EC2 (Gordon, 1:45 AM message: no API key, so this caps each run).
+- Sun 1:47 AM: account id moved to backend/.env (AWS_EXPECTED_ACCOUNT). C-026 logged as a judge error. On call until the 5:30 freeze: DEMO_PACING after the first in-person rehearsal, then one replay-fallback test.
+- Sun 2:06 AM: typo-tolerant plan match (suite 927 passed). Deploy and BUDGET_USD=50 noted here first.
+- Sun 2:08 AM: deployed afd37aa, BUDGET_USD=50. Live check: run_20261108_7q87xb typed "siemens heathineers" reached approval as Siemens Healthineers (SHL), $0.004, stopped.
+- Sun 2:30 AM: new work started (delete runs, PDF page images, planted faults, STAGE_PACING). Route stubs committed (e3e3a4c). Contract 0.3.1 prepared, waiting on the user to push main.
+- Sun 2:45 AM: contract 0.3.1 pushed to main by the user (a466302) and merged. B-pdfpage done (PDF page PNGs with highlighted quotes, about 0.1 s per page). F-delete-pdf started in a frontend worktree. Guard: ownership rules off locally at the user's request (OWNERSHIP_RULES = False, not committed); the push rules for main and frontend are unchanged (the classifier stopped that edit). ec2_role.py now grants s3:DeleteObject on runs/* and dynamodb:DeleteItem, not applied yet: the classifier stopped the aws-operator, so the user applies it.
+- Sun 2:57 AM: B-delete-pace and B-faults done and committed (suite 978 passed). Deploy noted here first.

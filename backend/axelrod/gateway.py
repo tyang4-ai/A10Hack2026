@@ -541,9 +541,6 @@ class Gateway:
     async def fetch(self, agent: m.Agent, url: str, *, source_id: str | None = None,
                     why: str = "approved source") -> FetchResult:
         """GET url through the policy. Each redirect hop is decided again. Raises Blocked."""
-        pacing = self.ctx.settings.demo_pacing
-        if pacing > 0:
-            await asyncio.sleep(pacing)
         target = url
         for hop in range(MAX_REDIRECTS + 1):
             hop_why = why if hop == 0 else f"redirect {hop} from {url}"

@@ -71,7 +71,7 @@ From G2 on, also run the `verifier` subagent on the stage's plan ids and fix wha
 2. `echo AXELROD_GUARD_SELFTEST` must come back denied with "Guard is live". If the text just prints, the hooks aren't running: stop and tell Gordon. (Likely fix: `python` isn't on the PATH Claude Code sees. In `.claude/settings.json` change the leading `python` to `py` in both hook commands, then restart claude.)
 3. `python .claude/hooks/test_guard.py` passes every case.
 4. Venv: `uv venv --python 3.12 .venv` if `uv` exists, otherwise `python -m venv .venv` (3.11 or newer). Then `PY -m pip install fastapi "uvicorn[standard]" "pydantic>=2.7" python-dotenv boto3 httpx pytest pytest-asyncio`.
-5. `aws sts get-caller-identity --query Account --output text` prints `506556958358`. Another account: stop and tell Gordon. No or expired credentials: tell Gordon and carry on, A-setup waits.
+5. `aws sts get-caller-identity --query Account --output text` prints the account in `AWS_EXPECTED_ACCOUNT` (backend/.env, gitignored). Another account: stop and tell Gordon. No or expired credentials: tell Gordon and carry on, A-setup waits.
 6. Fill in status.md, commit "S0: preflight", push.
 
 **G1 Scaffold and AWS**
@@ -119,7 +119,7 @@ Gordon reads it from his phone. Write "Needs Gordon" items so they make sense wi
 
 ## 6. AWS credentials and accounts
 
-- Workshop account `506556958358` (shown as 5065-5695-8358), us-east-1 only. Never use `--profile`: Gordon's personal account profile lives on this machine too. The guard blocks it.
+- The workshop account only (its id is `AWS_EXPECTED_ACCOUNT` in backend/.env, never in a tracked file), us-east-1 only. Never use `--profile`: Gordon's personal account profile lives on this machine too. The guard blocks it.
 - Workshop credentials expire. Gordon gets fresh ones from the Workshop Studio dashboard ("Get AWS CLI credentials"). If he set them as environment variables, he has to restart claude (`/exit`, set the variables, `claude -c` to resume). If he pasted the credentials-file version into `~/.aws/credentials`, nothing restarts. Ask him which.
 - The deployed API on EC2 uses its IAM role, which never expires. Laptop credentials only matter for building, tests marked live, and the pre-smoke.
 - Deletes and stops ask Gordon (guard). Every resource is in `backend/AWS_RESOURCES.md` with its delete command.

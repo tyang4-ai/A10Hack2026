@@ -88,6 +88,13 @@ def build_policy(region: str, account: str) -> dict:
                 "Resource": [f"arn:aws:s3:::{bucket}/*"],
             },
             {
+                # DELETE /runs/{id} (contract 0.3.1): a run's own vault folder only, never cache/, archive/ or deploy/
+                "Sid": "VaultRunDeletes",
+                "Effect": "Allow",
+                "Action": ["s3:DeleteObject"],
+                "Resource": [f"arn:aws:s3:::{bucket}/runs/*"],
+            },
+            {
                 "Sid": "Tables",
                 "Effect": "Allow",
                 "Action": [
@@ -99,6 +106,7 @@ def build_policy(region: str, account: str) -> dict:
                     "dynamodb:Scan",
                     "dynamodb:BatchGetItem",
                     "dynamodb:BatchWriteItem",
+                    "dynamodb:DeleteItem",
                 ],
                 "Resource": tables,
             },

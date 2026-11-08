@@ -699,8 +699,9 @@ def test_split_url():
     assert http.split_url("file:///etc/passwd") is None and http.split_url("not a url") is None
 
 
-async def test_demo_pacing_sleeps(ctx: FakeCtx, pages, monkeypatch):
-    ctx.settings = ctx.settings.model_copy(update={"demo_pacing": 0.25})
+async def test_fetch_never_sleeps(ctx: FakeCtx, pages, monkeypatch):
+    """DEMO_PACING (a sleep before every fetch) is gone. STAGE_PACING pauses per stage in the orchestrator."""
+    ctx.settings = ctx.settings.model_copy(update={"stage_pacing": 0.25})
     slept = []
 
     async def fake_sleep(s):
@@ -708,7 +709,7 @@ async def test_demo_pacing_sleeps(ctx: FakeCtx, pages, monkeypatch):
 
     monkeypatch.setattr(gw_mod.asyncio, "sleep", fake_sleep)
     await ctx.gateway.fetch(agent(), AR_URL, source_id="S-001")
-    assert slept == [0.25]
+    assert slept == []
 
 
 # ---------------------------------------------------------------------------
