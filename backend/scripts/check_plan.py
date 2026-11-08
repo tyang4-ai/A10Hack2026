@@ -1,17 +1,629 @@
-"""Check the frozen SHL plan: contract validation, ids, tiers, ranks, criterion coverage and every URL answering.
+"""Check the frozen SHL plan: contract validation, ids, tiers, ranks, criterion coverage, pages and every URL answering.
 
-Usage (from the repo root): PY backend/scripts/check_plan.py
+Usage (from the repo root):
+  PY backend/scripts/check_plan.py               structure, the test page file, then every source URL
+  PY backend/scripts/check_plan.py --offline     everything except the network
+  PY backend/scripts/check_plan.py --pages DIR   also download the PDFs into DIR (outside the repo, never
+                                                 committed) and check that every extract page holds its anchor
+
+The URL checks are a dev preflight, not agent traffic: no agent runs and nothing is stored, so they use stdlib
+urllib (HEAD, then a 1 KB ranged GET) instead of the gateway, which needs a run and has no HEAD. The planted
+test page only warns until the orchestrator pushes the backend branch. Exit code 1 means at least one error.
 """
 from __future__ import annotations
 
+import argparse
+import json
+import re
 import sys
+import time
+import unicodedata
+import urllib.error
+import urllib.request
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlsplit
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, so `backend.axelrod` imports
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))  # repo root, so `backend.axelrod` imports
+
+from pydantic import ValidationError  # noqa: E402
+
+from backend.axelrod.contract import RUBRIC, m  # noqa: E402
+
+PLAN_PATH = REPO / "backend" / "data" / "shl" / "plan.json"
+TEST_PAGE_PATH = REPO / "backend" / "data" / "test_pages" / "injection.html"
+TEST_PAGE_URL = ("https://raw.githubusercontent.com/tyang4-ai/A10Hack2026/backend/"
+                 "backend/data/test_pages/injection.html")
+TEST_PAGE_TITLE = "Axelrod test page: planted prompt injection (simulated)"
+REVOKE_TARGET = "S-006"           # the demo revokes this tier_2 article mid-collect
+PAGE_BUDGET = (30, 45)            # extract pages in total: they drive the live-model cost of a full run
+TIER_ORDER = {"priority": 0, "tier_2": 1, "tier_3": 2}
+REQUIRED_KEYS = {"frozen", "company", "ticker", "aliases", "depth", "as_of", "fiscal_note", "needs", "sources",
+                 "extract_pages"}
+OPTIONAL_KEYS = {"need_pages"}
+
+# The highest tier a planner may give each kind (CONTRACT.md section 5: lower is allowed, never higher).
+KIND_TOP_TIER = {
+    "sec_filing": "priority", "xbrl_facts": "priority", "annual_report": "priority", "company_ir": "priority",
+    "gov": "priority", "news": "tier_2", "market_report": "tier_2", "company_site": "tier_2",
+    "product_page": "tier_2", "data_api": "tier_2", "forum": "tier_3", "code_repo": "tier_3", "other": "tier_3",
+}
+
+# One phrase per extract page, checked against the real PDF by --pages. Page keys are 1-based indices in the
+# file. A page in extract_pages without an anchor here (or the other way round) is an error.
+PAGE_ANCHORS: dict[str, dict[int, str]] = {
+    "S-001": {
+        7: "we reported R&D expenses of €1,958 million",
+        8: "We operate in growth markets",
+        13: "Our addressable markets generally exhibited slight growth worldwide",
+        15: "A.3.2.1 Revenue by segment and region",
+        22: "A.3.3.2 Cash flows",
+        25: "A.4.1 Expected market development",
+        138: "B.1 Consolidated statements of income",
+        140: "B.3 Consolidated statements of financial position",
+        141: "B.4 Consolidated statements of cash flows",
+        152: "combined German tax rate of 29.5%",
+        156: "Note 12 Other intangible assets and property, plant and equipment",
+        159: "Note 15 Financial debt",
+        160: "multicurrency revolving credit facility of up to €2.5 billion",
+        162: "Net debt (including pensions)/EBITDA",
+        169: "propose to distribute a dividend of €1.00 per share",
+        177: "Maturity analysis as of Sept 30, 2025",
+        182: "Note 29 Segment information",
+        184: "Amortization, depreciation and other effects from IFRS 3 purchase price allocation adjustments",
+        189: "Note 34 Subsequent events",
+    },
+    "S-002": {
+        1: "Siemens Healthineers ends 2026 fiscal year with strong fourth quarter",
+        6: "Business Development Fiscal Year 2026",
+        7: "The income tax rate was 22.4%",
+        8: "For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0%",
+        13: "Consolidated statements of income",
+        15: "Consolidated statements of financial position",
+        17: "Consolidated statements of cash flows Fiscal year",
+        19: "EBITDA reconciliation",
+    },
+    "S-003": {
+        53: "B.1 Consolidated statements of income",
+        55: "B.3 Consolidated statements of financial position",
+        99: "Amortization, depreciation and other effects from IFRS 3 purchase price allocation adjustments",
+    },
+    "S-004": {
+        44: "B.1 Consolidated statements of income",
+        46: "B.3 Consolidated statements of financial position",
+        85: "Amortization, depreciation and other effects from IFRS 3 purchase price allocation",
+    },
+    "S-005": {
+        62: "B.1 Consolidated statements of income",
+        64: "B.3 Consolidated statements of financial position",
+        95: "Amortization of intangible assets acquired in business combinations",
+    },
+}
+
+
+@dataclass
+class Issue:
+    level: str      # "error" or "warn"
+    where: str
+    message: str
+
+
+@dataclass
+class Probe:
+    ok: bool
+    status: int | None
+    method: str
+    detail: str
+
+
+def err(where: str, message: str) -> Issue:
+    return Issue("error", where, message)
+
+
+def warn(where: str, message: str) -> Issue:
+    return Issue("warn", where, message)
+
+
+# ---------------------------------------------------------------------------
+# Loading and small helpers
+# ---------------------------------------------------------------------------
+
+
+def load_plan(path: Path = PLAN_PATH) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def is_pdf(source: m.Source) -> bool:
+    """PDF sources get extract_pages. Everything else is read whole (HTML pseudo-pages) or by code (JSON)."""
+    return urlsplit(source.url).path.lower().endswith(".pdf")
+
+
+def expand(ranges: list[list[int]]) -> list[int]:
+    return [p for a, b in ranges for p in range(a, b + 1)]
+
+
+def collect_order(sources: list[m.Source]) -> list[m.Source]:
+    """Same order as stages/collect.py: priority, then tier_2, then tier_3, each by rank."""
+    return sorted(sources, key=lambda s: (TIER_ORDER.get(s.tier, 9), s.rank, s.source_id))
+
+
+def norm_text(s: str) -> str:
+    """NFKC, control characters and soft hyphens dropped, whitespace runs collapsed (older SHL PDFs carry all three)."""
+    s = unicodedata.normalize("NFKC", s)
+    s = re.sub("[\u0000-\u0008\u000b-\u001f­]", "", s)
+    return " ".join(s.split())
+
+
+def in_scope(depth: str) -> list[str]:
+    scope = RUBRIC["depths"][depth]
+    return list(RUBRIC["criteria"]) if scope == "all" else list(scope)
+
+
+# ---------------------------------------------------------------------------
+# Structure
+# ---------------------------------------------------------------------------
+
+
+def check_structure(plan: dict[str, Any]) -> list[Issue]:
+    """Every offline check of plan.json. Model validation errors stop the checks that need the models."""
+    issues = check_header(plan)
+    needs, sources, model_issues = validate_models(plan)
+    issues += model_issues
+    if model_issues:
+        return issues
+    issues += check_ids(needs, sources)
+    issues += check_source_fields(needs, sources)
+    issues += check_tiers_and_ranks(sources)
+    issues += check_coverage(plan.get("depth", "screen"), needs, sources)
+    issues += check_pages(plan, needs, sources)
+    issues += check_test_page_source(sources)
+    return issues
+
+
+def check_header(plan: dict[str, Any]) -> list[Issue]:
+    issues: list[Issue] = []
+    missing = REQUIRED_KEYS - plan.keys()
+    if missing:
+        issues.append(err("plan", f"missing keys: {sorted(missing)}"))
+    extra = plan.keys() - REQUIRED_KEYS - OPTIONAL_KEYS
+    if extra:
+        issues.append(warn("plan", f"unknown keys: {sorted(extra)}"))
+    if plan.get("frozen") is not True:
+        issues.append(err("plan.frozen", "must be true"))
+    if plan.get("depth") not in RUBRIC["depths"]:
+        issues.append(err("plan.depth", f"{plan.get('depth')!r} is not a rubric depth"))
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(plan.get("as_of", ""))):
+        issues.append(err("plan.as_of", "must be YYYY-MM-DD"))
+    note = plan.get("fiscal_note")
+    if not isinstance(note, str) or not note.strip() or "\n" in note:
+        issues.append(err("plan.fiscal_note", "must be one non-empty line"))
+    issues += check_aliases(plan)
+    return issues
+
+
+def check_aliases(plan: dict[str, Any]) -> list[Issue]:
+    aliases = plan.get("aliases")
+    if not isinstance(aliases, list) or not aliases or not all(isinstance(a, str) for a in aliases):
+        return [err("plan.aliases", "must be a non-empty list of strings")]
+    issues = [err("plan.aliases", f"{a!r} must be lowercase") for a in aliases if a != a.lower()]
+    company = str(plan.get("company", "")).lower()
+    if not any(a in company for a in aliases):
+        issues.append(err("plan.aliases", "no alias matches the company name"))
+    return issues
+
+
+def validate_models(plan: dict[str, Any]) -> tuple[list[m.DataNeed], list[m.Source], list[Issue]]:
+    """Validate with the contract models themselves, so a typo fails here and not mid-run."""
+    needs: list[m.DataNeed] = []
+    sources: list[m.Source] = []
+    issues: list[Issue] = []
+    for i, raw in enumerate(plan.get("needs") or []):
+        try:
+            needs.append(m.DataNeed.model_validate(raw))
+        except ValidationError as exc:
+            issues.append(err(f"needs[{i}]", str(exc)))
+    for i, raw in enumerate(plan.get("sources") or []):
+        try:
+            sources.append(m.Source.model_validate(raw))
+        except ValidationError as exc:
+            issues.append(err(f"sources[{i}]", str(exc)))
+    if not needs or not sources:
+        issues.append(err("plan", "needs and sources must both be non-empty"))
+    return needs, sources, issues
+
+
+def check_ids(needs: list[m.DataNeed], sources: list[m.Source]) -> list[Issue]:
+    """Ids are code-style and contiguous: N-01, N-02 ... and S-001, S-002 ... in file order."""
+    issues: list[Issue] = []
+    for i, need in enumerate(needs, start=1):
+        if need.need_id != f"N-{i:02d}":
+            issues.append(err(need.need_id, f"expected N-{i:02d} at position {i}"))
+    for i, source in enumerate(sources, start=1):
+        if source.source_id != f"S-{i:03d}":
+            issues.append(err(source.source_id, f"expected S-{i:03d} at position {i}"))
+    return issues
+
+
+def check_source_fields(needs: list[m.DataNeed], sources: list[m.Source]) -> list[Issue]:
+    need_criteria = {n.need_id: set(n.criteria) for n in needs}
+    issues: list[Issue] = []
+    for s in sources:
+        issues += check_one_source(s, need_criteria)
+    return issues
+
+
+def check_one_source(s: m.Source, need_criteria: dict[str, set[str]]) -> list[Issue]:
+    where = s.source_id
+    parts = urlsplit(s.url)
+    issues: list[Issue] = []
+    if parts.scheme != "https":
+        issues.append(err(where, "url must be https"))
+    if parts.hostname != s.domain:
+        issues.append(err(where, f"domain {s.domain!r} does not match the url host {parts.hostname!r}"))
+    fresh = (s.proposed_by == "planner" and s.approval == "pending" and s.status == "proposed"
+             and not s.doc_ids and s.stats == m.SourceStats() and s.error is None)
+    if not fresh:
+        issues.append(err(where, "a frozen plan source must be planner-proposed, pending, proposed, with no docs"))
+    unknown = [n for n in s.need_ids if n not in need_criteria]
+    if unknown or not s.need_ids:
+        issues.append(err(where, f"need_ids must be known and non-empty: {unknown or 'empty'}"))
+    served = set().union(*(need_criteria.get(n, set()) for n in s.need_ids)) if s.need_ids else set()
+    stray = sorted(set(s.criteria) - served)
+    if stray or not s.criteria:
+        issues.append(err(where, f"criteria must come from its needs: {stray or 'empty'}"))
+    if not s.rationale.strip():
+        issues.append(err(where, "rationale is empty"))
+    return issues
+
+
+def check_tiers_and_ranks(sources: list[m.Source]) -> list[Issue]:
+    issues: list[Issue] = []
+    for s in sources:
+        top = KIND_TOP_TIER[s.kind]
+        if TIER_ORDER[s.tier] < TIER_ORDER[top]:
+            issues.append(err(s.source_id, f"kind {s.kind} may be at most {top}, not {s.tier}"))
+    for tier in TIER_ORDER:
+        ranks = sorted(s.rank for s in sources if s.tier == tier)
+        if ranks != list(range(1, len(ranks) + 1)):
+            issues.append(err(f"tier {tier}", f"ranks must be 1..{len(ranks)} with no gaps or ties, got {ranks}"))
+    for tier in ("tier_2", "tier_3"):
+        if not any(s.tier == tier for s in sources):
+            issues.append(err(f"tier {tier}", "has no source"))
+    return issues + check_revoke_target(sources)
+
+
+def check_revoke_target(sources: list[m.Source]) -> list[Issue]:
+    """S-006 is the tier_2 article the demo revokes, so it must be fetched late, after every priority source."""
+    by_id = {s.source_id: s for s in sources}
+    target = by_id.get(REVOKE_TARGET)
+    if target is None:
+        return [err(REVOKE_TARGET, "missing: the demo revokes it")]
+    issues: list[Issue] = []
+    if target.tier != "tier_2" or target.kind != "news":
+        issues.append(err(REVOKE_TARGET, f"must be a tier_2 news article, is {target.tier} {target.kind}"))
+    order = [s.source_id for s in collect_order(sources)]
+    pos = order.index(REVOKE_TARGET)
+    if any(by_id[sid].tier == "priority" for sid in order[pos + 1:]):
+        issues.append(err(REVOKE_TARGET, "a priority source is fetched after it"))
+    if pos < len(order) - 3:
+        issues.append(warn(REVOKE_TARGET, f"fetched at position {pos + 1} of {len(order)}, not near the end"))
+    return issues
+
+
+def check_coverage(depth: str, needs: list[m.DataNeed], sources: list[m.Source]) -> list[Issue]:
+    """Every in-scope criterion has a need and a source, and every need has at least one source."""
+    scope = in_scope(depth)
+    issues: list[Issue] = []
+    for criterion in scope:
+        if not any(criterion in n.criteria for n in needs):
+            issues.append(err(criterion, "no need serves this in-scope criterion"))
+        if not any(criterion in s.criteria for s in sources):
+            issues.append(err(criterion, "no source serves this in-scope criterion"))
+    for n in needs:
+        if not any(n.need_id in s.need_ids for s in sources):
+            issues.append(err(n.need_id, "no source serves this need"))
+        out = sorted(set(n.criteria) - set(scope))
+        if out:
+            issues.append(warn(n.need_id, f"criteria outside the {depth} depth: {out}"))
+    return issues
+
+
+# ---------------------------------------------------------------------------
+# Pages
+# ---------------------------------------------------------------------------
+
+
+def check_ranges(where: str, ranges: Any) -> list[Issue]:
+    """[[a, b], ...] with 1 <= a <= b, sorted and not overlapping."""
+    if not isinstance(ranges, list) or not ranges:
+        return [err(where, "must be a non-empty list of [first, last] pairs")]
+    last = 0
+    for r in ranges:
+        ok = (isinstance(r, list) and len(r) == 2 and all(isinstance(x, int) and not isinstance(x, bool) for x in r)
+              and 1 <= r[0] <= r[1])
+        if not ok:
+            return [err(where, f"bad range {r!r}")]
+        if r[0] <= last:
+            return [err(where, f"range {r} overlaps or is out of order")]
+        last = r[1]
+    return []
+
+
+def check_pages(plan: dict[str, Any], needs: list[m.DataNeed], sources: list[m.Source]) -> list[Issue]:
+    extract = plan.get("extract_pages") or {}
+    by_id = {s.source_id: s for s in sources}
+    issues: list[Issue] = []
+    for sid, ranges in extract.items():
+        source = by_id.get(sid)
+        if source is None or not is_pdf(source):
+            issues.append(err(f"extract_pages.{sid}", "only PDF sources in the plan get extract pages"))
+        issues += check_ranges(f"extract_pages.{sid}", ranges)
+    for s in sources:
+        if is_pdf(s) and s.source_id not in extract:
+            issues.append(err(f"extract_pages.{s.source_id}", "PDF source without extract pages"))
+    if issues:
+        return issues
+    total = sum(len(expand(r)) for r in extract.values())
+    low, high = PAGE_BUDGET
+    if not low <= total <= high:
+        issues.append(err("extract_pages", f"{total} pages in total, the budget is {low} to {high}"))
+    issues += check_need_pages(plan.get("need_pages"), extract, needs, by_id)
+    issues += check_anchor_table(extract)
+    return issues
+
+
+def check_need_pages(need_pages: Any, extract: dict[str, list[list[int]]], needs: list[m.DataNeed],
+                     by_id: dict[str, m.Source]) -> list[Issue]:
+    """need_pages is optional. When present, every range sits inside extract_pages and every page is used."""
+    if need_pages is None:
+        return []
+    need_ids = {n.need_id for n in needs}
+    issues: list[Issue] = []
+    used: dict[str, set[int]] = {sid: set() for sid in extract}
+    for nid, per_source in need_pages.items():
+        if nid not in need_ids:
+            issues.append(err(f"need_pages.{nid}", "unknown need"))
+            continue
+        for sid, ranges in per_source.items():
+            where = f"need_pages.{nid}.{sid}"
+            if sid not in extract:
+                issues.append(err(where, "source has no extract pages"))
+                continue
+            if nid not in by_id[sid].need_ids:
+                issues.append(err(where, f"{sid} does not list {nid} in need_ids"))
+            bad = check_ranges(where, ranges)
+            if bad:
+                issues += bad
+                continue
+            outside = sorted(set(expand(ranges)) - set(expand(extract[sid])))
+            if outside:
+                issues.append(err(where, f"pages {outside} are not in extract_pages"))
+            used[sid].update(expand(ranges))
+    for sid, pages in used.items():
+        idle = sorted(set(expand(extract[sid])) - pages)
+        if idle:
+            issues.append(warn(f"extract_pages.{sid}", f"pages {idle} serve no need in need_pages"))
+    return issues
+
+
+def check_anchor_table(extract: dict[str, list[list[int]]]) -> list[Issue]:
+    """PAGE_ANCHORS must name exactly the extract pages, so --pages verifies every one of them."""
+    issues: list[Issue] = []
+    for sid in sorted(set(extract) | set(PAGE_ANCHORS)):
+        want = set(expand(extract.get(sid, [])))
+        have = set(PAGE_ANCHORS.get(sid, {}))
+        if want != have:
+            issues.append(err(f"PAGE_ANCHORS.{sid}", f"missing {sorted(want - have)}, extra {sorted(have - want)}"))
+    return issues
+
+
+# ---------------------------------------------------------------------------
+# The planted test page
+# ---------------------------------------------------------------------------
+
+
+def check_test_page_source(sources: list[m.Source]) -> list[Issue]:
+    page = next((s for s in sources if s.url == TEST_PAGE_URL), None)
+    if page is None:
+        return [err("test page", f"no source with url {TEST_PAGE_URL}")]
+    issues: list[Issue] = []
+    if page.tier != "tier_3" or page.scores.reliability > 0.1:
+        issues.append(err(page.source_id, "the test page must be tier_3 with reliability 0.1 or less"))
+    if "(simulated)" not in page.title or "SIMULATED" not in page.rationale:
+        issues.append(err(page.source_id, "the test page must be labeled simulated in title and rationale"))
+    return issues
+
+
+def check_test_page_file(path: Path = TEST_PAGE_PATH) -> list[Issue]:
+    """Title, a visible and a hidden injection, the simulated label and one link to example.org."""
+    if not path.exists():
+        return [err("test page file", f"{path} is missing")]
+    html = path.read_text(encoding="utf-8")
+    where = "test page file"
+    issues: list[Issue] = []
+    if not html.lower().startswith("<!doctype html"):
+        issues.append(err(where, "must start with <!doctype html> (raw GitHub serves it as text/plain)"))
+    if f"<title>{TEST_PAGE_TITLE}</title>" not in html:
+        issues.append(err(where, f"title must be {TEST_PAGE_TITLE!r}"))
+    if "SIMULATED" not in html:
+        issues.append(err(where, "needs a visible SIMULATED label"))
+    if html.count("Ignore all previous instructions") < 2:
+        issues.append(err(where, "needs one visible and one hidden injection"))
+    hidden = re.search(r'<span style="[^"]*(?:font-size:\s*1px|display:\s*none)[^"]*"[^>]*>\s*Ignore all previous', html)
+    if not hidden:
+        issues.append(err(where, "the hidden injection is not in a hidden span"))
+    if re.search(r'class="[^"]*comment|aria-hidden', html):
+        issues.append(err(where, 'trafilatura drops class="comment" blocks and aria-hidden elements, '
+                                 "so the scan would never see the injection"))
+    hrefs = re.findall(r'href="([^"]+)"', html)
+    if [urlsplit(h).hostname for h in hrefs] != ["example.org"]:
+        issues.append(err(where, f"must have exactly one link, to example.org, got {hrefs}"))
+    return issues
+
+
+# ---------------------------------------------------------------------------
+# URLs
+# ---------------------------------------------------------------------------
+
+Opener = Callable[..., Any]
+
+
+def probe_url(url: str, user_agent: str, timeout: float = 20.0, opener: Opener = urllib.request.urlopen,
+              retries: int = 1) -> Probe:
+    """HEAD first. When HEAD fails, a ranged GET of the first 1 KB (some servers refuse HEAD or flake on it)."""
+    head = request_once(url, "HEAD", user_agent, timeout, opener)
+    if head.ok:
+        return head
+    last = head
+    for attempt in range(retries + 1):
+        if attempt:
+            time.sleep(1.0)
+        last = request_once(url, "GET", user_agent, timeout, opener, headers={"Range": "bytes=0-1023"})
+        if last.ok:
+            return last
+    return Probe(False, last.status, last.method, f"HEAD {head.status or head.detail}, GET {last.status or last.detail}")
+
+
+def request_once(url: str, method: str, user_agent: str, timeout: float, opener: Opener,
+                 headers: dict[str, str] | None = None) -> Probe:
+    req = urllib.request.Request(url, method=method, headers={"User-Agent": user_agent, **(headers or {})})
+    try:
+        with opener(req, timeout=timeout) as resp:
+            if method == "GET":
+                resp.read(1024)
+            status = int(resp.status)
+            ctype = resp.headers.get("Content-Type", "")
+            return Probe(200 <= status < 300, status, method, ctype)
+    except urllib.error.HTTPError as exc:
+        return Probe(False, exc.code, method, f"HTTP {exc.code}")
+    except Exception as exc:  # noqa: BLE001  network errors of every kind are a failed probe
+        return Probe(False, None, method, f"{type(exc).__name__}: {exc}")
+
+
+def check_urls(sources: list[m.Source], probe: Callable[[str], Probe]) -> tuple[list[Issue], list[str]]:
+    """Every source URL must answer. The test page only warns, since it answers only after the push."""
+    issues: list[Issue] = []
+    lines: list[str] = []
+    for s in sources:
+        result = probe(s.url)
+        lines.append(f"  {'ok  ' if result.ok else 'FAIL'} {s.source_id} {result.method} {result.status} "
+                     f"{result.detail} {s.url}")
+        if result.ok:
+            continue
+        if s.url == TEST_PAGE_URL:
+            issues.append(warn(s.source_id, f"test page does not answer yet ({result.detail}). "
+                                            "Expected until the backend branch is pushed"))
+        else:
+            issues.append(err(s.source_id, f"url does not answer: {result.detail}"))
+    return issues, lines
+
+
+# ---------------------------------------------------------------------------
+# Pages against the real PDFs (--pages)
+# ---------------------------------------------------------------------------
+
+
+def download(url: str, dest: Path, user_agent: str, timeout: float = 120.0) -> None:
+    req = urllib.request.Request(url, headers={"User-Agent": user_agent})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        dest.write_bytes(resp.read())
+
+
+def verify_pages(plan: dict[str, Any], pdf_dir: Path, user_agent: str,
+                 fetch: Callable[[str, Path, str], None] = download) -> tuple[list[Issue], list[str]]:
+    """Open each PDF (downloaded into pdf_dir as <source_id>.pdf when missing) and find every page's anchor."""
+    pdf_dir = pdf_dir.resolve()
+    if pdf_dir.is_relative_to(REPO):
+        return [err("--pages", f"{pdf_dir} is inside the repo. PDFs must never land in the repo")], []
+    pdf_dir.mkdir(parents=True, exist_ok=True)
+    urls = {s["source_id"]: s["url"] for s in plan["sources"]}
+    issues: list[Issue] = []
+    lines: list[str] = []
+    for sid, ranges in plan["extract_pages"].items():
+        path = pdf_dir / f"{sid}.pdf"
+        if not path.exists():
+            fetch(urls[sid], path, user_agent)
+        found, line = check_pdf_pages(sid, path, expand(ranges))
+        issues += found
+        lines.append(line)
+    return issues, lines
+
+
+def check_pdf_pages(sid: str, path: Path, pages: list[int]) -> tuple[list[Issue], str]:
+    import pymupdf
+
+    issues: list[Issue] = []
+    with pymupdf.open(path) as doc:
+        count = doc.page_count
+        for page in pages:
+            anchor = PAGE_ANCHORS.get(sid, {}).get(page)
+            if page > count:
+                issues.append(err(f"{sid} page {page}", f"the PDF has only {count} pages"))
+            elif anchor is None or norm_text(anchor) not in norm_text(doc[page - 1].get_text()):
+                issues.append(err(f"{sid} page {page}", f"anchor not found: {anchor!r}"))
+    bad = len(issues)
+    return issues, f"  {'ok  ' if not bad else 'FAIL'} {sid}: {len(pages) - bad}/{len(pages)} pages hold their anchor ({count} pages in {path.name})"
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def print_issues(issues: list[Issue]) -> None:
+    for issue in issues:
+        print(f"  {issue.level.upper():5} {issue.where}: {issue.message}")
+
+
+def summary(plan: dict[str, Any]) -> str:
+    total = sum(len(expand(r)) for r in (plan.get("extract_pages") or {}).values())
+    tiers = {t: sum(1 for s in plan.get("sources", []) if s.get("tier") == t) for t in TIER_ORDER}
+    return (f"{len(plan.get('needs', []))} needs, {len(plan.get('sources', []))} sources {tiers}, "
+            f"{total} extract pages")
+
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Check the frozen SHL plan.")
+    parser.add_argument("--plan", type=Path, default=PLAN_PATH, help="plan.json to check")
+    parser.add_argument("--offline", action="store_true", help="skip every network request")
+    parser.add_argument("--pages", type=Path, metavar="DIR",
+                        help="folder outside the repo for the PDFs, to check every extract page against its anchor")
+    parser.add_argument("--timeout", type=float, default=20.0, help="seconds per URL request")
+    return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
-    raise NotImplementedError("B-shl-plan")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    args = parse_args(argv)
+    plan = load_plan(args.plan)
+    print(f"check_plan: {args.plan.name}: {summary(plan)}")
+    issues = check_structure(plan) + check_test_page_file()
+    print_issues(issues)
+    if not args.offline or args.pages:
+        from backend.axelrod.config import get_settings
+
+        user_agent = get_settings().http_user_agent
+    if not args.offline:
+        sources = [m.Source.model_validate(s) for s in plan["sources"]]
+        print("urls:")
+        url_issues, lines = check_urls(sources, lambda u: probe_url(u, user_agent, args.timeout))
+        print("\n".join(lines))
+        print_issues(url_issues)
+        issues += url_issues
+    if args.pages:
+        print(f"pages against the PDFs in {args.pages}:")
+        page_issues, lines = verify_pages(plan, args.pages, user_agent)
+        print("\n".join(lines))
+        print_issues(page_issues)
+        issues += page_issues
+    errors = sum(1 for i in issues if i.level == "error")
+    warnings = len(issues) - errors
+    print(f"check_plan: {'FAIL' if errors else 'PASS'} ({errors} errors, {warnings} warnings)")
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
