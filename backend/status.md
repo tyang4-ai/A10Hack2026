@@ -63,6 +63,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Known issues
 
+- Guard quirk: `git push origin backend 2>&1 | tail -1` is read as a push to "2>" and asks Gordon. Orchestrator pushes are plain `git push origin backend` from now on. The guard itself is unchanged (Gordon's file).
+
 ## Needs Gordon
 
 - (7:31 PM, needed in W2, about 10:45 PM to 12:45 AM) A-deploy opens port 8000 on the EC2 security group. The guard asks you before that. If nobody answers in about 10 minutes, A-deploy builds everything except the open port and we use the G4 fallback (API on the laptop) until you're back.
