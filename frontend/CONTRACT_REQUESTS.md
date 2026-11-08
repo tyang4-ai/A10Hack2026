@@ -1,5 +1,7 @@
 # Contract requests from the frontend
 
+**Done.** Everything below is in contract v0.2.0 and v0.3.0 (see `contract/CHANGELOG.md`), and the frontend now imports these shapes from `@contract/types`. Kept as the record of what was asked.
+
 Shapes the dashboard needs that are not in `contract/` yet. The UI is already built against these and shows "not supported by this backend yet" until they exist. If you change a name, tell me and I'll match it. The provisional TypeScript lives in `frontend/src/lib/agentApi.ts` and gets deleted once these are in `models.py`.
 
 ## 1. Talk to an individual agent

@@ -20,10 +20,20 @@ export function formatValue(v: Value | null): string {
   return cur ? `${cur}${n}${scale}` : `${n}${scale} ${v.unit}`.trim();
 }
 
+// Compact chart labels from the value's own unit and scale: 13,429,000,000 EUR at scale
+// "one" is €13.4bn, -1,918 at scale "million" is -€1.9bn, 5.9 with unit % is 5.9%.
+const SCALE_MULT = { one: 1, thousand: 1e3, million: 1e6, billion: 1e9 } as const;
 export function formatAxis(n: number, unit: string, scale: Value["scale"]): string {
-  const cur = CURRENCY[unit] ?? "";
-  const s = scale === "million" ? "m" : scale === "billion" ? "bn" : scale === "thousand" ? "k" : "";
-  return `${cur}${roundHalfUp(n, 1).toLocaleString("en-US")}${s}`;
+  // One decimal below 100 so neighbours line up (€13.9bn next to €14.0bn, 4.0% next to 5.9%).
+  const dec = (x: number) => roundHalfUp(x, 1).toLocaleString("en-US", { minimumFractionDigits: Math.abs(x) < 100 ? 1 : 0, maximumFractionDigits: 1 });
+  if (unit === "%" || unit === "percent") return `${dec(n)}%`;
+  const v = n * SCALE_MULT[scale];
+  const abs = Math.abs(v);
+  const [d, s] = abs >= 1e9 ? [1e9, "bn"] : abs >= 1e6 ? [1e6, "m"] : abs >= 1e4 ? [1e3, "k"] : [1, ""];
+  const num = abs === 0 ? "0" : dec(abs / d);
+  const sign = v < 0 ? "-" : "";
+  const cur = CURRENCY[unit];
+  return cur ? `${sign}${cur}${num}${s}` : `${sign}${num}${s} ${unit}`.trim();
 }
 
 export const usd = (n: number) => `$${n < 1 ? n.toFixed(4) : n.toFixed(2)}`;
@@ -78,6 +88,14 @@ export const MODE_HELP: Record<"live" | "replay" | "fixture", string> = {
   live: "",
   fixture: "Recorded run. No live agents or AWS calls.",
   replay: "Recorded run, replayed at live speed. No live agents or AWS calls.",
+};
+
+// Runs served partly from a cache are labelled too (contract v0.2, demo cache labels).
+export const CACHE_LABEL = "CACHED";
+export const CACHE_HELP: Record<"off" | "documents" | "documents_and_models", string> = {
+  off: "",
+  documents: "Cached: documents come from a saved copy, not fetched live.",
+  documents_and_models: "Cached: documents and model answers come from a saved copy.",
 };
 
 export const human = (s: string) => s.replace(/_/g, " ");

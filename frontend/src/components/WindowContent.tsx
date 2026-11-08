@@ -206,7 +206,7 @@ function AgentsSub() {
 }
 function AgentSub({ id }: { id: string }) {
   const a = useRunStore((s) => s.agents[id]);
-  return <>{a ? `${a.role}, ${a.status}` : ""}</>;
+  return <>{a ? `${a.name ?? a.role}, ${a.status}` : ""}</>;
 }
 function FollowAgentSub() {
   const id = useFollowAgent();
@@ -240,7 +240,8 @@ function AgentStop({ id }: { id: string }) {
     if (!a || s.run?.status === "stopped") return null;
     const live = s.run?.status === "running" || s.run?.status === "awaiting_approval";
     if (a.status === "working" || a.status === "queued") return live ? "stop" : null;
-    return "rerun";
+    // Only goons can be rerun (contract section 14); Bobby himself can't.
+    return a.role === "orchestrator" ? null : "rerun";
   });
   const [rerun, setRerun] = useState(false);
   if (!state || !runId) return null;

@@ -6,7 +6,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Stage } from "@contract/types";
-import { NotSupported, runApi } from "@/lib/agentApi";
+import { api } from "@/lib/api";
 import { STAGE_LABEL } from "@/lib/format";
 
 // What the new run keeps from this one when it reruns from each step.
@@ -39,7 +39,6 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [unsupported, setUnsupported] = useState(false);
 
   // Esc closes; focus returns to the step that opened the dialog. onClose is read
   // through a ref so the top bar re-rendering on every poll doesn't re-run this.
@@ -59,12 +58,11 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
     setBusy(true);
     setErr(null);
     try {
-      const run = await runApi.rerun(runId, { from_stage: stage, instructions: text.trim() });
+      const run = await api.rerun(runId, { from_stage: stage, instructions: text.trim() });
       onClose();
       router.push(`/runs/${encodeURIComponent(run.run_id)}`);
     } catch (e) {
-      if (e instanceof NotSupported) setUnsupported(true);
-      else setErr(e instanceof Error ? e.message : String(e));
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -101,11 +99,6 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
           placeholder={EXAMPLES[stage]}
           className="mt-1 w-full resize-y rounded-[4px] border border-desk-line-strong bg-desk-raised px-2 py-1.5 text-desk-ink placeholder:text-desk-muted focus:border-accent"
         />
-        {unsupported && (
-          <div role="status" className="mt-2 rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">
-            Rerun isn&apos;t available yet.
-          </div>
-        )}
         {err && (
           <div role="alert" className="mt-2 text-desk-bad">
             {err}
@@ -114,7 +107,7 @@ export function RerunDialog({ runId, stage, onClose }: { runId: string; stage: S
         <div className="mt-3 flex items-center gap-2">
           <button
             onClick={() => void start()}
-            disabled={busy || !text.trim() || unsupported}
+            disabled={busy || !text.trim()}
             className="h-8 rounded-[4px] bg-accent px-3.5 font-semibold text-accent-ink disabled:opacity-40"
           >
             Start rerun

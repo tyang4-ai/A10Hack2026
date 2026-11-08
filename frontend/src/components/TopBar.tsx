@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Stage } from "@contract/types";
 import { api, ApiError } from "@/lib/api";
-import { MODE_HELP, MODE_LABEL, STAGES, STAGE_LABEL, usd } from "@/lib/format";
+import { CACHE_HELP, CACHE_LABEL, MODE_HELP, MODE_LABEL, STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { LayoutControl } from "./Desk";
 import { RerunDialog } from "./RerunDialog";
@@ -155,6 +155,11 @@ export function TopBar() {
                 {MODE_LABEL}
               </span>
             )}
+            {run.cache_mode !== "off" && (
+              <span title={CACHE_HELP[run.cache_mode]} className="rounded-[3px] border border-desk-warn px-1.5 font-mono text-[11px] font-semibold text-desk-warn">
+                {CACHE_LABEL}
+              </span>
+            )}
             {/* Done needs no label: every step in the stage bar is ticked. */}
             {run.status !== "done" && (
               <span className="flex items-center gap-1.5">
@@ -251,6 +256,9 @@ export function TopBar() {
 export function Banner() {
   const run = useRunStore((s) => s.run);
   const traffic = useRunStore((s) => s.traffic);
+  const refreshRun = useRunStore((s) => s.refreshRun);
+  const [resuming, setResuming] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   if (!run) return null;
   if (run.status === "stopped") {
     const after = traffic.filter((t) => t.data.decision === "blocked" && t.data.rule_id === null && /kill|stop/i.test(t.data.reason)).length;
@@ -258,6 +266,26 @@ export function Banner() {
       <div role="alert" className="flex flex-none items-center gap-2 bg-desk-bad px-4 py-2 text-[13px] font-semibold text-desk">
         <span aria-hidden className="h-2.5 w-2.5 bg-desk" />
         Run stopped. Every agent request is blocked.{after > 0 ? ` ${after} so far.` : ""}
+        {err && <span className="font-normal">{err}</span>}
+        {/* Resume turns the kill switch off and picks up where STOP cut in (contract v0.2). */}
+        <button
+          disabled={resuming}
+          onClick={async () => {
+            setResuming(true);
+            setErr(null);
+            try {
+              await api.resume(run.run_id, "Resumed by the analyst from the dashboard");
+              await refreshRun();
+            } catch (e) {
+              setErr(e instanceof Error ? e.message : String(e));
+            } finally {
+              setResuming(false);
+            }
+          }}
+          className="ml-auto h-7 rounded-[4px] bg-desk px-3 text-[12px] font-semibold text-desk-ink hover:opacity-90 disabled:opacity-50"
+        >
+          {resuming ? "Resuming…" : "Resume run"}
+        </button>
       </div>
     );
   }

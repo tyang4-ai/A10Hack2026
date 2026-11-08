@@ -2,7 +2,11 @@
 // (../contract/types.ts, generated from contract/models.py). Never call AWS here.
 import type {
   AddSourceRequest,
+  Agent,
   AgentList,
+  AgentMessage,
+  AgentMessageList,
+  AgentRerunRequest,
   AgentReport,
   ApprovalRequest,
   ApprovalResponse,
@@ -16,6 +20,7 @@ import type {
   InjectErrorsResponse,
   Plan,
   Policy,
+  RerunRequest,
   RevokeResponse,
   Run,
   RunList,
@@ -25,6 +30,8 @@ import type {
 } from "@contract/types";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
+// Sent as X-Axelrod-Key when the deployed API requires a key (set at build time).
+const API_KEY = process.env.NEXT_PUBLIC_AXELROD_KEY;
 
 // The contract's error envelope: {"error": {"code", "message", "details"}}.
 export class ApiError extends Error {
@@ -41,7 +48,10 @@ export class ApiError extends Error {
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(API_BASE + path, {
     method,
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    headers: {
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(API_KEY ? { "X-Axelrod-Key": API_KEY } : {}),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const json = await res.json().catch(() => null);
@@ -74,4 +84,11 @@ export const api = {
   comments: (id: string) => call<CommentList>("GET", `${r(id)}/comments`),
   comment: (id: string, req: CommentRequest) => call<Comment>("POST", `${r(id)}/comments`, req),
   injectErrors: (id: string, count: number) => call<InjectErrorsResponse>("POST", `${r(id)}/demo/inject-errors`, { count }),
+  // Contract v0.2 and v0.3: resume after STOP, rerun from a step, and per-agent chat, stop and rerun.
+  resume: (id: string, reason: string | null) => call<Run>("POST", `${r(id)}/resume`, { reason }),
+  rerun: (id: string, req: RerunRequest) => call<Run>("POST", `${r(id)}/rerun`, req),
+  agentMessages: (id: string, agent: string) => call<AgentMessageList>("GET", `${r(id)}/agents/${encodeURIComponent(agent)}/messages`),
+  sendAgentMessage: (id: string, agent: string, text: string) => call<AgentMessage>("POST", `${r(id)}/agents/${encodeURIComponent(agent)}/messages`, { text }),
+  stopAgent: (id: string, agent: string, reason: string) => call<Agent>("POST", `${r(id)}/agents/${encodeURIComponent(agent)}/stop`, { reason }),
+  rerunAgent: (id: string, agent: string, req: AgentRerunRequest) => call<Agent>("POST", `${r(id)}/agents/${encodeURIComponent(agent)}/rerun`, req),
 };

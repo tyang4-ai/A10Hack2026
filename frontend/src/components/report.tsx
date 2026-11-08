@@ -118,9 +118,27 @@ export function Scorecard({ rollup }: { rollup: Rollup | null }) {
 }
 
 // Charts are specs built by code; points are already computed. Never recompute them.
+// Series fills, from the theme's tokens: ink first, then link, muted and warn.
+const SERIES_FILL = ["fill-ink", "fill-link", "fill-muted", "fill-warn"];
+const SERIES_STROKE = ["stroke-ink", "stroke-link", "stroke-muted", "stroke-warn"];
+
+// Split a category label into at most two lines that fit `chars` each; the full label is in a <title>.
+function labelLines(label: string, chars: number): string[] {
+  if (label.length <= chars) return [label];
+  const words = label.split(" ");
+  let first = "";
+  while (words.length && (first + " " + words[0]).trim().length <= chars) first = (first + " " + words.shift()).trim();
+  if (!first) first = words.shift() ?? "";
+  const rest = words.join(" ");
+  return [first.length > chars ? first.slice(0, chars - 1) + "…" : first, rest.length > chars ? rest.slice(0, chars - 1) + "…" : rest].filter(Boolean);
+}
+
+// Bar and line charts that handle negative values (bars hang below a zero line), several
+// series (grouped bars with a legend, or one line each) and compact labels (€15.7bn).
 export function ChartView({ chart, compact }: { chart: Chart; compact?: boolean }) {
   const select = useRunStore((s) => s.select);
-  const pts = chart.series.flatMap((s) => s.points.map((p) => ({ ...p, series: s.name })));
+  const pts = chart.series.flatMap((s, si) => s.points.map((p) => ({ ...p, series: s.name, si })));
+  const fmt = (v: number) => formatAxis(v, chart.unit, chart.scale);
   if (chart.chart_type === "table" || pts.length === 0)
     return (
       <table className="w-full text-[13px]">
@@ -128,56 +146,119 @@ export function ChartView({ chart, compact }: { chart: Chart; compact?: boolean 
           {pts.map((p) => (
             <tr key={p.series + p.x} className="border-t border-rule">
               <td>{p.x}</td>
-              <td className="text-right">{formatAxis(p.y, chart.unit, chart.scale)}</td>
-              <td className="pl-2 text-right text-muted">{p.ref}</td>
+              {chart.series.length > 1 && <td className="text-muted">{p.series}</td>}
+              <td className="text-right font-mono tabular-nums">{fmt(p.y)}</td>
+              <td className="pl-2 text-right font-mono text-muted">{p.ref}</td>
             </tr>
           ))}
         </tbody>
       </table>
     );
+
   const xs = [...new Set(pts.map((p) => p.x))];
-  const max = Math.max(...pts.map((p) => p.y), 0) * 1.12 || 1;
-  const W = 420;
-  const H = compact ? 150 : 180;
-  const left = 46;
-  const bottom = H - 22;
-  const y = (v: number) => bottom - (v / max) * (bottom - 12);
-  const bw = Math.min(46, ((W - left - 10) / xs.length) * 0.6);
-  const x = (i: number) => left + ((i + 0.5) * (W - left - 10)) / xs.length;
-  const ticks = [0, max / 2, max].map((t) => Math.round(t));
+  const nSeries = chart.series.length;
+  const multi = nSeries > 1;
+  // The value range always includes zero, with headroom on the side away from it for labels.
+  const hiRaw = Math.max(0, ...pts.map((p) => p.y));
+  const loRaw = Math.min(0, ...pts.map((p) => p.y));
+  const span = hiRaw - loRaw || 1;
+  const hi = hiRaw + (hiRaw > 0 ? span * 0.14 : 0);
+  const lo = loRaw - (loRaw < 0 ? span * 0.14 : 0);
+  const longest = Math.max(...xs.map((x) => x.length));
+  const W = 560;
+  const left = 64;
+  const right = 10;
+  const top = 12;
+  const slot = (W - left - right) / xs.length;
+  const chars = Math.max(6, Math.floor(slot / 6.2));
+  const labelRows = longest > chars ? 2 : 1;
+  const H = (compact ? 160 : 190) + (labelRows - 1) * 12;
+  const bottom = H - 10 - labelRows * 12;
+  const y = (v: number) => top + ((hi - v) / (hi - lo)) * (bottom - top);
+  const cx = (i: number) => left + (i + 0.5) * slot;
+  const group = Math.min(slot * 0.72, multi ? 30 * nSeries : 48);
+  const bw = group / nSeries;
+  const bx = (i: number, si: number) => cx(i) - group / 2 + si * bw;
+  const ticks = [...new Set([lo, 0, hi].map((t) => (Math.abs(t) < 1e-9 ? 0 : t)))];
+  // Value labels only when each bar has room for one.
+  const showValues = !multi || bw >= 28;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full font-mono text-[10px]" role="img" aria-label={`${chart.title}: ${pts.map((p) => `${p.x} ${p.y}`).join(", ")}`}>
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={left} x2={W - 8} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--color-ink)" : "var(--color-rule)"} />
-          <text x={left - 5} y={y(t) + 3} textAnchor="end" className="fill-muted">
-            {formatAxis(t, chart.unit, chart.scale)}
-          </text>
-        </g>
-      ))}
-      {chart.chart_type === "line" && (
-        <polyline points={pts.map((p) => `${x(xs.indexOf(p.x))},${y(p.y)}`).join(" ")} fill="none" stroke="var(--color-ink)" strokeWidth={2} />
+    <figure className="m-0">
+      {multi && (
+        <div className="mb-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
+          {chart.series.map((s, si) => (
+            <span key={s.name} className="flex items-center gap-1">
+              <svg aria-hidden width="10" height="10">
+                <rect width="10" height="10" className={SERIES_FILL[si % SERIES_FILL.length]} />
+              </svg>
+              {s.name}
+            </span>
+          ))}
+        </div>
       )}
-      {pts.map((p) => {
-        const i = xs.indexOf(p.x);
-        return (
-          <g key={p.series + p.x} onClick={() => select({ type: "item", id: p.ref })} className="cursor-pointer">
-            <title>{`${p.x}: ${formatAxis(p.y, chart.unit, chart.scale)} (${p.ref})`}</title>
-            {chart.chart_type === "bar" ? (
-              <rect x={x(i) - bw / 2} y={y(p.y)} width={bw} height={bottom - y(p.y)} className="fill-ink hover:fill-link" />
-            ) : (
-              <circle cx={x(i)} cy={y(p.y)} r={4} className="fill-white stroke-ink hover:fill-link" strokeWidth={1.5} />
-            )}
-            <text x={x(i)} y={y(p.y) - 5} textAnchor="middle">
-              {roundHalfUp(p.y, 1).toLocaleString("en-US")}
-            </text>
-            <text x={x(i)} y={H - 6} textAnchor="middle" className="fill-muted">
-              {p.x}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="block w-full font-mono text-[10px]"
+        role="img"
+        aria-label={`${chart.title}: ${pts.map((p) => `${multi ? `${p.series} ` : ""}${p.x} ${fmt(p.y)}`).join(", ")}`}
+      >
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={left} x2={W - right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--color-ink)" : "var(--color-rule)"} />
+            <text x={left - 6} y={y(t) + 3} textAnchor="end" className="fill-muted">
+              {fmt(t)}
             </text>
           </g>
-        );
-      })}
-    </svg>
+        ))}
+        {chart.chart_type === "line" &&
+          chart.series.map((s, si) => (
+            <polyline
+              key={s.name}
+              points={s.points.map((p) => `${cx(xs.indexOf(p.x))},${y(p.y)}`).join(" ")}
+              fill="none"
+              className={SERIES_STROKE[si % SERIES_STROKE.length]}
+              strokeWidth={2}
+            />
+          ))}
+        {pts.map((p) => {
+          const i = xs.indexOf(p.x);
+          const neg = p.y < 0;
+          const labelY = neg ? y(p.y) + 12 : y(p.y) - 5;
+          return (
+            <g key={p.series + p.x} onClick={() => select({ type: "item", id: p.ref })} className="cursor-pointer">
+              <title>{`${multi ? `${p.series}, ` : ""}${p.x}: ${fmt(p.y)} (${p.ref})`}</title>
+              {chart.chart_type === "bar" ? (
+                <rect
+                  x={bx(i, p.si) + 1}
+                  y={Math.min(y(0), y(p.y))}
+                  width={Math.max(1, bw - 2)}
+                  height={Math.max(1, Math.abs(y(p.y) - y(0)))}
+                  className={`${SERIES_FILL[p.si % SERIES_FILL.length]} hover:fill-link`}
+                />
+              ) : (
+                <circle cx={cx(i)} cy={y(p.y)} r={4} className={`fill-paper ${SERIES_STROKE[p.si % SERIES_STROKE.length]} hover:fill-link`} strokeWidth={1.5} />
+              )}
+              {showValues && (
+                <text x={chart.chart_type === "bar" ? bx(i, p.si) + bw / 2 : cx(i)} y={labelY} textAnchor="middle" className="fill-ink">
+                  {fmt(p.y)}
+                </text>
+              )}
+            </g>
+          );
+        })}
+        {xs.map((x, i) => (
+          <text key={x} x={cx(i)} y={bottom + 14} textAnchor="middle" className="fill-muted">
+            <title>{x}</title>
+            {labelLines(x, chars).map((line, k) => (
+              <tspan key={k} x={cx(i)} dy={k ? 12 : 0}>
+                {line}
+              </tspan>
+            ))}
+          </text>
+        ))}
+      </svg>
+    </figure>
   );
 }
 

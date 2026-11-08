@@ -7,12 +7,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { AgentRole } from "@contract/types";
-import { agentApi, NotSupported } from "@/lib/agentApi";
+import { api } from "@/lib/api";
 import { allSentences, useRunStore } from "@/lib/store";
 import { useWindows } from "@/lib/windows";
 import { citesOf } from "./Inspector";
 
 const EXAMPLE: Record<AgentRole, string> = {
+  orchestrator: "Send back any conclusion that rests on a single source.",
   planner: "Add a data need for customer concentration.",
   fetcher: "Fetch the whole 10-K, not only the first section.",
   extractor: "Take revenue from the income statement, not the press release.",
@@ -32,7 +33,6 @@ export function AgentRerunDialog({ agentId, onClose }: { agentId: string; onClos
   const [recheck, setRecheck] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [unsupported, setUnsupported] = useState(false);
 
   // What this agent produced, and everything downstream that a re-check would revisit.
   const { produced, downstream, sentences } = useMemo(() => {
@@ -75,13 +75,12 @@ export function AgentRerunDialog({ agentId, onClose }: { agentId: string; onClos
     setBusy(true);
     setErr(null);
     try {
-      const next = await agentApi.rerun(runId, agentId, { instructions: text.trim(), recheck });
+      const next = await api.rerunAgent(runId, agentId, { instructions: text.trim(), recheck });
       useRunStore.setState((s) => ({ agents: { ...s.agents, [next.agent_id]: next } }));
       onClose();
       useWindows.getState().open("agent", next.agent_id);
     } catch (e) {
-      if (e instanceof NotSupported) setUnsupported(true);
-      else setErr(e instanceof Error ? e.message : String(e));
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -141,18 +140,13 @@ export function AgentRerunDialog({ agentId, onClose }: { agentId: string; onClos
           Re-check what depends on it
         </label>
         <p className="mt-2 text-[12px] text-desk-muted">Same run, same gateway rules. The old outputs stay in each item&apos;s history.</p>
-        {unsupported && (
-          <div role="status" className="mt-2 rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">
-            Rerunning an agent isn&apos;t available yet (ERR backend issue).
-          </div>
-        )}
         {err && (
           <div role="alert" className="mt-2 text-desk-bad">
             {err}
           </div>
         )}
         <div className="mt-3 flex items-center gap-2">
-          <button onClick={() => void start()} disabled={busy || !text.trim() || unsupported} className="h-8 rounded-[4px] bg-accent px-3.5 font-semibold text-accent-ink disabled:opacity-40">
+          <button onClick={() => void start()} disabled={busy || !text.trim()} className="h-8 rounded-[4px] bg-accent px-3.5 font-semibold text-accent-ink disabled:opacity-40">
             Rerun agent
           </button>
           <button onClick={onClose} className="h-8 rounded-[4px] px-2.5 text-desk-muted hover:text-white">

@@ -6,9 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Run } from "@contract/types";
-import type { RerunInfo } from "@/lib/agentApi";
 import { api } from "@/lib/api";
-import { MODE_HELP, MODE_LABEL, STAGE_LABEL, usd } from "@/lib/format";
+import { CACHE_HELP, CACHE_LABEL, MODE_HELP, MODE_LABEL, STAGE_LABEL, usd } from "@/lib/format";
 import { ago, STATUS_DOT, STATUS_WORD, ThemeSwitcher } from "./Switchers";
 import { Skeleton } from "./ui";
 
@@ -147,9 +146,9 @@ export function Home() {
   );
 }
 
-// A rerun names the run it came from and the step it reran from (provisional fields, see agentApi.ts).
+// A rerun names the run it came from and the step it reran from.
 function Lineage({ r }: { r: Run }) {
-  const x = r as Run & RerunInfo;
+  const x = r;
   if (!x.parent_run_id) return null;
   return (
     <div className="text-[12px] text-muted" title={x.instructions ?? undefined}>
@@ -228,6 +227,11 @@ function RunRow({ r }: { r: Run }) {
         {r.mode !== "live" && (
           <span title={MODE_HELP[r.mode]} className="mt-0.5 inline-block rounded-[3px] bg-warn-bg px-1 font-mono text-[10px] font-semibold text-warn">
             {MODE_LABEL}
+          </span>
+        )}
+        {r.cache_mode !== "off" && (
+          <span title={CACHE_HELP[r.cache_mode]} className="mt-0.5 ml-1 inline-block rounded-[3px] border border-warn px-1 font-mono text-[10px] font-semibold text-warn">
+            {CACHE_LABEL}
           </span>
         )}
       </td>

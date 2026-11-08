@@ -193,12 +193,17 @@ export function BriefModule() {
             ))}
           </section>
         ))}
-        <section className="mt-4">
-          <h2 className="mb-1.5 font-serif text-[18px] font-bold">What we could not determine</h2>
-          <Holes />
-        </section>
         <p className="mt-4 text-[12px] text-muted italic">{summary.disclaimer}</p>
       </article>
+
+      {/* The full gap register sits outside the printed page, so the final report prints in 3 pages.
+          The report's own sentences already name the gaps that matter. */}
+      <section aria-labelledby="gap-register" className="mx-auto mt-6 max-w-[8.5in] print:hidden">
+        <h2 id="gap-register" className="mb-1.5 text-[15px] font-semibold">
+          What we could not determine
+        </h2>
+        <Holes />
+      </section>
     </div>
   );
 }

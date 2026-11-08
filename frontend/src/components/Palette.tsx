@@ -60,7 +60,7 @@ function PaletteDialog() {
     for (const it of Object.values(items)) add("item", it.id, itemText(it));
     for (const s of allSentences(summary)) add("sentence", s.id, s.text);
     for (const s of Object.values(sources)) add("source", s.source_id, `${s.title} ${s.domain}`);
-    for (const a of Object.values(agents)) add("agent", a.agent_id, `${a.role}: ${a.task}`);
+    for (const a of Object.values(agents)) add("agent", a.agent_id, `${a.name ? `${a.name}, ` : ""}${a.role}: ${a.task}`);
     for (const h of holes ?? []) add("hole", h.hole_id, h.reason);
     return out.sort((a, b) => a.score - b.score || KIND_RANK.indexOf(a.kind) - KIND_RANK.indexOf(b.kind) || a.id.localeCompare(b.id, undefined, { numeric: true })).slice(0, 50);
   }, [q, items, summary, sources, agents, holes]);

@@ -395,7 +395,7 @@ function CommentBox({ targetType, targetId, runId }: { targetType: "item" | "sou
           <div className="text-white">“{c.text}”</div>
           <div className={c.status === "applied" ? "text-desk-good" : c.status === "rejected" ? "text-desk-bad" : "animate-pulse text-accent"}>
             {c.status.toUpperCase()}
-            {c.response ? ` · ${c.response}` : ""}
+            {c.response ? ` · Bobby: ${c.response}` : ""}
             {c.changed_item_ids.length ? ` · changed ${c.changed_item_ids.join(", ")}` : ""}
           </div>
         </div>

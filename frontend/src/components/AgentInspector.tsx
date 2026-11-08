@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { agentApi, NotSupported, type AgentMessage } from "@/lib/agentApi";
+import { useShallow } from "zustand/react/shallow";
+import { isEvent, type AgentMessage } from "@contract/types";
+import { useWindows } from "@/lib/windows";
+import { api } from "@/lib/api";
 import { count, fmtTime, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 
@@ -16,6 +19,42 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const CALL_CLS = { proceed: "text-desk-good", rework: "text-desk-warn", escalate: "text-desk-bad" } as const;
+
+// Bobby's calls at each step: proceed, rework (with the goons he sent back) or escalate.
+function Decisions() {
+  const calls = useRunStore(useShallow((s) => s.log.filter((e) => isEvent(e, "agent.decision"))));
+  const open = useWindows((s) => s.open);
+  return (
+    <Section title={`Bobby's calls (${calls.length})`}>
+      {calls.length === 0 && <div className="text-desk-muted">No calls yet.</div>}
+      <ol className="grid gap-2">
+        {calls.map((e) =>
+          isEvent(e, "agent.decision") ? (
+            <li key={e.seq}>
+              <div>
+                <span className="font-mono text-desk-muted">{fmtTime(e.ts)}</span>{" "}
+                <span className={`font-mono text-[11px] font-semibold ${CALL_CLS[e.data.decision]}`}>{e.data.decision.toUpperCase()}</span>{" "}
+                <span className="text-desk-muted">after {e.data.stage.replace("_", " ")}</span>
+              </div>
+              <div className="text-white">{e.data.summary}</div>
+              {e.data.reworks.map((w) => (
+                <div key={w.agent_id} className="text-desk-muted">
+                  Sent back{" "}
+                  <button onClick={() => open("agent", w.agent_id)} className="font-mono text-desk-link hover:underline">
+                    {w.agent_id}
+                  </button>
+                  : {w.instructions}
+                </div>
+              ))}
+            </li>
+          ) : null,
+        )}
+      </ol>
+    </Section>
+  );
+}
+
 // One agent: what it is doing, its traffic, a chat with it, and a stop for just this agent.
 export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolean }) {
   const agent = useRunStore((s) => s.agents[id]);
@@ -25,22 +64,24 @@ export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolea
   const log = useRunStore((s) => s.log);
   const live = useRunStore((s) => s.agentMessages[id]);
   const [history, setHistory] = useState<AgentMessage[]>([]);
-  const [unsupported, setUnsupported] = useState<string | null>(null);
 
   // Load the thread once; new messages then arrive as agent.message events.
   useEffect(() => {
     setHistory([]);
-    setUnsupported(null);
-    agentApi.messages(runId, id).then(
+    api.agentMessages(runId, id).then(
       (r) => setHistory(r.messages),
-      (e) => e instanceof NotSupported && setUnsupported(e.message),
+      () => setHistory([]),
     );
   }, [runId, id]);
 
   if (!agent) return <p className="p-3.5 text-desk-muted italic">{id} (missing)</p>;
 
   const seen = new Set<string>();
-  const thread = [...history, ...(live ?? [])].filter((m) => !seen.has(m.message_id) && seen.add(m.message_id));
+  // Newest copy of each message wins (a question comes back as "answered"), then oldest first,
+  // with the analyst's question before the reply when they share a timestamp.
+  const thread = [...(live ?? []), ...history]
+    .filter((m) => !seen.has(m.message_id) && seen.add(m.message_id))
+    .sort((a, b) => a.created_at.localeCompare(b.created_at) || (a.author === "analyst" ? -1 : 1));
   const reqs = traffic.filter((t) => t.agent_id === id);
   const blocked = reqs.filter((t) => t.data.decision !== "allowed").length;
   const notes = log.filter((e) => e.agent_id === id && e.type === "agent.log").slice(-4);
@@ -50,7 +91,8 @@ export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolea
     <>
       <div className="border-b border-desk-line px-3.5 py-3">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-white">{agent.agent_id}</span>
+          <span className="font-semibold text-white">{agent.name ?? agent.agent_id}</span>
+          {agent.name && <span className="font-mono text-desk-muted">{agent.agent_id}</span>}
           <span className="text-desk-muted">{agent.role}</span>
           <span className={`ml-auto font-mono text-[11px] font-semibold ${STATUS_CLS[agent.status]}`}>{agent.status.toUpperCase()}</span>
         </div>
@@ -59,7 +101,16 @@ export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolea
           {agent.model_id ? <span className="font-mono">{agent.model_id}</span> : "Code only, no model"}
           {agent.target_ids.length > 0 && <span>, working on {agent.target_ids.join(", ")}</span>}
         </div>
+        {agent.parent_agent_id && (
+          <div className="mt-2 rounded-[4px] border border-desk-line-strong px-2.5 py-1.5">
+            Rerun of <span className="font-mono">{agent.parent_agent_id}</span>
+            {agent.rerun_by === "orchestrator" ? " ordered by Bobby" : agent.rerun_by === "analyst" ? " by you" : ""}
+            {agent.instructions && <div className="text-desk-muted">“{agent.instructions}”</div>}
+          </div>
+        )}
       </div>
+
+      {agent.role === "orchestrator" && <Decisions />}
 
       <Section title="Usage">
         <div className="font-mono tabular-nums">
@@ -82,7 +133,7 @@ export function AgentInspector({ id, hideStop }: { id: string; hideStop?: boolea
         </Section>
       )}
 
-      <Chat runId={runId} agentId={id} thread={thread} unsupported={unsupported} onUnsupported={setUnsupported} runStopped={runStatus === "stopped"} />
+      <Chat runId={runId} agentId={id} thread={thread} runStopped={runStatus === "stopped"} />
 
       {!hideStop && (agent.status === "working" || agent.status === "queued") && runLive && (
         <Section title="Stop only this agent">
@@ -98,15 +149,11 @@ function Chat({
   runId,
   agentId,
   thread,
-  unsupported,
-  onUnsupported,
   runStopped,
 }: {
   runId: string;
   agentId: string;
   thread: AgentMessage[];
-  unsupported: string | null;
-  onUnsupported: (m: string) => void;
   runStopped: boolean;
 }) {
   const [text, setText] = useState("");
@@ -125,15 +172,14 @@ function Chat({
     setBusy(true);
     setErr(null);
     try {
-      const m = await agentApi.send(runId, agentId, text.trim());
+      const m = await api.sendAgentMessage(runId, agentId, text.trim());
       useRunStore.setState((s) => {
         const list = s.agentMessages[agentId] ?? [];
         return { agentMessages: { ...s.agentMessages, [agentId]: [...list.filter((x) => x.message_id !== m.message_id), m] } };
       });
       setText("");
     } catch (e) {
-      if (e instanceof NotSupported) onUnsupported(e.message);
-      else setErr(e instanceof Error ? e.message : String(e));
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -148,6 +194,7 @@ function Chat({
             <div className="text-[13px] leading-snug whitespace-pre-wrap">{m.text}</div>
             <div className={`mt-0.5 font-mono text-[10px] ${m.author === "analyst" ? "text-muted" : "text-desk-muted"}`}>
               {m.author === "analyst" ? "You" : agentId} · {fmtTime(m.created_at)}
+              {m.author === "agent" && <span title="Chat replies are not verified and never change the report"> · not checked</span>}
               {m.status === "failed" && <span className="text-desk-bad"> · failed</span>}
             </div>
           </div>
@@ -156,11 +203,6 @@ function Chat({
         <div ref={end} />
       </div>
 
-      {unsupported ? (
-        <div role="status" className="mt-2 rounded-[4px] border border-desk-warn/50 px-2.5 py-2 text-desk-warn">
-          Agent chat isn't available yet (ERR backend issue).
-        </div>
-      ) : (
         <form
           className="mt-2"
           onSubmit={(e) => {
@@ -195,26 +237,19 @@ function Chat({
             </div>
           )}
         </form>
-      )}
     </Section>
   );
 }
 
 // Two clicks: the first asks to confirm, the second stops. Also used in the agent chat window's title bar.
 export function StopAgentButton({ runId, agentId, compact }: { runId: string; agentId: string; compact?: boolean }) {
-  const [state, setState] = useState<"idle" | "confirm" | "busy" | "unsupported">("idle");
+  const [state, setState] = useState<"idle" | "confirm" | "busy">("idle");
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     if (state !== "confirm") return;
     const t = setTimeout(() => setState("idle"), 4000);
     return () => clearTimeout(t);
   }, [state]);
-  if (state === "unsupported")
-    return (
-      <span role="status" className="text-desk-warn" >
-        {compact ? "Stop not available yet" : "Stopping one agent isn't available yet (ERR backend issue)."}
-      </span>
-    );
   return (
     <span className="inline-flex items-center gap-2">
       <button
@@ -224,16 +259,12 @@ export function StopAgentButton({ runId, agentId, compact }: { runId: string; ag
           setState("busy");
           setErr(null);
           try {
-            const a = await agentApi.stop(runId, agentId, "Stopped by the analyst from the dashboard");
+            const a = await api.stopAgent(runId, agentId, "Stopped by the analyst from the dashboard");
             useRunStore.setState((s) => ({ agents: { ...s.agents, [a.agent_id]: a } }));
             setState("idle");
           } catch (e) {
-            if (e instanceof NotSupported) {
-              setState("unsupported");
-            } else {
-              setErr(e instanceof Error ? e.message : String(e));
-              setState("idle");
-            }
+            setErr(e instanceof Error ? e.message : String(e));
+            setState("idle");
           }
         }}
         className={`h-6 rounded-[4px] border border-desk-bad px-2.5 text-[12px] font-semibold transition-colors ${state === "confirm" ? "bg-desk-bad text-desk" : "text-desk-bad hover:bg-desk-bad hover:text-desk"}`}

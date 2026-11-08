@@ -7,6 +7,7 @@ import { create } from "zustand";
 import {
   isEvent,
   type Agent,
+  type AgentMessage,
   type AgentReport,
   type Block,
   type Comment,
@@ -20,7 +21,6 @@ import {
   type Source,
   type SummarySentence,
 } from "@contract/types";
-import { agentMessageFromEvent, type AgentMessage } from "./agentApi";
 import { api } from "./api";
 
 // A draft approval decision for one source, editable until the analyst commits.
@@ -257,6 +257,7 @@ export const useRunStore = create<State>((set, get) => ({
         else if (isEvent(e, "run.stopped")) run = { ...run, status: "stopped", stop_reason: e.data.reason };
         else if (isEvent(e, "run.failed")) run = { ...run, status: "failed", error: e.data.error };
         else if (isEvent(e, "run.completed")) run = { ...run, status: "done", stage: "complete" };
+        else if (isEvent(e, "run.resumed")) run = { ...run, status: "running", stage: e.data.stage, stop_reason: null };
         else if (isEvent(e, "usage.updated")) run = { ...run, usage: e.data.usage };
       }
 
@@ -304,9 +305,9 @@ export const useRunStore = create<State>((set, get) => ({
 
       if (isEvent(e, "comment.created") || isEvent(e, "comment.resolved")) comments[e.data.comment.comment_id] = e.data.comment;
 
-      // Provisional agent.message event (not in the contract yet, see agentApi.ts).
-      const am = agentMessageFromEvent(e as { type: string; data?: unknown });
-      if (am) {
+      // Agent chat: both the analyst's message and the agent's reply arrive as agent.message.
+      if (isEvent(e, "agent.message")) {
+        const am = e.data.message;
         const list = agentMessages[am.agent_id] ?? [];
         agentMessages[am.agent_id] = [...list.filter((m) => m.message_id !== am.message_id), am];
       }

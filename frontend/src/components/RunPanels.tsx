@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import type { Agent, AgentRole, VaultFile, VaultNode } from "@contract/types";
+import { isEvent, type Agent, type AgentRole, type VaultFile, type VaultNode } from "@contract/types";
 import { api } from "@/lib/api";
 import { count, fmtTime, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
@@ -59,7 +59,10 @@ export function Traffic() {
                 <td className="max-w-[380px] truncate px-2" title={d.target}>
                   {d.target}
                 </td>
-                <td className="px-2 font-semibold">{d.decision.toUpperCase()}</td>
+                <td className="px-2 font-semibold whitespace-nowrap">
+                  {d.decision.toUpperCase()}
+                  {d.cache === "hit" && <span className="ml-1.5 font-normal text-desk-warn" title={`Served from the cache${d.cached_at ? `, saved ${d.cached_at}` : ""}`}>cached</span>}
+                </td>
                 <td className="px-2 whitespace-nowrap text-desk-muted">{d.rule_id ?? (/kill|stop/i.test(d.reason) ? "stopped" : "default deny")}</td>
                 <td className="px-2 text-right tabular-nums">{d.latency_ms}</td>
                 <td className="px-2 text-right tabular-nums">{d.tokens_in !== null ? `${count(d.tokens_in)} / ${count(d.tokens_out ?? 0)}` : ""}</td>
@@ -81,7 +84,10 @@ export function Traffic() {
   );
 }
 
-const ROLES: AgentRole[] = ["planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer", "reviser"];
+// Bobby (the orchestrator) is shown on his own; these are his goons' roles, in pipeline order.
+const ROLES: AgentRole[] = ["orchestrator", "planner", "fetcher", "extractor", "drafter", "verifier", "repairer", "summarizer", "reviser"];
+const GOON_ROLES = ROLES.filter((r) => r !== "orchestrator");
+const CALL_CLS = { proceed: "text-desk-good", rework: "text-desk-warn", escalate: "text-desk-bad" } as const;
 const AGENT_CLS = { queued: "bg-desk-line-strong", working: "bg-desk-link animate-pulse", done: "bg-desk-good", failed: "bg-desk-bad", stopped: "bg-accent" } as const;
 
 // Click an agent to open its chat window, where you can talk to it or stop it.
@@ -95,9 +101,29 @@ export function Agents() {
     for (const a of Object.values(agents)) m.set(a.role, [...(m.get(a.role) ?? []), a]);
     return m;
   }, [agents]);
+  const bobby = byRole.get("orchestrator")?.[0];
+  const lastCall = useRunStore((s) => {
+    for (let i = s.log.length - 1; i >= 0; i--) if (s.log[i].type === "agent.decision") return s.log[i];
+    return null;
+  });
   return (
     <div className="p-3">
-      {ROLES.filter((r) => byRole.has(r)).map((r) => (
+      {/* Bobby first: he orchestrates, and every other agent is one of his goons. */}
+      {bobby && (
+        <button
+          onClick={() => openWin("agent", bobby.agent_id)}
+          className="mb-3 flex w-full items-start gap-2.5 rounded-[4px] border border-desk-line-strong px-2.5 py-2 text-left hover:bg-desk-raised"
+        >
+          <span className={`mt-1 h-3 w-3 flex-none rounded-full ${AGENT_CLS[bobby.status]}`} />
+          <span className="min-w-0">
+            <span className="font-semibold text-white">{bobby.name ?? bobby.agent_id}</span>
+            <span className="text-desk-muted"> orchestrator, {bobby.status}</span>
+            {lastCall && <span className="block truncate text-desk-muted">Last call: {lastCall.message}</span>}
+          </span>
+        </button>
+      )}
+      {bobby && <div className="mb-1.5 text-[11px] font-semibold text-desk-muted">Bobby&apos;s goons</div>}
+      {GOON_ROLES.filter((r) => byRole.has(r)).map((r) => (
         <div key={r} className="mb-2 flex items-start gap-3">
           <span className="w-24 flex-none text-desk-muted">
             {r} <span className="font-mono">{byRole.get(r)!.length}</span>
@@ -106,8 +132,8 @@ export function Agents() {
             {byRole.get(r)!.map((a) => (
               <button
                 key={a.agent_id}
-                aria-label={`${a.agent_id} ${a.status}, open chat`}
-                title={`${a.agent_id}: ${a.status}. ${a.task}`}
+                aria-label={`${a.name ?? a.agent_id} (${a.agent_id}) ${a.status}, open chat`}
+                title={`${a.name ? `${a.name}, ` : ""}${a.agent_id}: ${a.status}. ${a.task}`}
                 onClick={() => openWin("agent", a.agent_id)}
                 className="grid h-6 w-6 place-items-center rounded-[4px] hover:bg-desk-raised"
               >
@@ -191,13 +217,29 @@ export function Log() {
   const rows = log.slice(-800).reverse();
   return (
     <ol className="p-2">
-      {rows.map((e) => (
-        <li key={e.seq} className={`flex gap-2.5 py-0.5 ${e.type === "agent.log" ? "text-accent" : e.level === "error" ? "text-desk-bad" : e.level === "warn" ? "text-desk-warn" : ""}`}>
-          <span className="text-desk-muted tabular-nums">{fmtTime(e.ts)}</span>
-          <span className="w-28 flex-none truncate text-desk-muted">{e.agent_id ?? e.type}</span>
-          <span>{e.message}</span>
-        </li>
-      ))}
+      {rows.map((e) =>
+        isEvent(e, "agent.decision") ? (
+          // Bobby's calls stand out: the decision word, then what he decided and any rework he ordered.
+          <li key={e.seq} className="my-1 flex gap-2.5 border-l-2 border-accent py-0.5 pl-2">
+            <span className="text-desk-muted tabular-nums">{fmtTime(e.ts)}</span>
+            <span className={`w-20 flex-none font-mono text-[11px] font-semibold ${CALL_CLS[e.data.decision]}`}>{e.data.decision.toUpperCase()}</span>
+            <span className="text-white">
+              {e.data.summary}
+              {e.data.reworks.map((w) => (
+                <span key={w.agent_id} className="block text-desk-muted">
+                  Rework {w.agent_id}: {w.instructions}
+                </span>
+              ))}
+            </span>
+          </li>
+        ) : (
+          <li key={e.seq} className={`flex gap-2.5 py-0.5 ${e.type === "agent.log" ? "text-accent" : e.level === "error" ? "text-desk-bad" : e.level === "warn" ? "text-desk-warn" : ""}`}>
+            <span className="text-desk-muted tabular-nums">{fmtTime(e.ts)}</span>
+            <span className="w-28 flex-none truncate text-desk-muted">{e.agent_id ?? e.type}</span>
+            <span>{e.message}</span>
+          </li>
+        ),
+      )}
     </ol>
   );
 }
