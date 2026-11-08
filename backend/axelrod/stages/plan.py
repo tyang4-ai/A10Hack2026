@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
@@ -22,8 +23,11 @@ PLAN_FILE = BACKEND_DIR / "data" / "shl" / "plan.json"
 PACE_S = 0.15                      # gap between plan.need / plan.source events, so the UI fills in live
 FROZEN_NOTE = ("Frozen demo plan: the needs and sources for Siemens Healthineers were prepared before the event, "
                "not generated live.")
-UNAVAILABLE = "only the frozen Siemens Healthineers plan is available in this build"
+UNAVAILABLE = ("only the frozen Siemens Healthineers plan is available in this build "
+               "(type Siemens Healthineers, or ticker SHL)")
 _LEGAL_FORMS = {"ag", "se", "inc", "corp", "plc", "ltd", "nv", "sa", "co", "gmbh", "kgaa"}
+TYPO_MIN_RATIO = 0.88              # difflib ratio, spaces dropped: one or two typos pass, another company doesn't
+TYPO_MIN_LEN = 8                   # shorter names ("siemens") never match loosely
 TEST_PAGE_FILE = "/data/test_pages/injection.html"     # how plan.json's URL for the planted page ends
 SERVED_RATIONALE = (" Served by Axelrod's own API at {url} (TEST_PAGE_URL), because the GitHub repo stays private "
                     "until submission. Still simulated: the API marks the page with X-Axelrod-Simulated: true.")
@@ -46,19 +50,43 @@ def _norm(text: str | None) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", (text or "").lower()))
 
 
-def matches(plan: dict[str, Any], company: str, ticker: str | None) -> bool:
-    """Company or ticker equal to an alias, the plan's company or its ticker, ignoring case,
-    punctuation and a trailing legal form ("AG"). "SHL.DE" counts as "SHL"."""
-    keys = {_norm(a) for a in plan.get("aliases", [])} | {_norm(plan.get("company")), _norm(plan.get("ticker"))}
-    keys.discard("")
+def match_kind(plan: dict[str, Any], company: str, ticker: str | None) -> str | None:
+    """"exact" when the company or ticker equals an alias, the plan's company or its ticker, ignoring case,
+    punctuation and a trailing legal form ("AG"). "SHL.DE" counts as "SHL". "typo" when the company name is
+    a near miss of a name key (one or two typos, "siemens heathineers"). Tickers never match loosely, and
+    neither do short names, so "Siemens AG" or "SHW" never reach the frozen plan. None otherwise."""
+    names = {_norm(a) for a in plan.get("aliases", [])} | {_norm(plan.get("company"))}
+    names.discard("")
+    keys = names | ({_norm(plan.get("ticker"))} - {""})
     words = _norm(company).split()
     while len(words) > 1 and words[-1] in _LEGAL_FORMS:
         words.pop()
-    candidates = {_norm(company), " ".join(words)}
+    named = {_norm(company), " ".join(words)} - {""}
+    candidates = set(named)
     if ticker and _norm(ticker):
         t = _norm(ticker)
         candidates |= {t, t.split()[0]}
-    return bool(candidates & keys)
+    if candidates & keys:
+        return "exact"
+    for cand in named:
+        a = cand.replace(" ", "")
+        if len(a) < TYPO_MIN_LEN:
+            continue
+        if any(SequenceMatcher(None, a, k.replace(" ", "")).ratio() >= TYPO_MIN_RATIO for k in names):
+            return "typo"
+    return None
+
+
+def matches(plan: dict[str, Any], company: str, ticker: str | None) -> bool:
+    return match_kind(plan, company, ticker) is not None
+
+
+def plan_name(plan: dict[str, Any]) -> str:
+    """The plan's company without its trailing legal form, as printed: "Siemens Healthineers"."""
+    words = str(plan.get("company") or "").split()
+    while len(words) > 1 and _norm(words[-1]) in _LEGAL_FORMS:
+        words.pop()
+    return " ".join(words)
 
 
 def _fresh_source(raw: dict[str, Any]) -> m.Source:
@@ -79,8 +107,15 @@ def _bump_counter(ctx: RunContext, prefix: str, ids: list[str]) -> None:
 async def run(ctx: RunContext) -> None:
     state = ctx.state
     plan = load_plan()
-    if not matches(plan, state.run.company, state.run.ticker):
+    kind = match_kind(plan, state.run.company, state.run.ticker)
+    if kind is None:
         raise PlanUnavailable(UNAVAILABLE)
+    if kind == "typo":
+        # The name feeds titles, prompts and checks, so the run takes the plan's spelling, and says so.
+        typed, state.run.company = state.run.company, plan_name(plan)
+        state.run.ticker = state.run.ticker or plan.get("ticker")
+        note = f"Company typed as '{typed}', read as {state.run.company} (typo-tolerant match to the frozen plan)."
+        state.run.notes = f"{state.run.notes.strip()} | {note}" if (state.run.notes or "").strip() else note
     needs = [m.DataNeed.model_validate(n) for n in plan.get("needs", [])]
     sources = [_fresh_source(s) for s in plan.get("sources", [])]
     _apply_plan_fields(ctx, plan, needs, sources)

@@ -1,12 +1,13 @@
 DEMO RUN: run_20261108_rzpoj7 (picked 1:32 AM)
 
+- **Deploy at 2:06 AM:** the typo-tolerant company match ("siemens heathineers" failed run_20261108_mr8gct at 1:58 AM), `axelrod` service only. Then `BUDGET_USD=50`.
 - **Run:** R2 on EC2, 647 items, 96.6% pass or fixed, 5 of 6 criteria scored, rollup -0.6, certainty 94 (report) and 74 (brief), brief 2.5 pages, $2.84. Tag `demo-ok-2`, replay in `backend/data/replay/run_20261108_rzpoj7`. Backup: demo-ok-1 run_20261108_pin2ve. The comparison is under Now.
 - **Deployed:** 4f10702 on EC2 (`axelrod` service, port 8000). Later commits are only this board, DEMO.md and the R2 replay, which EC2 doesn't need because a stored run wins over a replay with the same id. Invoke URL `https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com`. Webapp: `NEXT_PUBLIC_API_BASE=<invoke-url>/api/v1`. No API key yet (Needs Gordon).
 - **Server env for the demo** (set 1:33 AM in `/etc/axelrod.env`):
   - `CACHE_DOCUMENTS=on`: the gateway decides every fetch, then serves it from the S3 cache.
   - `CACHE_MODELS=record`: model calls stay live and each answer is also recorded, so the in-person rehearsals record the demo path for the replay fallback. Runs say `cache_mode: documents`.
   - `DEMO_PACING=0.8`: seconds before each fetch. In the scripted check, STOP landed at about 52 s with a 10 s approval, revoking S-006 right after the first fetches. Set what the in-person rehearsal needs: `bash backend/infra/remote.sh --set-env DEMO_PACING=<seconds>`, or ask this session.
-  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=1` (per run, since 1:42 AM: the live part costs about $0.10 to $0.18 up to STOP), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
+  - `MAX_CONCURRENCY_SMALL=8`, `BUDGET_USD=50` (per run, since 2:06 AM, asked for in this session because $1 failed a rehearsal that ran past STOP: run_20261108_z7ddk1 ran out at draft. A full run costs about $3. The public URL still has no API key), `STORE=aws`, `GUARDRAIL_ID` set, `TEST_PAGE_URL=<invoke-url>/test-pages/injection.html`.
 - **Fallback if Bedrock throttles:** `--set-env CACHE_MODELS=replay` serves recorded answers at $0, labeled `documents_and_models`. So far that's R2's 291 answers. It's untested on the live segment until a rehearsal has run with `record`.
 - **Cut:** the scripted G6b rehearsal and B-rehearse (Gordon, 1 AM). The script stays in the repo, unused. Nothing else: v2 steps 1 to 12 are built.
 
@@ -111,6 +112,7 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Known issues
 
+- Only the frozen SHL plan exists: any other company fails at the plan stage at $0, with a hint on what to type. Since the typo fix, one or two typos in the name still match, and the run takes the plan's spelling with a note. Tickers never match loosely.
 - **C-026's rejection in R2 is a judge error.** C-026 says €488 million at September 30, 2025 and €592 million at September 30, 2024, exactly as D-413 (FY2025) and D-424 (FY2024) state. Two of three judges said the years were reversed. It shows as a failed conclusion and a hole, so nobody shows it as a caught error.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere.
 - Extract starts only after collect finishes (stages run one after another), so in the demo the goon stop comes after S-010. The server's DEMO_PACING isn't reported anywhere, so demo_live measures it from the events.
@@ -176,3 +178,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 1:33 AM: demo env set on EC2. DEMO RUN line posted: run_20261108_rzpoj7.
 - Sun 1:42 AM: BUDGET_USD=1 on EC2 (Gordon, 1:45 AM message: no API key, so this caps each run).
 - Sun 1:47 AM: account id moved to backend/.env (AWS_EXPECTED_ACCOUNT). C-026 logged as a judge error. On call until the 5:30 freeze: DEMO_PACING after the first in-person rehearsal, then one replay-fallback test.
+- Sun 2:06 AM: typo-tolerant plan match (suite 927 passed). Deploy and BUDGET_USD=50 noted here first.
