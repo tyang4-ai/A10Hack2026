@@ -984,6 +984,13 @@ class InjectErrorsResponse(Model):
     note: str
 
 
+class RunDeleted(Model):  # v0.3.1: DELETE /runs/{run_id}
+    run_id: str
+    events: int  # event rows removed
+    vault_files: int  # files removed from the run's vault folder
+    note: str  # what stays: the shared document cache and recorded model answers
+
+
 # ---------------------------------------------------------------------------
 # Events (polled from GET /runs/{run_id}/events)
 # ---------------------------------------------------------------------------
