@@ -38,6 +38,35 @@ function tileAt(self: string, fx: number, fy: number) {
   return Object.values(useWindows.getState().wins).find((w) => w.id !== self && !w.min && !w.max && fx >= w.x && fx < w.x + w.w && fy >= w.y && fy < w.y + w.h) ?? null;
 }
 
+// Dropping onto empty desk fills the empty space there: the largest rectangle that
+// contains the pointer and overlaps no other window. Candidate edges are the desk's
+// edges and every other window's edges; for each left/right pair around the pointer,
+// the nearest windows above and below bound the height.
+export function emptyAt(self: string, fx: number, fy: number, minW: number, minH: number): Geo | null {
+  const eps = 1e-6;
+  const others = Object.values(useWindows.getState().wins).filter((w) => w.id !== self && !w.min && !w.max);
+  if (others.some((w) => fx > w.x && fx < w.x + w.w && fy > w.y && fy < w.y + w.h)) return null;
+  const xs = [...new Set([0, 1, ...others.flatMap((w) => [w.x, w.x + w.w])])].sort((a, b) => a - b);
+  let best: Geo | null = null;
+  for (const l of xs.filter((x) => x <= fx))
+    for (const r of xs.filter((x) => x > fx)) {
+      if (r - l < minW) continue;
+      let top = 0;
+      let bottom = 1;
+      let blocked = false;
+      for (const w of others) {
+        if (w.x >= r - eps || w.x + w.w <= l + eps) continue; // not in this column band
+        if (w.y + w.h <= fy + eps) top = Math.max(top, w.y + w.h);
+        else if (w.y >= fy - eps) bottom = Math.min(bottom, w.y);
+        else blocked = true; // a window crosses the pointer's row inside this band
+      }
+      if (blocked) continue;
+      const g = { x: l, y: top, w: r - l, h: bottom - top };
+      if (g.h >= minH && (!best || g.w * g.h > best.w * best.h)) best = g;
+    }
+  return best;
+}
+
 function resizeGeo(g: Geo, mode: Mode, dx: number, dy: number, minW: number, minH: number): Geo {
   let { x, y, w, h } = g;
   if (mode.includes("e")) w = Math.min(Math.max(g.w + dx, minW), 1 - g.x);
@@ -122,7 +151,10 @@ export const Window = memo(function Window({ id }: { id: string }) {
         const over = tileAt(id, px / d.desk.width, py / d.desk.height);
         d.target = over?.id ?? null;
         snap = over ? { x: over.x, y: over.y, w: over.w, h: over.h } : null;
-      } else snap = snapFor(px, py, d.desk.width, d.desk.height);
+      } else
+        snap =
+          snapFor(px, py, d.desk.width, d.desk.height) ??
+          emptyAt(id, px / d.desk.width, py / d.desk.height, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));
       const cur = useWindows.getState().snap;
       if (JSON.stringify(snap) !== JSON.stringify(cur)) useWindows.setState({ snap });
     } else {
