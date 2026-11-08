@@ -14,7 +14,7 @@ export function parsePageRef(ref: string) {
 }
 
 // Follow an item down its citations to the first quote on a stored text page.
-function pageRefFor(items: Record<string, Item>, id: string, depth = 0): string | null {
+export function pageRefFor(items: Record<string, Item>, id: string, depth = 0): string | null {
   const it = items[id.split(":")[0]];
   if (!it || depth > 4) return null;
   if (it.kind === "data") {
@@ -49,10 +49,10 @@ export function FollowPage() {
     if (ref) setLast(ref);
   }, [ref]);
   useEffect(() => setLast(null), [runId]);
-  const selItem = useRunStore((s) => (s.selected?.type === "item" ? s.selected.id : null));
+  const selItem = useRunStore((s) => (s.selected?.type === "item" || s.selected?.type === "sentence" ? s.selected.id : null));
   const shown = ref ?? last;
   if (!runId) return null;
-  const noPage = selItem && !ref ? `${selItem} cites structured data. There's no page to show.` : null;
+  const noPage = selItem && !ref ? `${selItem} cites structured data or the scorecard. There's no page to show.` : null;
   if (!shown) return <p className="p-4 text-[13px] text-muted">{noPage ?? "Select an item to see its source."}</p>;
   const p = parsePageRef(shown);
   return (
