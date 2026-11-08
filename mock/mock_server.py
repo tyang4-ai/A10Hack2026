@@ -15,6 +15,9 @@ What it does
   emit the same events the real backend will.
 - v0.2: agent chat (canned replies), stopping one agent, resume after STOP,
   and rerun from a step (a fork that replays the same story) work too.
+- v0.3: Bobby, the orchestrator, spawns first and logs his calls as
+  agent.decision events. Every other agent is "Bobby's goon #n". Rerunning
+  one goon with instructions makes new versions of its items in the same run.
 - Every response is validated against contract/models.py, so if the mock
   answers, the shape is right.
 
@@ -177,7 +180,7 @@ class RunState:
                 e["message"] = f"{aid} {e['data']['action']} {e['data']['target']} blocked (R-stop-{aid})"
                 e["level"] = "warn"
                 return e
-            if e["type"] in ("agent.status", "agent.log", "item.created", "item.updated", "item.verified"):
+            if e["type"] in ("agent.status", "agent.log", "agent.decision", "item.created", "item.updated", "item.verified"):
                 return None
         sid = (e.get("data") or {}).get("source_id")
         if not sid:
@@ -747,6 +750,81 @@ def send_agent_message(run_id: str, agent_id: str, req: m.AgentMessageRequest):
     r.schedule(1.2 / SPEED + 0.001, _message_event(r, {**asked, "status": "answered"}), base=now)
     r.tick()
     return asked
+
+
+@app.post(f"{PREFIX}/runs/{{run_id}}/agents/{{agent_id}}/rerun", response_model=m.Agent, status_code=201)
+def rerun_agent(run_id: str, agent_id: str, req: m.AgentRerunRequest):
+    r = get_run(run_id)
+    a = _agent(r, agent_id)
+    if r.status == "stopped":
+        raise ApiError(409, "invalid_state", "Run is stopped. Resume it before rerunning an agent.")
+    if a["status"] in ("queued", "working"):
+        raise ApiError(409, "invalid_state", f"{agent_id} is still {a['status']}. Stop it first.")
+    if a["role"] == "orchestrator":
+        raise ApiError(409, "invalid_state", "Bobby can't be rerun. Talk to him in the chat instead.")
+    root = agent_id.split(".")[0]
+    k = 1 + sum(1 for x in r.agents if x == root or x.startswith(root + "."))
+    new_id = f"{root}.{k}"
+    goons = sum(1 for x in r.agents.values() if x["role"] != "orchestrator")
+    new = {**copy.deepcopy(a), "agent_id": new_id, "status": "working", "task": f"Rerun of {agent_id}: {a['task']}",
+           "started_at": now_iso(), "finished_at": None, "name": f"Bobby's goon #{goons + 1}", "parent_agent_id": agent_id,
+           "instructions": req.instructions, "rerun_by": "analyst",
+           "usage": {"model_calls": 0, "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0, "budget_usd": None}}
+    created = [e["data"]["item"]["id"] for e in r.released if e["type"] == "item.created" and e.get("agent_id") == root]
+    targets = [t for t in a.get("target_ids", []) if t in r.items and t not in created]
+    changed = [i for i in created + targets if i in r.items]
+    now, t = time.monotonic(), 0.0
+    reopen = req.recheck and r.status == "done"
+
+    def at(delay: float, ev: dict):
+        r.schedule(delay / SPEED, {"stage": r.stage, "agent_id": new_id, "level": "info", "_user": True, **ev}, base=now)
+
+    if reopen:
+        at(0, {"type": "run.status", "agent_id": None, "message": f"Rerunning {agent_id}: run reopened",
+               "data": {"status": "running", "stage": r.stage}})
+    at(0.01, {"type": "agent.spawned", "message": f"{new_id} spawned: rerun of {agent_id} by the analyst", "data": {"agent": new}})
+    at(0.4, {"type": "gateway.request", "message": f"{new_id} -> model allowed (rerun)",
+             "data": {"request_id": f"REQ-W{len(r.released):04d}", "role": a["role"], "action": "model.invoke",
+                      "target": a.get("model_id") or bf.HAIKU, "decision": "allowed", "rule_id": "R-sys-models",
+                      "reason": f"Role '{a['role']}' may call this model", "source_id": None, "latency_ms": 900,
+                      "http_status": 200, "bytes": None, "tokens_in": 2400, "tokens_out": 300, "cost_usd": 0.0039}})
+    t = 0.8
+    for iid in changed:
+        it = copy.deepcopy(r.items[iid])
+        v = it["verification"]
+        v["attempts"] = list(v.get("attempts") or []) + [{
+            "attempt": len(v.get("attempts") or []) + 1, "status": v["status"], "checks": v.get("checks") or [],
+            "action": "rework", "before": None, "after": None,
+            "note": f"Rerun by {new_id}: {req.instructions[:200]}", "at": now_iso(t / SPEED)}]
+        if iid in created:
+            at(t, {"type": "item.updated", "message": f"{iid} new version from {new_id}", "data": {"item": it, "reason": "rework"}})
+        at(t + 0.02, {"type": "item.verified", "message": f"{iid} {v['status']}",
+                      "data": {"item_id": iid, "verification": v, "certainty": it.get("certainty")}})
+        t += 0.1
+    if req.recheck and changed:
+        deps = [i for i in r.item_order if i not in changed and set(changed) & set(
+            (r.items[i].get("data_ids") or []) + (r.items[i].get("conclusion_ids") or []) + (r.items[i].get("refs") or []))]
+        deps += [i for i in r.item_order if i not in changed and i not in deps and set(deps) & set(r.items[i].get("conclusion_ids") or [])]
+        for iid in deps:
+            it = r.items[iid]
+            at(t, {"type": "item.verified", "agent_id": None, "message": f"{iid} re-checked after {new_id}",
+                   "data": {"item_id": iid, "verification": it["verification"], "certainty": it.get("certainty")}})
+            t += 0.05
+        touched = set(changed) | set(deps)
+        for sid, sent in r.sentences.items():
+            if touched & set(sent.get("derived_from") or []):
+                at(t, {"type": "summary.verified", "agent_id": None, "message": f"{sid} re-checked after {new_id}",
+                       "data": {"sentence_id": sid, "verification": sent["verification"], "certainty": sent.get("certainty")}})
+                t += 0.05
+    at(t + 0.1, {"type": "agent.status", "message": f"{new_id} done",
+                 "data": {"agent_id": new_id, "status": "done", "task": "Rerun finished",
+                          "usage": {"model_calls": 1, "tokens_in": 2400, "tokens_out": 300, "cost_usd": 0.0039, "budget_usd": None}}})
+    if reopen:
+        at(t + 0.2, {"type": "run.status", "agent_id": None, "message": "Run complete again",
+                     "data": {"status": "done", "stage": "complete"}})
+        at(t + 0.21, {"type": "run.completed", "agent_id": None, "message": "Run complete", "data": {}})
+    r.tick()
+    return new
 
 
 @app.post(f"{PREFIX}/runs/{{run_id}}/agents/{{agent_id}}/stop", response_model=m.Agent)

@@ -27,15 +27,15 @@ The doors lock around 8 PM. Stay in, or know who can let you back in.
 
 The live part runs on the deployed webapp with `cache_mode: documents`: every fetch is decided by the gateway, then served from the S3 document cache (Gordon's pre-event archive plus copies from earlier runs), so collection takes seconds and doesn't depend on outside sites. Model calls stay live. If Bedrock is slow, switch to `documents_and_models` (recorded model answers) and say so. The CLI is on screen for about 10 seconds. Rehearse with a stopwatch. Exact clicks and pacing live in `backend/DEMO.md`.
 
-**0:00 to 0:15, the problem.** AI can write an investment memo in a minute, but nobody can trust it. Numbers get made up, and research agents read untrusted pages from the open web. Axelrod checks every number with code and puts every agent behind one gateway.
+**0:00 to 0:15, the problem.** AI can write an investment memo in a minute, but nobody can trust it. Numbers get made up, and research agents read untrusted pages from the open web. In Axelrod, Bobby, our orchestrator agent, makes the calls and his goons do the work. Every one of them goes through one gateway, and code checks every number.
 
 **0:15 to 0:25, launch from the CLI** (A10 step 1). `axelrod run "Siemens Healthineers" --ticker SHL` prints the run id and a link. Switch to the webapp, where the run is already there.
 
 **0:25 to 1:20, the live run in the webapp** (A10 steps 2 to 4).
-1. The plan streams in (frozen for the demo, say so). Approve the priority sources, drag one up, reject one. Never touch S-006, S-009 or S-010.
+1. Bobby spawns and the plan streams in (frozen for the demo, say so). Bobby's first call shows in the log. Approve the priority sources, drag one up, reject one. Never touch S-006, S-009 or S-010.
 2. Traffic: every fetch and every model call, with tokens and cost. Fetches say "cache" and when the copy was collected.
 3. Block: S-009's off-site links go red on their own (default deny). Click Revoke on S-006, and its next request turns red. S-010, our planted test page (simulated), comes back flagged by Bedrock Guardrails and is quarantined.
-4. Stop one extractor in the Agents window. Its next model call is blocked while the rest keeps going.
+4. Stop one of Bobby's goons in the Agents window. Its next model call is blocked while the rest keeps going.
 5. STOP. The kill switch discards in-flight results and blocks everything after.
 
 **1:20 to 2:35, the finished SHL run** (run earlier tonight, on the same sources).
@@ -43,10 +43,10 @@ The live part runs on the deployed webapp with `cache_mode: documents`: every fe
 - Click a sentence and follow it through the conclusion and the data item to the highlighted line on the annual report page.
 - A repaired item: an extractor's slip caught by code, shown as a diff.
 - ROTIC scores -1 and we flag the certainty, because some years lack the inputs. "We tell you how much to trust each line, and why."
-- The judges rejected two scores, so they show as gaps, not guesses.
+- The judges rejected two scores, so they show as gaps, not guesses. Bobby's calls are in the log: where he proceeded and which goons he sent back to rework.
 - The baseline: a plain Claude report on the same pages got its quotes right, but its scores went unchecked. Our checks caught 24 of 25 planted errors.
 
-**2:35 to 2:50, architecture.** Bedrock (Claude Sonnet 5 plans and drafts, a swarm of Claude Haiku 4.5 agents extracts and judges), the Guardrails tripwire, S3 for the vault and the document cache, DynamoDB for the event log, EC2 with an IAM role, API Gateway in front. About $2 of model calls per full report.
+**2:35 to 2:50, architecture.** Bedrock (Bobby and the drafting goons on Claude Sonnet 5, a swarm of goons on Claude Haiku 4.5 that extracts and judges), the Guardrails tripwire, S3 for the vault and the document cache, DynamoDB for the event log, EC2 with an IAM role, API Gateway in front. About $2 of model calls per full report.
 
 **2:50 to 3:00, close.** Who buys: PE, hedge fund and corp dev analysts screening public companies, priced per seat. Labeled on screen and on Devpost: the frozen plan, the cached documents (collected before the event), the planted test page.
 

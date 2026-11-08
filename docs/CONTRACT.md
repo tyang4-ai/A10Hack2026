@@ -1,4 +1,4 @@
-# Axelrod API contract (v0.2.0)
+# Axelrod API contract (v0.3.0)
 
 The source of truth is `contract/models.py`. This file explains it. `contract/types.ts` is generated from the models, and the mock server validates every response against them. If this doc and `models.py` ever disagree, `models.py` wins. Fix the doc.
 
@@ -94,6 +94,7 @@ All paths below are relative to `NEXT_PUBLIC_API_BASE`.
 | P1 | `POST /runs/{run_id}/agents/{agent_id}/messages` | `AgentMessageRequest` | `AgentMessage` (201) | v0.2. The analyst's message. The reply arrives as an `agent.message` event |
 | P1 | `POST /runs/{run_id}/resume` | `ResumeRequest` | `Run` | v0.2. Turns the kill switch off and picks up where STOP cut in |
 | P1 | `POST /runs/{run_id}/rerun` | `RerunRequest` | `Run` (201) | v0.2. Forks a new run from a step, with instructions. The parent never changes |
+| P1 | `POST /runs/{run_id}/agents/{agent_id}/rerun` | `AgentRerunRequest` | `Agent` (201) | v0.3. Reruns one goon with instructions, in the same run. See section 14 |
 
 A stopped run rejects comments, edits, injections and agent chat (409, or a `rejected` comment) until it resumes.
 
@@ -126,10 +127,11 @@ Every event has `seq`, `ts`, `run_id`, `type`, `stage`, `agent_id`, `level` and 
 | `agent.status` | `{agent_id, status, task, usage, reason}` | Agent swarm. `reason` is set when the analyst stopped the agent |
 | `agent.log` | `{text, transcript_path}` | Thought log |
 | `agent.message` | `{message}` | v0.2. Agent chat. The same `message_id` can arrive again with a new `status`: replace it |
+| `agent.decision` | `{agent_id, stage, decision, summary, reworks, comment_id}` | v0.3. One of Bobby's calls: `proceed`, `rework` or `escalate` |
 | `gateway.request` | `GatewayRequestData` | Traffic table. `decision` is `allowed`, `blocked` or `flagged`. v0.2: `cache` is `hit`, `miss` or null |
 | `item.created` | `{item}` | New report row (status `pending`) |
 | `item.verified` | `{item_id, verification, certainty}` | Row color and certainty pill |
-| `item.updated` | `{item, reason}` | Replace the row. `reason`: `repair`, `comment`, `user_edit`, `demo_injection`, `source_revoked` (v0.2) |
+| `item.updated` | `{item, reason}` | Replace the row. `reason`: `repair`, `comment`, `user_edit`, `demo_injection`, `source_revoked` (v0.2), `rework` (v0.3) |
 | `report.ready` | `{items, passed, fixed, failed, holes}` | Refetch `/report` for rollup and certainty |
 | `summary.sentence` | `{sentence, section_heading}` | Brief draft streaming in |
 | `summary.verified` | `{sentence_id, verification, certainty}` | Sentence highlight |
@@ -263,4 +265,21 @@ Edit `contract/models.py`, run `python contract/gen_types.py`, update the mock a
 - `Run.cache_mode`: `off`, `documents` (fetch bodies from the cache, model calls live) or `documents_and_models` (model answers replayed from recorded calls too). Show a badge for anything but `off`.
 - `gateway.request.cache`: `hit` (served from the cache, no network or model call made, `cost_usd` 0), `miss` (done live and stored) or null (cache off). `cached_at` says when the cached copy was made. The policy decision always comes first: a blocked request never reads the cache.
 - `Document.origin`: `fetched` (this run), `cache` (an earlier Axelrod run) or `archive` (collected before the event, Gordon's summer 2026 archive). `collected_at` is when the bytes were first collected.
+
+## 14. v0.3 additions: Bobby and his goons, rerun one agent
+
+**Bobby.** Every run has one orchestrator agent: `agent_id: "bobby"`, `role: "orchestrator"`, `name: "Bobby"`, on the large model. Bobby makes the big calls and never does the legwork. Every other agent is one of Bobby's goons, with `name: "Bobby's goon #<n>"` in spawn order, on the large or small model as before. The UI shows Bobby first and groups everyone else under "Bobby's goons".
+
+Bobby decides at fixed points and logs each call as an `agent.decision` event:
+- **Stage gates:** after `plan`, `extract`, `repair` (the report is final) and `verify_summary`. Code hands him a digest of the stage (counts, failures by check, holes, budget). He answers `proceed`, `rework` (at most 3 goons per gate, each once, listed in `reworks`) or `escalate` (a note for the analyst, and the run carries on).
+- **Comments:** when the analyst comments on an item or a sentence, Bobby reads it and either sends the goon that produced it back with the comment as instructions, or answers without a change. Either way the comment resolves with his answer (`comment.resolved`, `response`), and the decision event carries `comment_id`.
+- **Chat:** the analyst can talk to Bobby like any agent (section 13).
+
+Code keeps him in bounds. Bobby's calls go through the gateway like any agent's (role scope, budget, kill switch). He can't approve, reject or revoke sources, change the policy, mark an item as passed, or spend past the budget. Only code checks decide pass or fail. If Bobby is stopped, the run carries on with `proceed` at every gate and logs that his calls are off.
+
+**Rerun one agent.** `POST /runs/{run_id}/agents/{agent_id}/rerun` with `{"instructions", "recheck"}` reruns one goon in the same run, unlike rerun-from-a-step, which forks. The analyst and Bobby both use it (`rerun_by`).
+- The new agent has the same role and targets, `agent_id` `<root>.<k>` (`extractor-03.2`, then `extractor-03.3`), `parent_agent_id` set to the agent it reran, and the `instructions`. It emits `agent.spawned` and goes through the gateway under the current policy, so an instruction that asks for an unapproved source is blocked like any other request.
+- Its outputs become new versions of the same item ids (`item.updated` with reason `rework`), so citations keep resolving. The previous version stays in `verification.attempts` as an attempt with `action: "rework"`.
+- With `recheck: true`, everything that cites a changed item (conclusions, scores, charts, brief sentences) is re-checked and its certainty recomputed (`item.verified`, `summary.verified`). A finished run goes back to `running` for that and completes again. With `recheck: false`, only the agent's own outputs change.
+- Errors: 404 for an unknown agent. 409 if the agent is still working (stop it first), if the run is stopped, or for Bobby (talk to him instead).
 

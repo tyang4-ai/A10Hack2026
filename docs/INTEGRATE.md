@@ -39,7 +39,8 @@ The merges shouldn't conflict, since each branch only touched its own folder. If
    - Charts must handle negative values, several series and compact labels (€15.7bn). Today the R&D chart is blank and the debt chart stacks three series on one bar.
    - The full gap register goes outside `#brief`, so the brief prints in 3 pages.
    - A badge for `cache_mode` other than `off`.
-   - `src/lib/agentApi.ts` gives way to the contract types.
+   - Bobby: `orchestrator` in the `ROLES` list (`RunPanels.tsx`) and in every `Record<AgentRole, ...>` (`AgentRerunDialog.tsx` fails to compile without it). Show `Agent.name`, Bobby first, the rest grouped as "Bobby's goons". Show `agent.decision` events in the log and on Bobby's window.
+   - `src/lib/agentApi.ts` gives way to the contract types (chat, stop, rerun one agent, rerun from a step, resume).
 
    This is Tong's folder. Send him the list first. Change his code only if he's offline and Gordon says yes, keep the change small, and tell Tong what you changed.
 

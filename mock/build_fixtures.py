@@ -319,6 +319,7 @@ FIXTURE_DECISIONS = [
 # ---------------------------------------------------------------------------
 
 ROLE_SCOPES = [
+    {"role": "orchestrator", "actions": ["model.invoke"], "models": [SONNET]},
     {"role": "planner", "actions": ["model.invoke"], "models": [SONNET]},
     {"role": "fetcher", "actions": ["fetch"], "models": []},
     {"role": "extractor", "actions": ["model.invoke"], "models": [HAIKU]},
@@ -946,11 +947,25 @@ class Timeline:
             "cost_usd": None}, agent_id=agent_id, level=level, dt=dt)
 
 
+BOBBY = "bobby"  # v0.3: the orchestrator. Every other agent is one of Bobby's goons
+_GOONS = [0]
+
+
 def agent(agent_id, role, model, task, targets, status="working", start=None) -> dict:
+    if role == "orchestrator":
+        name = "Bobby"
+    else:
+        _GOONS[0] += 1
+        name = f"Bobby's goon #{_GOONS[0]}"
     return {"agent_id": agent_id, "role": role, "model_id": model, "status": status, "task": task, "target_ids": targets,
             "started_at": start, "finished_at": None,
             "usage": {"model_calls": 0, "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0, "budget_usd": None},
-            "transcript_path": f"{VAULT_ROOT}/00-Meta/agents/{agent_id}.jsonl"}
+            "transcript_path": f"{VAULT_ROOT}/00-Meta/agents/{agent_id}.jsonl",
+            "name": name, "parent_agent_id": None, "instructions": None, "rerun_by": None}
+
+
+def decision(stage, summary, verdict="proceed") -> dict:
+    return {"agent_id": BOBBY, "stage": stage, "decision": verdict, "summary": summary, "reworks": [], "comment_id": None}
 
 
 def build_timelines(items, summary, docs) -> tuple[list[dict], list[dict]]:
@@ -958,9 +973,14 @@ def build_timelines(items, summary, docs) -> tuple[list[dict], list[dict]]:
     docs_by_source = {d["source_id"]: d for d in docs}
 
     # ---- pre-approval: planning ----------------------------------------------
+    _GOONS[0] = 0
     pre = Timeline()
     pre.emit("run.status", "plan", "Planning started", {"status": "running", "stage": "plan"})
-    pre.emit("agent.spawned", "plan", "planner spawned", {"agent": agent("planner", "planner", SONNET,
+    pre.emit("agent.spawned", "plan", "Bobby spawned: the orchestrator makes the big calls", {"agent": agent(
+             BOBBY, "orchestrator", SONNET, "Run the screen: dispatch the goons, review every stage, decide reworks", [],
+             start=ts(120))}, agent_id=BOBBY)
+    pre.model_call("plan", BOBBY, "orchestrator", SONNET, 2100, 380, dt=400)
+    pre.emit("agent.spawned", "plan", "Bobby dispatched the planner", {"agent": agent("planner", "planner", SONNET,
              "Map BOFFIN screen criteria to evidence needs and sources", [], start=ts(200))}, agent_id="planner")
     pre.emit("agent.log", "plan", "Depth is screen: 6 criteria in scope (rotic_level, rotic_vs_peers, secular_growth, "
              "leverage, liquidity, research_stage).", {"text": "Depth is screen: 6 criteria in scope.",
@@ -979,6 +999,10 @@ def build_timelines(items, summary, docs) -> tuple[list[dict], list[dict]]:
     pre.emit("agent.status", "plan", "planner done", {"agent_id": "planner", "status": "done", "task": "Plan ready",
              "usage": {"model_calls": 2, "tokens_in": 7300, "tokens_out": 3300, "cost_usd": 0.0476, "budget_usd": None}},
              agent_id="planner")
+    pre.model_call("plan", BOBBY, "orchestrator", SONNET, 5200, 260, dt=300)
+    pre.emit("agent.decision", "plan", "Bobby: plan checked, the analyst decides what gets fetched", decision(
+             "plan", f"Plan checked: {len(NEEDS)} needs and {len(SOURCES)} sources, primary filings first. Nothing is fetched until the analyst approves."),
+             agent_id=BOBBY)
     pre.emit("plan.ready", "approve", f"Plan ready: {len(NEEDS)} needs, {len(SOURCES)} sources. Waiting for approval.",
              {"needs": len(NEEDS), "sources": len(SOURCES)}, agent_id="planner")
     pre.emit("run.status", "approve", "Waiting for the analyst to approve priority sources",
@@ -1093,6 +1117,11 @@ def build_timelines(items, summary, docs) -> tuple[list[dict], list[dict]]:
                   "stats": {"bytes": d["bytes"], "pages": d["pages"], "data_items": n_items, "data_items_verified": n_items},
                   "error": None}, dt=40)
 
+    post.model_call("extract", BOBBY, "orchestrator", SONNET, 6400, 300, dt=200)
+    post.emit("agent.decision", "extract", "Bobby: extraction checked, on to the draft", decision(
+              "extract", "Every data item passed or was fixed. Code caught the digit slip in D-028 and the repairer re-cited it. On to the draft."),
+              agent_id=BOBBY)
+
     # ---- draft: conclusions, scores, charts --------------------------------------
     post.emit("run.status", "draft", "Drafting conclusions and scores from verified data only", {"status": "running", "stage": "draft"})
     post.emit("agent.spawned", "draft", "drafter spawned", {"agent": agent("drafter", "drafter", SONNET,
@@ -1158,6 +1187,11 @@ def build_timelines(items, summary, docs) -> tuple[list[dict], list[dict]]:
     post.emit("report.ready", "repair", f"Agent report final: {len(items)} items, {n_fixed} fixed, {n_fail} failed, {len(HOLES)} holes",
               {"items": len(items), "passed": len(items) - n_fail - n_fixed, "fixed": n_fixed, "failed": n_fail, "holes": len(HOLES)})
 
+    post.model_call("repair", BOBBY, "orchestrator", SONNET, 7100, 320, dt=200)
+    post.emit("agent.decision", "repair", "Bobby: report final, gaps declared, on to the brief", decision(
+              "repair", f"Report final: {n_fixed} items fixed, {n_fail} failed and declared as gaps. No rework needed. On to the brief."),
+              agent_id=BOBBY)
+
     # ---- summarize + verify summary ---------------------------------------------------------
     post.emit("run.status", "summarize", "Writing the 3-page brief from the verified report only",
               {"status": "running", "stage": "summarize"})
@@ -1193,6 +1227,12 @@ def build_timelines(items, summary, docs) -> tuple[list[dict], list[dict]]:
     post.emit("agent.status", "verify_summary", "summarizer done", {"agent_id": "summarizer", "status": "done", "task": "Brief finished",
               "usage": {"model_calls": len(sentences), "tokens_in": 3000 * len(sentences), "tokens_out": 90 * len(sentences),
                         "cost_usd": round(len(sentences) * 0.0069, 4), "budget_usd": None}}, agent_id="summarizer")
+    post.model_call("verify_summary", BOBBY, "orchestrator", SONNET, 5600, 240, dt=200)
+    post.emit("agent.decision", "verify_summary", "Bobby: brief checked, signing off", decision(
+              "verify_summary", "Every brief sentence was checked against the report. Signing off."), agent_id=BOBBY)
+    post.emit("agent.status", "verify_summary", "Bobby done", {"agent_id": BOBBY, "status": "done", "task": "Run signed off",
+              "usage": {"model_calls": 5, "tokens_in": 26400, "tokens_out": 1500, "cost_usd": 0.0678, "budget_usd": None}},
+              agent_id=BOBBY)
     post.emit("usage.updated", "verify_summary", f"Spent ${post.usage['cost_usd']:.4f} in total", {"usage": post.usage})
     post.emit("summary.ready", "complete", f"Brief ready: {summary['stats']['sentences']} sentences, {summary['stats']['words']} words",
               {"sentences": summary["stats"]["sentences"], "words": summary["stats"]["words"]})

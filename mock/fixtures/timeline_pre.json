@@ -15,9 +15,65 @@
     "t": 300,
     "type": "agent.spawned",
     "stage": "plan",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "Bobby spawned: the orchestrator makes the big calls",
+    "data": {
+      "agent": {
+        "agent_id": "bobby",
+        "role": "orchestrator",
+        "model_id": "us.anthropic.claude-sonnet-5-5",
+        "status": "working",
+        "task": "Run the screen: dispatch the goons, review every stage, decide reworks",
+        "target_ids": [],
+        "started_at": "2026-11-08T00:30:00.120Z",
+        "finished_at": null,
+        "usage": {
+          "model_calls": 0,
+          "tokens_in": 0,
+          "tokens_out": 0,
+          "cost_usd": 0.0,
+          "budget_usd": null
+        },
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/bobby.jsonl",
+        "name": "Bobby",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
+      }
+    }
+  },
+  {
+    "t": 700,
+    "type": "gateway.request",
+    "stage": "plan",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "bobby -> us.anthropic.claude-sonnet-5-5 allowed (2100 in / 380 out)",
+    "data": {
+      "request_id": "REQ-0001",
+      "role": "orchestrator",
+      "action": "model.invoke",
+      "target": "us.anthropic.claude-sonnet-5-5",
+      "decision": "allowed",
+      "rule_id": "R-sys-models",
+      "reason": "Role 'orchestrator' may call this model",
+      "source_id": null,
+      "latency_ms": 1090,
+      "http_status": 200,
+      "bytes": null,
+      "tokens_in": 2100,
+      "tokens_out": 380,
+      "cost_usd": 0.008
+    }
+  },
+  {
+    "t": 850,
+    "type": "agent.spawned",
+    "stage": "plan",
     "agent_id": "planner",
     "level": "info",
-    "message": "planner spawned",
+    "message": "Bobby dispatched the planner",
     "data": {
       "agent": {
         "agent_id": "planner",
@@ -35,12 +91,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/planner.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/planner.jsonl",
+        "name": "Bobby's goon #1",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 700,
+    "t": 1250,
     "type": "agent.log",
     "stage": "plan",
     "agent_id": "planner",
@@ -52,14 +112,14 @@
     }
   },
   {
-    "t": 1300,
+    "t": 1850,
     "type": "gateway.request",
     "stage": "plan",
     "agent_id": "planner",
     "level": "info",
     "message": "planner -> us.anthropic.claude-sonnet-5-5 allowed (3200 in / 1400 out)",
     "data": {
-      "request_id": "REQ-0001",
+      "request_id": "REQ-0002",
       "role": "planner",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -76,7 +136,7 @@
     }
   },
   {
-    "t": 1650,
+    "t": 2200,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -100,7 +160,7 @@
     }
   },
   {
-    "t": 2000,
+    "t": 2550,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -123,7 +183,7 @@
     }
   },
   {
-    "t": 2350,
+    "t": 2900,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -147,7 +207,7 @@
     }
   },
   {
-    "t": 2700,
+    "t": 3250,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -172,7 +232,7 @@
     }
   },
   {
-    "t": 3050,
+    "t": 3600,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -196,7 +256,7 @@
     }
   },
   {
-    "t": 3400,
+    "t": 3950,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -219,7 +279,7 @@
     }
   },
   {
-    "t": 3750,
+    "t": 4300,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -242,7 +302,7 @@
     }
   },
   {
-    "t": 4100,
+    "t": 4650,
     "type": "plan.need",
     "stage": "plan",
     "agent_id": "planner",
@@ -265,7 +325,7 @@
     }
   },
   {
-    "t": 4400,
+    "t": 4950,
     "type": "agent.log",
     "stage": "plan",
     "agent_id": "planner",
@@ -277,14 +337,14 @@
     }
   },
   {
-    "t": 5100,
+    "t": 5650,
     "type": "gateway.request",
     "stage": "plan",
     "agent_id": "planner",
     "level": "info",
     "message": "planner -> us.anthropic.claude-sonnet-5-5 allowed (4100 in / 1900 out)",
     "data": {
-      "request_id": "REQ-0002",
+      "request_id": "REQ-0003",
       "role": "planner",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -301,7 +361,7 @@
     }
   },
   {
-    "t": 5400,
+    "t": 5950,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -351,7 +411,7 @@
     }
   },
   {
-    "t": 5700,
+    "t": 6250,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -408,7 +468,7 @@
     }
   },
   {
-    "t": 6000,
+    "t": 6550,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -458,7 +518,7 @@
     }
   },
   {
-    "t": 6300,
+    "t": 6850,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -510,7 +570,7 @@
     }
   },
   {
-    "t": 6600,
+    "t": 7150,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -560,7 +620,7 @@
     }
   },
   {
-    "t": 6900,
+    "t": 7450,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -610,7 +670,7 @@
     }
   },
   {
-    "t": 7200,
+    "t": 7750,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -660,7 +720,7 @@
     }
   },
   {
-    "t": 7500,
+    "t": 8050,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -710,7 +770,7 @@
     }
   },
   {
-    "t": 7800,
+    "t": 8350,
     "type": "plan.source",
     "stage": "plan",
     "agent_id": "planner",
@@ -760,7 +820,7 @@
     }
   },
   {
-    "t": 7950,
+    "t": 8500,
     "type": "agent.status",
     "stage": "plan",
     "agent_id": "planner",
@@ -780,7 +840,47 @@
     }
   },
   {
-    "t": 8100,
+    "t": 8800,
+    "type": "gateway.request",
+    "stage": "plan",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "bobby -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 260 out)",
+    "data": {
+      "request_id": "REQ-0004",
+      "role": "orchestrator",
+      "action": "model.invoke",
+      "target": "us.anthropic.claude-sonnet-5-5",
+      "decision": "allowed",
+      "rule_id": "R-sys-models",
+      "reason": "Role 'orchestrator' may call this model",
+      "source_id": null,
+      "latency_ms": 1030,
+      "http_status": 200,
+      "bytes": null,
+      "tokens_in": 5200,
+      "tokens_out": 260,
+      "cost_usd": 0.013
+    }
+  },
+  {
+    "t": 8950,
+    "type": "agent.decision",
+    "stage": "plan",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "Bobby: plan checked, the analyst decides what gets fetched",
+    "data": {
+      "agent_id": "bobby",
+      "stage": "plan",
+      "decision": "proceed",
+      "summary": "Plan checked: 8 needs and 9 sources, primary filings first. Nothing is fetched until the analyst approves.",
+      "reworks": [],
+      "comment_id": null
+    }
+  },
+  {
+    "t": 9100,
     "type": "plan.ready",
     "stage": "approve",
     "agent_id": "planner",
@@ -792,7 +892,7 @@
     }
   },
   {
-    "t": 8150,
+    "t": 9150,
     "type": "run.status",
     "stage": "approve",
     "agent_id": null,

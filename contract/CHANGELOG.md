@@ -2,6 +2,14 @@
 
 Newest first. Every shape change gets a line here and a bump in `contract/VERSION`.
 
+## 0.3.0 (Sat Nov 7, 2026, 11:45 PM)
+
+All additive, from Gordon's notes and Tong's request to rerun one agent (`frontend/CONTRACT_REQUESTS.md` section 4).
+- Bobby, the orchestrator: role `orchestrator`, `Agent.name` ("Bobby", "Bobby's goon #n"), event `agent.decision` (`AgentDecisionData`, `ReworkOrder`).
+- Rerun one agent in the same run: `POST /runs/{id}/agents/{agent_id}/rerun`, `AgentRerunRequest`, `Agent.parent_agent_id`, `Agent.instructions`, `Agent.rerun_by`, `item.updated` reason `rework`, repair action `rework`.
+- Fixtures: Bobby spawns first, logs four calls, and every other agent is one of his goons. The mock reruns one agent with new item versions and re-checks. Event types: 29.
+- Frontend heads-up: `AgentRole` gained `orchestrator`, so a `Record<AgentRole, ...>` needs that key.
+
 ## 0.2.0 (Sat Nov 7, 2026, 11 PM)
 
 All additive. From Tong's frontend requests (`frontend/CONTRACT_REQUESTS.md`), approved by Gordon, plus the backend's `source_revoked` request and the demo cache labels.

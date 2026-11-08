@@ -35,7 +35,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/fetcher-01.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/fetcher-01.jsonl",
+        "name": "Bobby's goon #2",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -63,7 +67,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/fetcher-02.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/fetcher-02.jsonl",
+        "name": "Bobby's goon #3",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -91,7 +99,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/fetcher-03.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/fetcher-03.jsonl",
+        "name": "Bobby's goon #4",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -122,7 +134,7 @@
     "level": "info",
     "message": "fetcher-01 fetch https://data.sec.gov/api/xbrl/companyfacts/CIK0009999999.json allowed",
     "data": {
-      "request_id": "REQ-0003",
+      "request_id": "REQ-0005",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://data.sec.gov/api/xbrl/companyfacts/CIK0009999999.json",
@@ -203,7 +215,7 @@
     "level": "info",
     "message": "fetcher-02 fetch https://www.sec.gov/Archives/edgar/data/9999999/000999999925000041/nwi-20250930.pdf allowed",
     "data": {
-      "request_id": "REQ-0004",
+      "request_id": "REQ-0006",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://www.sec.gov/Archives/edgar/data/9999999/000999999925000041/nwi-20250930.pdf",
@@ -284,7 +296,7 @@
     "level": "info",
     "message": "fetcher-03 fetch https://investors.northwind-instruments.example/investor-day-2025.pdf allowed",
     "data": {
-      "request_id": "REQ-0005",
+      "request_id": "REQ-0007",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://investors.northwind-instruments.example/investor-day-2025.pdf",
@@ -346,7 +358,7 @@
     "level": "info",
     "message": "fetcher-01 fetch https://market-reports.example/lab-analytical-instruments-2025 allowed",
     "data": {
-      "request_id": "REQ-0006",
+      "request_id": "REQ-0008",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://market-reports.example/lab-analytical-instruments-2025",
@@ -427,7 +439,7 @@
     "level": "info",
     "message": "fetcher-02 fetch https://labbusinessweekly.example/2025/10/northwind-consumables-contract allowed",
     "data": {
-      "request_id": "REQ-0007",
+      "request_id": "REQ-0009",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://labbusinessweekly.example/2025/10/northwind-consumables-contract",
@@ -489,7 +501,7 @@
     "level": "warn",
     "message": "fetcher-02 fetch https://stock-chatter.example/northwind blocked",
     "data": {
-      "request_id": "REQ-0008",
+      "request_id": "REQ-0010",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://stock-chatter.example/northwind",
@@ -532,7 +544,7 @@
     "level": "info",
     "message": "fetcher-03 fetch https://federal-register.example/2025-18842 allowed",
     "data": {
-      "request_id": "REQ-0009",
+      "request_id": "REQ-0011",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://federal-register.example/2025-18842",
@@ -613,7 +625,7 @@
     "level": "info",
     "message": "fetcher-01 fetch https://forum.example/r/labrats/comments/abc123/northwind_service_delays allowed",
     "data": {
-      "request_id": "REQ-0010",
+      "request_id": "REQ-0012",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://forum.example/r/labrats/comments/abc123/northwind_service_delays",
@@ -637,7 +649,7 @@
     "level": "warn",
     "message": "Guardrails flagged S-009: page quarantined",
     "data": {
-      "request_id": "REQ-0011",
+      "request_id": "REQ-0013",
       "role": "fetcher",
       "action": "fetch",
       "target": "https://forum.example/r/labrats/comments/abc123/northwind_service_delays",
@@ -808,7 +820,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/xbrl-reader.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/xbrl-reader.jsonl",
+        "name": "Bobby's goon #5",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -838,7 +854,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-01.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-01.jsonl",
+        "name": "Bobby's goon #6",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -868,7 +888,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-02.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-02.jsonl",
+        "name": "Bobby's goon #7",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -898,7 +922,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-03.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-03.jsonl",
+        "name": "Bobby's goon #8",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -928,7 +956,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-04.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-04.jsonl",
+        "name": "Bobby's goon #9",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -958,7 +990,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-05.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-05.jsonl",
+        "name": "Bobby's goon #10",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -988,7 +1024,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-06.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/extractor-06.jsonl",
+        "name": "Bobby's goon #11",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -3079,7 +3119,7 @@
     "level": "info",
     "message": "extractor-02 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0012",
+      "request_id": "REQ-0014",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -3204,7 +3244,7 @@
     "level": "info",
     "message": "extractor-01 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0013",
+      "request_id": "REQ-0015",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -3329,7 +3369,7 @@
     "level": "info",
     "message": "extractor-01 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0014",
+      "request_id": "REQ-0016",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -3454,7 +3494,7 @@
     "level": "info",
     "message": "extractor-01 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0015",
+      "request_id": "REQ-0017",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -3471,7 +3511,24 @@
     }
   },
   {
-    "t": 10010,
+    "t": 9930,
+    "type": "usage.updated",
+    "stage": "extract",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.0880 so far",
+    "data": {
+      "usage": {
+        "model_calls": 8,
+        "tokens_in": 25000,
+        "tokens_out": 5740,
+        "cost_usd": 0.088,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 10020,
     "type": "item.created",
     "stage": "extract",
     "agent_id": "extractor-01",
@@ -3522,7 +3579,7 @@
     }
   },
   {
-    "t": 10070,
+    "t": 10080,
     "type": "item.verified",
     "stage": "extract",
     "agent_id": null,
@@ -3572,14 +3629,14 @@
     }
   },
   {
-    "t": 10190,
+    "t": 10200,
     "type": "gateway.request",
     "stage": "extract",
     "agent_id": "extractor-01",
     "level": "info",
     "message": "extractor-01 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0016",
+      "request_id": "REQ-0018",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -3596,7 +3653,7 @@
     }
   },
   {
-    "t": 10280,
+    "t": 10290,
     "type": "item.created",
     "stage": "extract",
     "agent_id": "extractor-01",
@@ -3647,7 +3704,7 @@
     }
   },
   {
-    "t": 10340,
+    "t": 10350,
     "type": "item.verified",
     "stage": "extract",
     "agent_id": null,
@@ -3697,14 +3754,14 @@
     }
   },
   {
-    "t": 10460,
+    "t": 10470,
     "type": "gateway.request",
     "stage": "extract",
     "agent_id": "extractor-01",
     "level": "info",
     "message": "extractor-01 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0017",
+      "request_id": "REQ-0019",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -3718,23 +3775,6 @@
       "tokens_in": 2600,
       "tokens_out": 450,
       "cost_usd": 0.00485
-    }
-  },
-  {
-    "t": 10470,
-    "type": "usage.updated",
-    "stage": "extract",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.0767 so far",
-    "data": {
-      "usage": {
-        "model_calls": 8,
-        "tokens_in": 22900,
-        "tokens_out": 6000,
-        "cost_usd": 0.0767,
-        "budget_usd": 5.0
-      }
     }
   },
   {
@@ -3829,7 +3869,7 @@
     "level": "info",
     "message": "extractor-03 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0018",
+      "request_id": "REQ-0020",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4004,7 +4044,11 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/repairer-01.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/repairer-01.jsonl",
+        "name": "Bobby's goon #12",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
@@ -4016,7 +4060,7 @@
     "level": "info",
     "message": "repairer-01 -> us.anthropic.claude-haiku-5-5 allowed (900 in / 160 out)",
     "data": {
-      "request_id": "REQ-0019",
+      "request_id": "REQ-0021",
       "role": "repairer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4425,7 +4469,7 @@
     "level": "info",
     "message": "extractor-03 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0020",
+      "request_id": "REQ-0022",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4572,7 +4616,7 @@
     "level": "info",
     "message": "extractor-03 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0021",
+      "request_id": "REQ-0023",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4697,7 +4741,7 @@
     "level": "info",
     "message": "extractor-03 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0022",
+      "request_id": "REQ-0024",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4823,7 +4867,7 @@
     "level": "info",
     "message": "extractor-03 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0023",
+      "request_id": "REQ-0025",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4840,7 +4884,24 @@
     }
   },
   {
-    "t": 12440,
+    "t": 12360,
+    "type": "usage.updated",
+    "stage": "extract",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.1236 so far",
+    "data": {
+      "usage": {
+        "model_calls": 16,
+        "tokens_in": 44100,
+        "tokens_out": 9050,
+        "cost_usd": 0.12365,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 12450,
     "type": "item.created",
     "stage": "extract",
     "agent_id": "extractor-03",
@@ -4891,7 +4952,7 @@
     }
   },
   {
-    "t": 12500,
+    "t": 12510,
     "type": "item.verified",
     "stage": "extract",
     "agent_id": null,
@@ -4941,14 +5002,14 @@
     }
   },
   {
-    "t": 12620,
+    "t": 12630,
     "type": "gateway.request",
     "stage": "extract",
     "agent_id": "extractor-02",
     "level": "info",
     "message": "extractor-02 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0024",
+      "request_id": "REQ-0026",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -4965,7 +5026,7 @@
     }
   },
   {
-    "t": 12710,
+    "t": 12720,
     "type": "item.created",
     "stage": "extract",
     "agent_id": "extractor-02",
@@ -5010,7 +5071,7 @@
     }
   },
   {
-    "t": 12770,
+    "t": 12780,
     "type": "item.verified",
     "stage": "extract",
     "agent_id": null,
@@ -5049,14 +5110,14 @@
     }
   },
   {
-    "t": 12890,
+    "t": 12900,
     "type": "gateway.request",
     "stage": "extract",
     "agent_id": "extractor-02",
     "level": "info",
     "message": "extractor-02 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0025",
+      "request_id": "REQ-0027",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -5070,23 +5131,6 @@
       "tokens_in": 2600,
       "tokens_out": 450,
       "cost_usd": 0.00485
-    }
-  },
-  {
-    "t": 12900,
-    "type": "usage.updated",
-    "stage": "extract",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.1124 so far",
-    "data": {
-      "usage": {
-        "model_calls": 16,
-        "tokens_in": 42000,
-        "tokens_out": 9310,
-        "cost_usd": 0.11235,
-        "budget_usd": 5.0
-      }
     }
   },
   {
@@ -5198,7 +5242,7 @@
     "level": "info",
     "message": "extractor-04 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0026",
+      "request_id": "REQ-0028",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -5323,7 +5367,7 @@
     "level": "info",
     "message": "extractor-04 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0027",
+      "request_id": "REQ-0029",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -5431,7 +5475,7 @@
     "level": "info",
     "message": "extractor-05 -> us.anthropic.claude-haiku-5-5 allowed (2600 in / 450 out)",
     "data": {
-      "request_id": "REQ-0028",
+      "request_id": "REQ-0030",
       "role": "extractor",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -5807,7 +5851,47 @@
     }
   },
   {
-    "t": 14570,
+    "t": 14620,
+    "type": "gateway.request",
+    "stage": "extract",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "bobby -> us.anthropic.claude-sonnet-5-5 allowed (6400 in / 300 out)",
+    "data": {
+      "request_id": "REQ-0031",
+      "role": "orchestrator",
+      "action": "model.invoke",
+      "target": "us.anthropic.claude-sonnet-5-5",
+      "decision": "allowed",
+      "rule_id": "R-sys-models",
+      "reason": "Role 'orchestrator' may call this model",
+      "source_id": null,
+      "latency_ms": 1050,
+      "http_status": 200,
+      "bytes": null,
+      "tokens_in": 6400,
+      "tokens_out": 300,
+      "cost_usd": 0.0158
+    }
+  },
+  {
+    "t": 14770,
+    "type": "agent.decision",
+    "stage": "extract",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "Bobby: extraction checked, on to the draft",
+    "data": {
+      "agent_id": "bobby",
+      "stage": "extract",
+      "decision": "proceed",
+      "summary": "Every data item passed or was fixed. Code caught the digit slip in D-028 and the repairer re-cited it. On to the draft.",
+      "reworks": [],
+      "comment_id": null
+    }
+  },
+  {
+    "t": 14920,
     "type": "run.status",
     "stage": "draft",
     "agent_id": null,
@@ -5819,7 +5903,7 @@
     }
   },
   {
-    "t": 14720,
+    "t": 15070,
     "type": "agent.spawned",
     "stage": "draft",
     "agent_id": "drafter",
@@ -5842,19 +5926,23 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/drafter.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/drafter.jsonl",
+        "name": "Bobby's goon #13",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 14920,
+    "t": 15270,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0029",
+      "request_id": "REQ-0032",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -5871,7 +5959,7 @@
     }
   },
   {
-    "t": 15040,
+    "t": 15390,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -5967,14 +6055,14 @@
     }
   },
   {
-    "t": 15240,
+    "t": 15590,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0030",
+      "request_id": "REQ-0033",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -5991,7 +6079,24 @@
     }
   },
   {
-    "t": 15360,
+    "t": 15600,
+    "type": "usage.updated",
+    "stage": "draft",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.1949 so far",
+    "data": {
+      "usage": {
+        "model_calls": 24,
+        "tokens_in": 73900,
+        "tokens_out": 12640,
+        "cost_usd": 0.1949,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 15720,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6023,14 +6128,14 @@
     }
   },
   {
-    "t": 15560,
+    "t": 15920,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0031",
+      "request_id": "REQ-0034",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6047,7 +6152,7 @@
     }
   },
   {
-    "t": 15680,
+    "t": 16040,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6079,14 +6184,14 @@
     }
   },
   {
-    "t": 15880,
+    "t": 16240,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0032",
+      "request_id": "REQ-0035",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6103,7 +6208,7 @@
     }
   },
   {
-    "t": 16000,
+    "t": 16360,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6135,14 +6240,14 @@
     }
   },
   {
-    "t": 16200,
+    "t": 16560,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0033",
+      "request_id": "REQ-0036",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6159,24 +6264,7 @@
     }
   },
   {
-    "t": 16210,
-    "type": "usage.updated",
-    "stage": "draft",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.2049 so far",
-    "data": {
-      "usage": {
-        "model_calls": 24,
-        "tokens_in": 75800,
-        "tokens_out": 13260,
-        "cost_usd": 0.2049,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 16330,
+    "t": 16680,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6215,14 +6303,14 @@
     }
   },
   {
-    "t": 16530,
+    "t": 16880,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0034",
+      "request_id": "REQ-0037",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6239,7 +6327,7 @@
     }
   },
   {
-    "t": 16650,
+    "t": 17000,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6279,14 +6367,14 @@
     }
   },
   {
-    "t": 16850,
+    "t": 17200,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0035",
+      "request_id": "REQ-0038",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6303,7 +6391,7 @@
     }
   },
   {
-    "t": 16970,
+    "t": 17320,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6334,14 +6422,14 @@
     }
   },
   {
-    "t": 17170,
+    "t": 17520,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0036",
+      "request_id": "REQ-0039",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6358,7 +6446,7 @@
     }
   },
   {
-    "t": 17290,
+    "t": 17640,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6393,14 +6481,14 @@
     }
   },
   {
-    "t": 17490,
+    "t": 17840,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0037",
+      "request_id": "REQ-0040",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6417,7 +6505,7 @@
     }
   },
   {
-    "t": 17610,
+    "t": 17960,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6448,14 +6536,14 @@
     }
   },
   {
-    "t": 17810,
+    "t": 18160,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0038",
+      "request_id": "REQ-0041",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6472,7 +6560,24 @@
     }
   },
   {
-    "t": 17930,
+    "t": 18170,
+    "type": "usage.updated",
+    "stage": "draft",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.3197 so far",
+    "data": {
+      "usage": {
+        "model_calls": 32,
+        "tokens_in": 115500,
+        "tokens_out": 16800,
+        "cost_usd": 0.3197,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 18290,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6509,14 +6614,14 @@
     }
   },
   {
-    "t": 18130,
+    "t": 18490,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0039",
+      "request_id": "REQ-0042",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6533,7 +6638,7 @@
     }
   },
   {
-    "t": 18250,
+    "t": 18610,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6568,14 +6673,14 @@
     }
   },
   {
-    "t": 18450,
+    "t": 18810,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0040",
+      "request_id": "REQ-0043",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6592,7 +6697,7 @@
     }
   },
   {
-    "t": 18570,
+    "t": 18930,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6631,14 +6736,14 @@
     }
   },
   {
-    "t": 18770,
+    "t": 19130,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0041",
+      "request_id": "REQ-0044",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6655,24 +6760,7 @@
     }
   },
   {
-    "t": 18780,
-    "type": "usage.updated",
-    "stage": "draft",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.3297 so far",
-    "data": {
-      "usage": {
-        "model_calls": 32,
-        "tokens_in": 117400,
-        "tokens_out": 17420,
-        "cost_usd": 0.3297,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 18900,
+    "t": 19250,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6710,14 +6798,14 @@
     }
   },
   {
-    "t": 19100,
+    "t": 19450,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0042",
+      "request_id": "REQ-0045",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6734,7 +6822,7 @@
     }
   },
   {
-    "t": 19220,
+    "t": 19570,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6772,14 +6860,14 @@
     }
   },
   {
-    "t": 19420,
+    "t": 19770,
     "type": "gateway.request",
     "stage": "draft",
     "agent_id": "drafter",
     "level": "info",
     "message": "drafter -> us.anthropic.claude-sonnet-5-5 allowed (5200 in / 520 out)",
     "data": {
-      "request_id": "REQ-0043",
+      "request_id": "REQ-0046",
       "role": "drafter",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -6796,7 +6884,7 @@
     }
   },
   {
-    "t": 19540,
+    "t": 19890,
     "type": "item.created",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6831,7 +6919,7 @@
     }
   },
   {
-    "t": 19660,
+    "t": 20010,
     "type": "item.created",
     "stage": "draft",
     "agent_id": null,
@@ -6896,7 +6984,7 @@
     }
   },
   {
-    "t": 19780,
+    "t": 20130,
     "type": "item.created",
     "stage": "draft",
     "agent_id": null,
@@ -6942,7 +7030,7 @@
     }
   },
   {
-    "t": 19930,
+    "t": 20280,
     "type": "agent.status",
     "stage": "draft",
     "agent_id": "drafter",
@@ -6962,7 +7050,7 @@
     }
   },
   {
-    "t": 20080,
+    "t": 20430,
     "type": "run.status",
     "stage": "verify",
     "agent_id": null,
@@ -6974,7 +7062,7 @@
     }
   },
   {
-    "t": 20120,
+    "t": 20470,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-001",
@@ -6999,12 +7087,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-001.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-001.jsonl",
+        "name": "Bobby's goon #14",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20160,
+    "t": 20510,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-002",
@@ -7029,12 +7121,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-002.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-002.jsonl",
+        "name": "Bobby's goon #15",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20200,
+    "t": 20550,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-003",
@@ -7059,12 +7155,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-003.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-003.jsonl",
+        "name": "Bobby's goon #16",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20240,
+    "t": 20590,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-004",
@@ -7089,12 +7189,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-004.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-004.jsonl",
+        "name": "Bobby's goon #17",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20280,
+    "t": 20630,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-005",
@@ -7119,12 +7223,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-005.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-005.jsonl",
+        "name": "Bobby's goon #18",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20320,
+    "t": 20670,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-006",
@@ -7149,12 +7257,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-006.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-006.jsonl",
+        "name": "Bobby's goon #19",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20360,
+    "t": 20710,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-007",
@@ -7179,12 +7291,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-007.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-007.jsonl",
+        "name": "Bobby's goon #20",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20400,
+    "t": 20750,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-008",
@@ -7209,12 +7325,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-008.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-008.jsonl",
+        "name": "Bobby's goon #21",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20440,
+    "t": 20790,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-C-009",
@@ -7239,12 +7359,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-009.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-C-009.jsonl",
+        "name": "Bobby's goon #22",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20480,
+    "t": 20830,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-E-001",
@@ -7269,12 +7393,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-001.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-001.jsonl",
+        "name": "Bobby's goon #23",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20520,
+    "t": 20870,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-E-003",
@@ -7299,12 +7427,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-003.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-003.jsonl",
+        "name": "Bobby's goon #24",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20560,
+    "t": 20910,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-E-004",
@@ -7329,12 +7461,16 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-004.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-004.jsonl",
+        "name": "Bobby's goon #25",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20600,
+    "t": 20950,
     "type": "agent.spawned",
     "stage": "verify",
     "agent_id": "verifier-E-005",
@@ -7359,19 +7495,23 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-005.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/verifier-E-005.jsonl",
+        "name": "Bobby's goon #26",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 20690,
+    "t": 21040,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-001",
     "level": "info",
     "message": "verifier-C-001 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0044",
+      "request_id": "REQ-0047",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -7388,7 +7528,7 @@
     }
   },
   {
-    "t": 20750,
+    "t": 21100,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-001",
@@ -7451,7 +7591,7 @@
     }
   },
   {
-    "t": 20770,
+    "t": 21120,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-001",
@@ -7471,14 +7611,14 @@
     }
   },
   {
-    "t": 20860,
+    "t": 21210,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-002",
     "level": "info",
     "message": "verifier-C-002 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0045",
+      "request_id": "REQ-0048",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -7495,7 +7635,7 @@
     }
   },
   {
-    "t": 20920,
+    "t": 21270,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-002",
@@ -7547,7 +7687,7 @@
     }
   },
   {
-    "t": 20940,
+    "t": 21290,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-002",
@@ -7567,14 +7707,14 @@
     }
   },
   {
-    "t": 21030,
+    "t": 21380,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-003",
     "level": "info",
     "message": "verifier-C-003 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0046",
+      "request_id": "REQ-0049",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -7591,7 +7731,24 @@
     }
   },
   {
-    "t": 21090,
+    "t": 21390,
+    "type": "usage.updated",
+    "stage": "verify",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.4040 so far",
+    "data": {
+      "usage": {
+        "model_calls": 40,
+        "tokens_in": 146000,
+        "tokens_out": 19760,
+        "cost_usd": 0.404,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 21450,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-003",
@@ -7643,7 +7800,7 @@
     }
   },
   {
-    "t": 21110,
+    "t": 21470,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-003",
@@ -7663,14 +7820,14 @@
     }
   },
   {
-    "t": 21200,
+    "t": 21560,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-004",
     "level": "info",
     "message": "verifier-C-004 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0047",
+      "request_id": "REQ-0050",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -7687,7 +7844,7 @@
     }
   },
   {
-    "t": 21260,
+    "t": 21620,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-004",
@@ -7739,7 +7896,7 @@
     }
   },
   {
-    "t": 21280,
+    "t": 21640,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-004",
@@ -7759,14 +7916,14 @@
     }
   },
   {
-    "t": 21370,
+    "t": 21730,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-005",
     "level": "info",
     "message": "verifier-C-005 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0048",
+      "request_id": "REQ-0051",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -7783,7 +7940,7 @@
     }
   },
   {
-    "t": 21450,
+    "t": 21810,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-005",
@@ -7838,7 +7995,7 @@
     }
   },
   {
-    "t": 21470,
+    "t": 21830,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-005",
@@ -7858,14 +8015,14 @@
     }
   },
   {
-    "t": 21560,
+    "t": 21920,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-006",
     "level": "info",
     "message": "verifier-C-006 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0049",
+      "request_id": "REQ-0052",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -7882,24 +8039,7 @@
     }
   },
   {
-    "t": 21570,
-    "type": "usage.updated",
-    "stage": "verify",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.3735 so far",
-    "data": {
-      "usage": {
-        "model_calls": 40,
-        "tokens_in": 136800,
-        "tokens_out": 19180,
-        "cost_usd": 0.3735,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 21630,
+    "t": 21980,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-006",
@@ -7962,7 +8102,7 @@
     }
   },
   {
-    "t": 21650,
+    "t": 22000,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-006",
@@ -7982,14 +8122,14 @@
     }
   },
   {
-    "t": 21740,
+    "t": 22090,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-007",
     "level": "info",
     "message": "verifier-C-007 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0050",
+      "request_id": "REQ-0053",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8006,7 +8146,7 @@
     }
   },
   {
-    "t": 21800,
+    "t": 22150,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-007",
@@ -8058,7 +8198,7 @@
     }
   },
   {
-    "t": 21820,
+    "t": 22170,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-007",
@@ -8078,14 +8218,14 @@
     }
   },
   {
-    "t": 21910,
+    "t": 22260,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-008",
     "level": "info",
     "message": "verifier-C-008 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0051",
+      "request_id": "REQ-0054",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8102,7 +8242,7 @@
     }
   },
   {
-    "t": 21970,
+    "t": 22320,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-008",
@@ -8154,7 +8294,7 @@
     }
   },
   {
-    "t": 21990,
+    "t": 22340,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-008",
@@ -8174,14 +8314,14 @@
     }
   },
   {
-    "t": 22080,
+    "t": 22430,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-C-009",
     "level": "info",
     "message": "verifier-C-009 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0052",
+      "request_id": "REQ-0055",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8198,7 +8338,7 @@
     }
   },
   {
-    "t": 22160,
+    "t": 22510,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-C-009",
@@ -8242,7 +8382,7 @@
     }
   },
   {
-    "t": 22180,
+    "t": 22530,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-C-009",
@@ -8262,14 +8402,14 @@
     }
   },
   {
-    "t": 22270,
+    "t": 22620,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-E-001",
     "level": "info",
     "message": "verifier-E-001 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0053",
+      "request_id": "REQ-0056",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8286,7 +8426,7 @@
     }
   },
   {
-    "t": 22330,
+    "t": 22680,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-E-001",
@@ -8338,7 +8478,7 @@
     }
   },
   {
-    "t": 22350,
+    "t": 22700,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-E-001",
@@ -8358,7 +8498,7 @@
     }
   },
   {
-    "t": 22410,
+    "t": 22760,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": null,
@@ -8397,14 +8537,14 @@
     }
   },
   {
-    "t": 22500,
+    "t": 22850,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-E-003",
     "level": "info",
     "message": "verifier-E-003 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0054",
+      "request_id": "REQ-0057",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8421,7 +8561,24 @@
     }
   },
   {
-    "t": 22560,
+    "t": 22860,
+    "type": "usage.updated",
+    "stage": "verify",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.4208 so far",
+    "data": {
+      "usage": {
+        "model_calls": 48,
+        "tokens_in": 158000,
+        "tokens_out": 20720,
+        "cost_usd": 0.4208,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 22920,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-E-003",
@@ -8462,7 +8619,7 @@
     }
   },
   {
-    "t": 22580,
+    "t": 22940,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-E-003",
@@ -8482,14 +8639,14 @@
     }
   },
   {
-    "t": 22670,
+    "t": 23030,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-E-004",
     "level": "info",
     "message": "verifier-E-004 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0055",
+      "request_id": "REQ-0058",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8506,7 +8663,7 @@
     }
   },
   {
-    "t": 22730,
+    "t": 23090,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-E-004",
@@ -8547,7 +8704,7 @@
     }
   },
   {
-    "t": 22750,
+    "t": 23110,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-E-004",
@@ -8567,14 +8724,14 @@
     }
   },
   {
-    "t": 22840,
+    "t": 23200,
     "type": "gateway.request",
     "stage": "verify",
     "agent_id": "verifier-E-005",
     "level": "info",
     "message": "verifier-E-005 -> us.anthropic.claude-haiku-5-5 allowed (1500 in / 120 out)",
     "data": {
-      "request_id": "REQ-0056",
+      "request_id": "REQ-0059",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8591,7 +8748,7 @@
     }
   },
   {
-    "t": 22900,
+    "t": 23260,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": "verifier-E-005",
@@ -8643,7 +8800,7 @@
     }
   },
   {
-    "t": 22920,
+    "t": 23280,
     "type": "agent.status",
     "stage": "verify",
     "agent_id": "verifier-E-005",
@@ -8663,7 +8820,7 @@
     }
   },
   {
-    "t": 22980,
+    "t": 23340,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": null,
@@ -8702,7 +8859,7 @@
     }
   },
   {
-    "t": 23040,
+    "t": 23400,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": null,
@@ -8741,7 +8898,7 @@
     }
   },
   {
-    "t": 23100,
+    "t": 23460,
     "type": "item.verified",
     "stage": "verify",
     "agent_id": null,
@@ -8780,7 +8937,7 @@
     }
   },
   {
-    "t": 23250,
+    "t": 23610,
     "type": "run.status",
     "stage": "repair",
     "agent_id": null,
@@ -8792,7 +8949,7 @@
     }
   },
   {
-    "t": 23400,
+    "t": 23760,
     "type": "agent.spawned",
     "stage": "repair",
     "agent_id": "repairer-02",
@@ -8817,19 +8974,23 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/repairer-02.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/repairer-02.jsonl",
+        "name": "Bobby's goon #27",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 23550,
+    "t": 23910,
     "type": "gateway.request",
     "stage": "repair",
     "agent_id": "repairer-02",
     "level": "info",
     "message": "repairer-02 -> us.anthropic.claude-haiku-5-5 allowed (1800 in / 200 out)",
     "data": {
-      "request_id": "REQ-0057",
+      "request_id": "REQ-0060",
       "role": "repairer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -8846,24 +9007,7 @@
     }
   },
   {
-    "t": 23560,
-    "type": "usage.updated",
-    "stage": "repair",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.3910 so far",
-    "data": {
-      "usage": {
-        "model_calls": 48,
-        "tokens_in": 149100,
-        "tokens_out": 20220,
-        "cost_usd": 0.391,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 23710,
+    "t": 24060,
     "type": "agent.log",
     "stage": "repair",
     "agent_id": "repairer-02",
@@ -8875,7 +9019,7 @@
     }
   },
   {
-    "t": 23860,
+    "t": 24210,
     "type": "item.updated",
     "stage": "repair",
     "agent_id": "repairer-02",
@@ -9019,7 +9163,7 @@
     }
   },
   {
-    "t": 24010,
+    "t": 24360,
     "type": "item.verified",
     "stage": "repair",
     "agent_id": "verifier-C-005",
@@ -9141,7 +9285,7 @@
     }
   },
   {
-    "t": 24160,
+    "t": 24510,
     "type": "agent.spawned",
     "stage": "repair",
     "agent_id": "repairer-03",
@@ -9166,19 +9310,23 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/repairer-03.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/repairer-03.jsonl",
+        "name": "Bobby's goon #28",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 24310,
+    "t": 24660,
     "type": "gateway.request",
     "stage": "repair",
     "agent_id": "repairer-03",
     "level": "info",
     "message": "repairer-03 -> us.anthropic.claude-haiku-5-5 allowed (1800 in / 200 out)",
     "data": {
-      "request_id": "REQ-0058",
+      "request_id": "REQ-0061",
       "role": "repairer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -9195,7 +9343,7 @@
     }
   },
   {
-    "t": 24460,
+    "t": 24810,
     "type": "agent.log",
     "stage": "repair",
     "agent_id": "repairer-03",
@@ -9207,14 +9355,14 @@
     }
   },
   {
-    "t": 24610,
+    "t": 24960,
     "type": "gateway.request",
     "stage": "repair",
     "agent_id": "repairer-03",
     "level": "info",
     "message": "repairer-03 -> us.anthropic.claude-haiku-5-5 allowed (1800 in / 200 out)",
     "data": {
-      "request_id": "REQ-0059",
+      "request_id": "REQ-0062",
       "role": "repairer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -9231,7 +9379,7 @@
     }
   },
   {
-    "t": 24760,
+    "t": 25110,
     "type": "agent.log",
     "stage": "repair",
     "agent_id": "repairer-03",
@@ -9243,7 +9391,7 @@
     }
   },
   {
-    "t": 24910,
+    "t": 25260,
     "type": "item.updated",
     "stage": "repair",
     "agent_id": "repairer-03",
@@ -9386,7 +9534,7 @@
     }
   },
   {
-    "t": 25060,
+    "t": 25410,
     "type": "item.verified",
     "stage": "repair",
     "agent_id": "verifier-C-009",
@@ -9515,7 +9663,7 @@
     }
   },
   {
-    "t": 25210,
+    "t": 25560,
     "type": "report.ready",
     "stage": "repair",
     "agent_id": null,
@@ -9530,7 +9678,47 @@
     }
   },
   {
-    "t": 25360,
+    "t": 25760,
+    "type": "gateway.request",
+    "stage": "repair",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "bobby -> us.anthropic.claude-sonnet-5-5 allowed (7100 in / 320 out)",
+    "data": {
+      "request_id": "REQ-0063",
+      "role": "orchestrator",
+      "action": "model.invoke",
+      "target": "us.anthropic.claude-sonnet-5-5",
+      "decision": "allowed",
+      "rule_id": "R-sys-models",
+      "reason": "Role 'orchestrator' may call this model",
+      "source_id": null,
+      "latency_ms": 1060,
+      "http_status": 200,
+      "bytes": null,
+      "tokens_in": 7100,
+      "tokens_out": 320,
+      "cost_usd": 0.0174
+    }
+  },
+  {
+    "t": 25910,
+    "type": "agent.decision",
+    "stage": "repair",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "Bobby: report final, gaps declared, on to the brief",
+    "data": {
+      "agent_id": "bobby",
+      "stage": "repair",
+      "decision": "proceed",
+      "summary": "Report final: 2 items fixed, 1 failed and declared as gaps. No rework needed. On to the brief.",
+      "reworks": [],
+      "comment_id": null
+    }
+  },
+  {
+    "t": 26060,
     "type": "run.status",
     "stage": "summarize",
     "agent_id": null,
@@ -9542,7 +9730,7 @@
     }
   },
   {
-    "t": 25510,
+    "t": 26210,
     "type": "agent.spawned",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9565,19 +9753,23 @@
           "cost_usd": 0.0,
           "budget_usd": null
         },
-        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/summarizer.jsonl"
+        "transcript_path": "runs/run_20261108_fx0001/northwind-instruments/00-Meta/agents/summarizer.jsonl",
+        "name": "Bobby's goon #29",
+        "parent_agent_id": null,
+        "instructions": null,
+        "rerun_by": null
       }
     }
   },
   {
-    "t": 25630,
+    "t": 26330,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0060",
+      "request_id": "REQ-0064",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9594,7 +9786,7 @@
     }
   },
   {
-    "t": 25720,
+    "t": 26420,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9620,14 +9812,14 @@
     }
   },
   {
-    "t": 25840,
+    "t": 26540,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0061",
+      "request_id": "REQ-0065",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9644,7 +9836,24 @@
     }
   },
   {
-    "t": 25930,
+    "t": 26550,
+    "type": "usage.updated",
+    "stage": "summarize",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.4646 so far",
+    "data": {
+      "usage": {
+        "model_calls": 56,
+        "tokens_in": 179500,
+        "tokens_out": 22060,
+        "cost_usd": 0.4646,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 26640,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9671,14 +9880,14 @@
     }
   },
   {
-    "t": 26050,
+    "t": 26760,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0062",
+      "request_id": "REQ-0066",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9695,7 +9904,7 @@
     }
   },
   {
-    "t": 26140,
+    "t": 26850,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9721,14 +9930,14 @@
     }
   },
   {
-    "t": 26260,
+    "t": 26970,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0063",
+      "request_id": "REQ-0067",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9745,7 +9954,7 @@
     }
   },
   {
-    "t": 26350,
+    "t": 27060,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9771,14 +9980,14 @@
     }
   },
   {
-    "t": 26470,
+    "t": 27180,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0064",
+      "request_id": "REQ-0068",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9795,7 +10004,7 @@
     }
   },
   {
-    "t": 26560,
+    "t": 27270,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9821,14 +10030,14 @@
     }
   },
   {
-    "t": 26680,
+    "t": 27390,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0065",
+      "request_id": "REQ-0069",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9845,24 +10054,7 @@
     }
   },
   {
-    "t": 26690,
-    "type": "usage.updated",
-    "stage": "summarize",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.4380 so far",
-    "data": {
-      "usage": {
-        "model_calls": 56,
-        "tokens_in": 170700,
-        "tokens_out": 21160,
-        "cost_usd": 0.438,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 26780,
+    "t": 27480,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9889,14 +10081,14 @@
     }
   },
   {
-    "t": 26900,
+    "t": 27600,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0066",
+      "request_id": "REQ-0070",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9913,7 +10105,7 @@
     }
   },
   {
-    "t": 26990,
+    "t": 27690,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9939,14 +10131,14 @@
     }
   },
   {
-    "t": 27110,
+    "t": 27810,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0067",
+      "request_id": "REQ-0071",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -9963,7 +10155,7 @@
     }
   },
   {
-    "t": 27200,
+    "t": 27900,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -9990,14 +10182,14 @@
     }
   },
   {
-    "t": 27320,
+    "t": 28020,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0068",
+      "request_id": "REQ-0072",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10014,7 +10206,7 @@
     }
   },
   {
-    "t": 27410,
+    "t": 28110,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10040,14 +10232,14 @@
     }
   },
   {
-    "t": 27530,
+    "t": 28230,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0069",
+      "request_id": "REQ-0073",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10064,7 +10256,24 @@
     }
   },
   {
-    "t": 27620,
+    "t": 28240,
+    "type": "usage.updated",
+    "stage": "summarize",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.5198 so far",
+    "data": {
+      "usage": {
+        "model_calls": 64,
+        "tokens_in": 203500,
+        "tokens_out": 22780,
+        "cost_usd": 0.5198,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 28330,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10090,14 +10299,14 @@
     }
   },
   {
-    "t": 27740,
+    "t": 28450,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0070",
+      "request_id": "REQ-0074",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10114,7 +10323,7 @@
     }
   },
   {
-    "t": 27830,
+    "t": 28540,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10140,14 +10349,14 @@
     }
   },
   {
-    "t": 27950,
+    "t": 28660,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0071",
+      "request_id": "REQ-0075",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10164,7 +10373,7 @@
     }
   },
   {
-    "t": 28040,
+    "t": 28750,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10191,14 +10400,14 @@
     }
   },
   {
-    "t": 28160,
+    "t": 28870,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0072",
+      "request_id": "REQ-0076",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10215,7 +10424,7 @@
     }
   },
   {
-    "t": 28250,
+    "t": 28960,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10241,14 +10450,14 @@
     }
   },
   {
-    "t": 28370,
+    "t": 29080,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0073",
+      "request_id": "REQ-0077",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10265,24 +10474,7 @@
     }
   },
   {
-    "t": 28380,
-    "type": "usage.updated",
-    "stage": "summarize",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.4932 so far",
-    "data": {
-      "usage": {
-        "model_calls": 64,
-        "tokens_in": 194700,
-        "tokens_out": 21880,
-        "cost_usd": 0.4932,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 28470,
+    "t": 29170,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10309,14 +10501,14 @@
     }
   },
   {
-    "t": 28590,
+    "t": 29290,
     "type": "gateway.request",
     "stage": "summarize",
     "agent_id": "summarizer",
     "level": "info",
     "message": "summarizer -> us.anthropic.claude-sonnet-5-5 allowed (3000 in / 90 out)",
     "data": {
-      "request_id": "REQ-0074",
+      "request_id": "REQ-0078",
       "role": "summarizer",
       "action": "model.invoke",
       "target": "us.anthropic.claude-sonnet-5-5",
@@ -10333,7 +10525,7 @@
     }
   },
   {
-    "t": 28680,
+    "t": 29380,
     "type": "summary.sentence",
     "stage": "summarize",
     "agent_id": "summarizer",
@@ -10359,7 +10551,7 @@
     }
   },
   {
-    "t": 28830,
+    "t": 29530,
     "type": "run.status",
     "stage": "verify_summary",
     "agent_id": null,
@@ -10371,14 +10563,14 @@
     }
   },
   {
-    "t": 28890,
+    "t": 29590,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-001",
     "level": "info",
     "message": "verifier-H-001 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0075",
+      "request_id": "REQ-0079",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10395,7 +10587,7 @@
     }
   },
   {
-    "t": 28950,
+    "t": 29650,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-001",
@@ -10447,14 +10639,14 @@
     }
   },
   {
-    "t": 29010,
+    "t": 29710,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-002",
     "level": "info",
     "message": "verifier-H-002 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0076",
+      "request_id": "REQ-0080",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10471,7 +10663,7 @@
     }
   },
   {
-    "t": 29070,
+    "t": 29770,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-002",
@@ -10523,14 +10715,14 @@
     }
   },
   {
-    "t": 29130,
+    "t": 29830,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-003",
     "level": "info",
     "message": "verifier-H-003 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0077",
+      "request_id": "REQ-0081",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10547,7 +10739,24 @@
     }
   },
   {
-    "t": 29190,
+    "t": 29840,
+    "type": "usage.updated",
+    "stage": "verify_summary",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.5588 so far",
+    "data": {
+      "usage": {
+        "model_calls": 72,
+        "tokens_in": 221800,
+        "tokens_out": 23470,
+        "cost_usd": 0.5588,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 29900,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-003",
@@ -10599,7 +10808,7 @@
     }
   },
   {
-    "t": 29250,
+    "t": 29960,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-004",
@@ -10638,14 +10847,14 @@
     }
   },
   {
-    "t": 29310,
+    "t": 30020,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-005",
     "level": "info",
     "message": "verifier-H-005 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0078",
+      "request_id": "REQ-0082",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10662,7 +10871,7 @@
     }
   },
   {
-    "t": 29460,
+    "t": 30170,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-005",
@@ -10691,7 +10900,7 @@
     }
   },
   {
-    "t": 29520,
+    "t": 30230,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-005",
@@ -10776,14 +10985,14 @@
     }
   },
   {
-    "t": 29580,
+    "t": 30290,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-006",
     "level": "info",
     "message": "verifier-H-006 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0079",
+      "request_id": "REQ-0083",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10800,7 +11009,7 @@
     }
   },
   {
-    "t": 29640,
+    "t": 30350,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-006",
@@ -10852,14 +11061,14 @@
     }
   },
   {
-    "t": 29700,
+    "t": 30410,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-007",
     "level": "info",
     "message": "verifier-H-007 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0080",
+      "request_id": "REQ-0084",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10876,7 +11085,7 @@
     }
   },
   {
-    "t": 29760,
+    "t": 30470,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-007",
@@ -10928,14 +11137,14 @@
     }
   },
   {
-    "t": 29820,
+    "t": 30530,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-008",
     "level": "info",
     "message": "verifier-H-008 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0081",
+      "request_id": "REQ-0085",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -10952,24 +11161,7 @@
     }
   },
   {
-    "t": 29830,
-    "type": "usage.updated",
-    "stage": "verify_summary",
-    "agent_id": null,
-    "level": "info",
-    "message": "Spent $0.5106 so far",
-    "data": {
-      "usage": {
-        "model_calls": 72,
-        "tokens_in": 205400,
-        "tokens_out": 22530,
-        "cost_usd": 0.5106,
-        "budget_usd": 5.0
-      }
-    }
-  },
-  {
-    "t": 29890,
+    "t": 30590,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-008",
@@ -11021,14 +11213,14 @@
     }
   },
   {
-    "t": 29950,
+    "t": 30650,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-009",
     "level": "info",
     "message": "verifier-H-009 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0082",
+      "request_id": "REQ-0086",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11045,7 +11237,7 @@
     }
   },
   {
-    "t": 30010,
+    "t": 30710,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-009",
@@ -11097,14 +11289,14 @@
     }
   },
   {
-    "t": 30070,
+    "t": 30770,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-010",
     "level": "info",
     "message": "verifier-H-010 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0083",
+      "request_id": "REQ-0087",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11121,7 +11313,7 @@
     }
   },
   {
-    "t": 30130,
+    "t": 30830,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-010",
@@ -11173,14 +11365,14 @@
     }
   },
   {
-    "t": 30190,
+    "t": 30890,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-011",
     "level": "info",
     "message": "verifier-H-011 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0084",
+      "request_id": "REQ-0088",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11197,7 +11389,7 @@
     }
   },
   {
-    "t": 30250,
+    "t": 30950,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-011",
@@ -11249,14 +11441,14 @@
     }
   },
   {
-    "t": 30310,
+    "t": 31010,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-012",
     "level": "info",
     "message": "verifier-H-012 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0085",
+      "request_id": "REQ-0089",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11273,7 +11465,24 @@
     }
   },
   {
-    "t": 30370,
+    "t": 31020,
+    "type": "usage.updated",
+    "stage": "verify_summary",
+    "agent_id": null,
+    "level": "info",
+    "message": "Spent $0.5708 so far",
+    "data": {
+      "usage": {
+        "model_calls": 80,
+        "tokens_in": 230600,
+        "tokens_out": 24110,
+        "cost_usd": 0.5708,
+        "budget_usd": 5.0
+      }
+    }
+  },
+  {
+    "t": 31080,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-012",
@@ -11325,14 +11534,14 @@
     }
   },
   {
-    "t": 30430,
+    "t": 31140,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-013",
     "level": "info",
     "message": "verifier-H-013 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0086",
+      "request_id": "REQ-0090",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11349,7 +11558,7 @@
     }
   },
   {
-    "t": 30490,
+    "t": 31200,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-013",
@@ -11401,14 +11610,14 @@
     }
   },
   {
-    "t": 30550,
+    "t": 31260,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-014",
     "level": "info",
     "message": "verifier-H-014 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0087",
+      "request_id": "REQ-0091",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11425,7 +11634,7 @@
     }
   },
   {
-    "t": 30610,
+    "t": 31320,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-014",
@@ -11477,14 +11686,14 @@
     }
   },
   {
-    "t": 30670,
+    "t": 31380,
     "type": "gateway.request",
     "stage": "verify_summary",
     "agent_id": "verifier-H-015",
     "level": "info",
     "message": "verifier-H-015 -> us.anthropic.claude-haiku-5-5 allowed (1100 in / 80 out)",
     "data": {
-      "request_id": "REQ-0088",
+      "request_id": "REQ-0092",
       "role": "verifier",
       "action": "model.invoke",
       "target": "us.anthropic.claude-haiku-5-5",
@@ -11501,7 +11710,7 @@
     }
   },
   {
-    "t": 30730,
+    "t": 31440,
     "type": "summary.verified",
     "stage": "verify_summary",
     "agent_id": "verifier-H-015",
@@ -11553,7 +11762,7 @@
     }
   },
   {
-    "t": 30880,
+    "t": 31590,
     "type": "agent.status",
     "stage": "verify_summary",
     "agent_id": "summarizer",
@@ -11573,24 +11782,84 @@
     }
   },
   {
-    "t": 31030,
+    "t": 31790,
+    "type": "gateway.request",
+    "stage": "verify_summary",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "bobby -> us.anthropic.claude-sonnet-5-5 allowed (5600 in / 240 out)",
+    "data": {
+      "request_id": "REQ-0093",
+      "role": "orchestrator",
+      "action": "model.invoke",
+      "target": "us.anthropic.claude-sonnet-5-5",
+      "decision": "allowed",
+      "rule_id": "R-sys-models",
+      "reason": "Role 'orchestrator' may call this model",
+      "source_id": null,
+      "latency_ms": 1020,
+      "http_status": 200,
+      "bytes": null,
+      "tokens_in": 5600,
+      "tokens_out": 240,
+      "cost_usd": 0.0136
+    }
+  },
+  {
+    "t": 31940,
+    "type": "agent.decision",
+    "stage": "verify_summary",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "Bobby: brief checked, signing off",
+    "data": {
+      "agent_id": "bobby",
+      "stage": "verify_summary",
+      "decision": "proceed",
+      "summary": "Every brief sentence was checked against the report. Signing off.",
+      "reworks": [],
+      "comment_id": null
+    }
+  },
+  {
+    "t": 32090,
+    "type": "agent.status",
+    "stage": "verify_summary",
+    "agent_id": "bobby",
+    "level": "info",
+    "message": "Bobby done",
+    "data": {
+      "agent_id": "bobby",
+      "status": "done",
+      "task": "Run signed off",
+      "usage": {
+        "model_calls": 5,
+        "tokens_in": 26400,
+        "tokens_out": 1500,
+        "cost_usd": 0.0678,
+        "budget_usd": null
+      }
+    }
+  },
+  {
+    "t": 32240,
     "type": "usage.updated",
     "stage": "verify_summary",
     "agent_id": null,
     "level": "info",
-    "message": "Spent $0.5211 in total",
+    "message": "Spent $0.5889 in total",
     "data": {
       "usage": {
-        "model_calls": 79,
-        "tokens_in": 213100,
-        "tokens_out": 23090,
-        "cost_usd": 0.5211,
+        "model_calls": 84,
+        "tokens_in": 239500,
+        "tokens_out": 24590,
+        "cost_usd": 0.5889,
         "budget_usd": 5.0
       }
     }
   },
   {
-    "t": 31180,
+    "t": 32390,
     "type": "summary.ready",
     "stage": "complete",
     "agent_id": null,
@@ -11602,7 +11871,7 @@
     }
   },
   {
-    "t": 31330,
+    "t": 32540,
     "type": "run.status",
     "stage": "complete",
     "agent_id": null,
@@ -11614,7 +11883,7 @@
     }
   },
   {
-    "t": 31350,
+    "t": 32560,
     "type": "run.completed",
     "stage": "complete",
     "agent_id": null,

@@ -208,6 +208,7 @@ CheckName = Literal[
 CheckResultValue = Literal["pass", "fail", "blocked"]
 
 AgentRole = Literal[
+    "orchestrator",  # v0.3: Bobby, the one agent that makes the big calls. Every other agent is one of his goons
     "planner",
     "fetcher",
     "extractor",
@@ -237,6 +238,7 @@ RepairAction = Literal[
     "not_determinable",  # turn it into a declared hole
     "reword",            # wording fix with the same evidence
     "user_edit",         # a human changed it
+    "rework",            # v0.3: a rerun of the agent that produced it, with instructions
 ]
 
 
@@ -871,7 +873,7 @@ class HumanReport(Model):
 
 
 class Agent(Model):
-    agent_id: str
+    agent_id: str  # "bobby" for the orchestrator, "<role>-<nn>" for goons, "<agent_id>.<k>" for a rerun
     role: AgentRole
     model_id: Optional[str] = None
     status: AgentStatus
@@ -881,6 +883,17 @@ class Agent(Model):
     finished_at: Optional[str] = None
     usage: Usage = Usage()
     transcript_path: Optional[str] = None
+    # v0.3: display name. "Bobby" for the orchestrator, "Bobby's goon #<n>" for every other agent
+    name: Optional[str] = None
+    # v0.3: rerun one agent. The new agent names the agent it reran and carries the instructions
+    parent_agent_id: Optional[str] = None
+    instructions: Optional[str] = None
+    rerun_by: Optional[Literal["analyst", "orchestrator"]] = None
+
+
+class AgentRerunRequest(Model):  # v0.3: rerun one agent in the same run
+    instructions: str = Field(min_length=1, max_length=4000)
+    recheck: bool = True  # also re-check everything that cites the changed items
 
 
 class AgentList(Model):
@@ -1097,7 +1110,7 @@ class ItemVerifiedData(Model):
 
 class ItemUpdatedData(Model):
     item: Item
-    reason: Literal["repair", "comment", "user_edit", "demo_injection", "source_revoked"]
+    reason: Literal["repair", "comment", "user_edit", "demo_injection", "source_revoked", "rework"]
 
 
 class ReportReadyData(Model):
@@ -1132,6 +1145,20 @@ class AgentMessageData(Model):  # v0.2
     message: AgentMessage
 
 
+class ReworkOrder(Model):  # v0.3: Bobby sends one goon back with instructions
+    agent_id: str
+    instructions: str
+
+
+class AgentDecisionData(Model):  # v0.3: one of Bobby's calls at a stage gate or on a comment
+    agent_id: str
+    stage: Stage
+    decision: Literal["proceed", "rework", "escalate"]
+    summary: str  # one or two plain sentences, shown in the log
+    reworks: list[ReworkOrder] = []
+    comment_id: Optional[str] = None  # set when the call answers an analyst comment
+
+
 class RunResumedData(Model):  # v0.2
     reason: Optional[str] = None
     stage: Stage  # where the run picks up
@@ -1149,6 +1176,11 @@ class RunCreatedEvent(_EventBase):
 class RunResumedEvent(_EventBase):  # v0.2
     type: Literal["run.resumed"]
     data: RunResumedData
+
+
+class AgentDecisionEvent(_EventBase):  # v0.3
+    type: Literal["agent.decision"]
+    data: AgentDecisionData
 
 
 class AgentMessageEvent(_EventBase):  # v0.2
@@ -1300,6 +1332,7 @@ Event = Annotated[
         AgentStatusEvent,
         AgentLogEvent,
         AgentMessageEvent,
+        AgentDecisionEvent,
         GatewayRequestEvent,
         ItemCreatedEvent,
         ItemVerifiedEvent,
@@ -1320,7 +1353,7 @@ EVENT_TYPES = [
     "plan.need", "plan.source", "plan.ready",
     "approval.committed", "policy.updated",
     "source.status", "doc.stored",
-    "agent.spawned", "agent.status", "agent.log", "agent.message",
+    "agent.spawned", "agent.status", "agent.log", "agent.message", "agent.decision",
     "gateway.request",
     "item.created", "item.verified", "item.updated", "report.ready",
     "summary.sentence", "summary.verified", "summary.ready",
@@ -1374,7 +1407,7 @@ EXPORTED = [
     DataItem, Conclusion, Extrapolation, Chart, AgentReport, ItemPatch,
     Rollup, CategoryScore, Hole, Certainty, ReportCertainty,
     SummarySentence, HumanReport,
-    Agent, AgentList, AgentMessage, AgentMessageRequest, AgentMessageList,
+    Agent, AgentList, AgentMessage, AgentMessageRequest, AgentMessageList, AgentRerunRequest,
     CommentRequest, Comment, CommentList,
     VaultNode, VaultFile,
     InjectErrorsRequest, InjectErrorsResponse,

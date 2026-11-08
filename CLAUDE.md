@@ -4,7 +4,7 @@ Read this first, then the doc for your side:
 - **Frontend:** `docs/FRONTEND_TLDR.md`, then `docs/CONTRACT.md`
 - **Backend:** `docs/BACKEND.md`, then `docs/CONTRACT.md`
 - **Both:** `docs/PLAN.md` (timeline and the 3-minute demo script)
-- **v0.2 work (Sat 11 PM on):** backend in `docs/BACKEND_V2.md`, integration and AWS deploy in `docs/INTEGRATE.md`
+- **Night work (Sat 11 PM on, contract v0.3):** Bobby and the backend in `docs/BACKEND_V2.md`, integration and AWS deploy in `docs/INTEGRATE.md`
 
 ## What we're building
 
