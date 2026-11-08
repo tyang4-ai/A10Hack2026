@@ -33,6 +33,15 @@ export function snapFor(px: number, py: number, W: number, H: number): Geo | nul
   return null;
 }
 
+// The title bar under a point, if the window on top there is showing its title bar at that spot.
+const TITLE_H = 32;
+function titleBarAt(self: string, px: number, py: number, W: number, H: number) {
+  const over = Object.values(useWindows.getState().wins)
+    .filter((w) => w.id !== self && !w.min && !w.max && px >= w.x * W && px < (w.x + w.w) * W && py >= w.y * H && py < (w.y + w.h) * H)
+    .sort((a, b) => b.z - a.z)[0];
+  return over && py < over.y * H + TITLE_H ? over : null;
+}
+
 // The visible, unmaximized window (other than the one being dragged) under a point on the desk.
 function tileAt(self: string, fx: number, fy: number) {
   return Object.values(useWindows.getState().wins).find((w) => w.id !== self && !w.min && !w.max && fx >= w.x && fx < w.x + w.w && fy >= w.y && fy < w.y + w.h) ?? null;
@@ -222,10 +231,16 @@ export const Window = memo(function Window({ id }: { id: string }) {
         const over = tileAt(id, px / d.desk.width, py / d.desk.height);
         d.target = over?.id ?? null;
         snap = over ? { x: over.x, y: over.y, w: over.w, h: over.h } : null;
-      } else
+      } else {
+        // Desk edges first, then another window's title bar (drop to swap), then the empty space under the pointer.
+        const edge = snapFor(px, py, d.desk.width, d.desk.height);
+        const bar = edge ? null : titleBarAt(id, px, py, d.desk.width, d.desk.height);
+        d.target = bar?.id ?? null;
         snap =
-          snapFor(px, py, d.desk.width, d.desk.height) ??
+          edge ??
+          (bar ? { x: bar.x, y: bar.y, w: bar.w, h: bar.h } : null) ??
           emptyAt(id, px / d.desk.width, py / d.desk.height, Math.min(1, MIN_W / d.desk.width), Math.min(1, MIN_H / d.desk.height));
+      }
       const cur = useWindows.getState().snap;
       if (JSON.stringify(snap) !== JSON.stringify(cur)) useWindows.setState({ snap });
     } else {
@@ -257,6 +272,7 @@ export const Window = memo(function Window({ id }: { id: string }) {
       else useWindows.getState().tile();
       return;
     }
+    if (d.target) return useWindows.getState().swapPlaces(id, d.target);
     if (snap && snap.w === 1 && snap.h === 1) resize(id, d.orig, true);
     else resize(id, snap ?? g);
   };

@@ -207,6 +207,7 @@ interface WinState {
   toggleAuto: () => void;
   tile: () => void;
   swap: (a: string, b: string) => void;
+  swapPlaces: (a: string, b: string) => void;
   saveAs: (label: string) => void;
   deleteLayout: (id: string) => void;
 }
@@ -378,6 +379,17 @@ export const useWindows = create<WinState>((set, get) => ({
       writeSaved({ ...saved, customs: get().customs });
     }
     if (layout === id) get().applyLayout("read");
+  },
+
+  // Drop a window on another's title bar: the two trade position and size (and tiling order).
+  swapPlaces: (a, b) => {
+    const { wins, auto } = get();
+    const A = wins[a];
+    const B = wins[b];
+    if (!A || !B) return;
+    const geo = (w: Win) => ({ x: w.x, y: w.y, w: w.w, h: w.h, slot: w.slot, max: w.max });
+    set({ wins: { ...wins, [a]: { ...A, ...geo(B) }, [b]: { ...B, ...geo(A) } }, dirty: true });
+    if (auto) get().tile();
   },
 
   // Drag a window onto another in auto mode to swap their places.
