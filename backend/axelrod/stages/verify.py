@@ -5,6 +5,12 @@ charts. Code checks run first. A claim that fails or is blocked by code is not s
 repair stage re-checks it after a fix). Each judge is its own agent (verifier-<item id>-<k>) with its own
 model call and sees only the claim, the cited items and, for a score, the rubric entry. Votes are counted
 by code and recorded as votes_for / votes_total, which feed the certainty score.
+
+A score's judges see its value (+1, 0, -1 or N/A), its scoring type, the company, the rubric entry with how
+its direction is read, and the text, and answer two questions: is the text supported, and does the score
+follow from it under the rubric (B-fix-score). A judge that finds the direction wrong votes against, under
+the same check name (support). Repair stays weaken-only (stages/repair.py): a direction failure can move a
+judgment score toward 0 or N/A, never flip its sign, and a threshold score stays code's.
 """
 from __future__ import annotations
 
@@ -66,25 +72,47 @@ def conclusion_view(c: m.Conclusion) -> dict:
     return {"id": c.id, "text": c.text, "computations": [_computation_view(x) for x in c.computations]}
 
 
+DIRECTION_JUDGMENT = ("Where an anchor is null: ahead of peers, or strong on the criterion, is +1; behind peers, "
+                      "or weak, is -1; mixed or unclear is 0.")
+DIRECTION_THRESHOLD = ("Code sets the score from the rule input against the bars: plus_one met is +1, minus_one met "
+                       "is -1, neither is 0.")
+SET_BY = {"threshold": "code, from rule_input against the rubric bar", "judgment": "the drafter, under the rubric"}
+
+
 def rubric_view(criterion: str) -> dict:
+    """The rubric entry a score is judged on, plus how its direction is read (B-fix-score): rotic_vs_peers has no
+    anchors, so without the direction line a judge had nothing to hold a +1 against."""
     crit = RUBRIC["criteria"].get(criterion, {})
     out = {"criterion": criterion, "label": crit.get("label"), "scoring": crit.get("scoring"),
            "plus_one": crit.get("plus_one"), "minus_one": crit.get("minus_one"),
            "evidence_hint": crit.get("evidence_hint"), "scale": "-1, 0, +1, or null for N/A"}
     if crit.get("zero"):
         out["zero"] = crit["zero"]
+    out["direction"] = DIRECTION_THRESHOLD if crit.get("scoring") == "threshold" else DIRECTION_JUDGMENT
     return out
 
 
 def claim_view(item: m.Item) -> dict:
+    """The claim as a judge (and the repairer) sees it. A score shows its value the way the rubric writes it
+    (score_shown: +1, 0, -1 or N/A), its scoring type and who set it, next to its text, so its direction can be
+    checked against the text. score stays the plain number for code and the repairer."""
     if item.kind == "conclusion":
         return {"kind": "conclusion", "text": item.text,
                 "computations": [_computation_view(x, checked_by_code=True) for x in item.computations]}
     if item.kind == "extrapolation":
-        return {"kind": "score", "criterion": item.criterion, "label": label(item.criterion), "score": item.score,
-                "na_reason": item.na_reason, "confidence": item.confidence, "text": item.text,
-                "rule_input": item.rule.input}
+        return {"kind": "score", "criterion": item.criterion, "label": label(item.criterion),
+                "scoring": item.rule.type, "score": item.score, "score_shown": judge.shown(item.score),
+                "score_set_by": SET_BY.get(item.rule.type, SET_BY["judgment"]), "na_reason": item.na_reason,
+                "confidence": item.confidence, "text": item.text, "rule_input": item.rule.input}
     return {"kind": item.kind, "text": getattr(item, "text", "")}
+
+
+def judge_claim_view(state: RunState, item: m.Item) -> dict:
+    """claim_view plus, for a score, the company it is about, so "ahead of peers" has a subject."""
+    view = claim_view(item)
+    if item.kind == "extrapolation":
+        view["company"] = state.run.company
+    return view
 
 
 def evidence_view(state: RunState, item: m.Item) -> list[dict]:
@@ -129,19 +157,39 @@ async def _one_judge(ctx: RunContext, item_id: str, k: int, prompt: str) -> judg
     return out  # type: ignore[return-value]
 
 
+def direction_wrong(item: m.Item, v: judge.JudgeVerdict) -> bool:
+    """A judge found a score's direction wrong. Code counts that as a vote against, even if the verdict says
+    SUPPORTED: the judge's own answer to the direction question wins over a slip in the verdict."""
+    return item.kind == "extrapolation" and v.score_direction == "wrong"
+
+
+def against(item: m.Item, v: judge.JudgeVerdict) -> bool:
+    return v.verdict == "UNSUPPORTED" or direction_wrong(item, v)
+
+
+def dissent_of(item: m.Item, v: judge.JudgeVerdict) -> str:
+    """A dissenting judge's reason, prefixed when it is about the score's direction, so the detail names it."""
+    reason = v.reason.strip()
+    if direction_wrong(item, v):
+        reason = f"Score direction wrong ({judge.shown(item.score)}): {reason}"
+    return reason[:300]
+
+
 def tally(item: m.Item, votes: list[judge.JudgeVerdict | None], model_id: str | None) -> m.CheckResult:
-    """Two of three pass it. A missing vote never counts as support, and can make the check blocked."""
+    """Two of three pass it. A missing vote never counts as support, and can make the check blocked. For a score,
+    a judge that found the direction wrong votes against (B-fix-score), and its reason leads the detail."""
     text = claim_text(item)
     answered = [v for v in votes if v is not None]
-    yes = sum(v.verdict == "SUPPORTED" for v in answered)
-    no = [v for v in answered if v.verdict == "UNSUPPORTED"]
+    no = [v for v in answered if against(item, v)]
+    yes = len(answered) - len(no)
+    no.sort(key=lambda v: not direction_wrong(item, v))      # a direction dissent first, then the others
     spans: list[str] = []
     for v in no:
         for s in v.unsupported_spans:
             s = s.strip()
             if s and s in text and s not in spans:
                 spans.append(s)
-    dissent = no[0].reason.strip()[:300] if no else ""
+    dissent = dissent_of(item, no[0]) if no else ""
     if yes >= NEEDED:
         result = "pass"
         detail = (f"Supported by {yes} of {len(votes)} judges" if not no and len(answered) == len(votes)
@@ -159,10 +207,11 @@ def tally(item: m.Item, votes: list[judge.JudgeVerdict | None], model_id: str | 
 
 
 async def judge_claim(ctx: RunContext, item: m.Item) -> m.CheckResult:
-    """Three isolated judges in parallel on one claim."""
+    """Three isolated judges in parallel on one claim. A score's judges also answer whether its direction
+    follows from the text and the cited conclusions under the rubric."""
     ctx.check_stop()
     rubric = rubric_view(item.criterion) if item.kind == "extrapolation" else None
-    prompt = judge.judge_prompt(claim_view(item), evidence_view(ctx.state, item), rubric)
+    prompt = judge.judge_prompt(judge_claim_view(ctx.state, item), evidence_view(ctx.state, item), rubric)
     k0 = next_judge_k(ctx.state, item.id)
     votes = await asyncio.gather(*(_one_judge(ctx, item.id, k0 + j, prompt) for j in range(JUDGES)))
     return tally(item, list(votes), ctx.settings.model_small)

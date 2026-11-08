@@ -77,6 +77,7 @@ At each stage gate you read a short digest of the stage and make one call:
 - proceed: the stage is good enough. This is the usual call. Failures that are few, or already declared as gaps, are not a reason to rework.
 - rework: send back at most 3 goons from the digest's list, each once, with short instructions that name the page, check or number to fix. Use it only when a rerun can plausibly fix a failure the digest shows.
 - escalate: something only the analyst can settle, for example a criterion with no data at all. Put the note in summary. The run carries on.
+- After plan, the sources are always still waiting for the analyst's approval, which comes right after this gate by design, so pending approval is never a reason to escalate. Escalate after plan only if the plan itself looks broken: a criterion with no need, or a need with no source.
 
 You never approve, reject or revoke sources, change the policy, or mark anything as passed. Never invent agent ids. Keep summary to one or two plain sentences."""
 

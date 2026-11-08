@@ -21,9 +21,9 @@ from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
-from ..contract import m
+from ..contract import RUBRIC, m
 from .base import register_fake, tool_name
-from .judge import parse_block
+from .judge import direction_conflict, parse_block
 
 MAX_TOKENS = 12000   # a ROTIC series over nine years and two peers is a long answer
 
@@ -40,7 +40,7 @@ Rules for conclusions:
 - Never type a number from <data> into an expr: use its id. The only plain numbers allowed in an expr are small whole constants (2 to average two values, 5 for five years, 100). Code drops a computation that types any other number, including a rate you assume, so every input traces to a source.
 - Write each amount in its own row's currency ("USD 2,763 million" for a USD row, "€3,154 million" for a EUR row). A ratio such as ROTIC has no currency, so companies that report in different currencies can be compared on it.
 - A conclusion's text may use only its own data and its own computations, never another conclusion's results. Compare results across conclusions in a score's text instead: a score may use the displays of every conclusion it cites.
-- key is your own short label for a conclusion (c1, c2, ...). It is not an id. Scores and charts point to conclusions by key. In a score's text, name the conclusion a sentence rests on by its key in brackets, for example (c2): code replaces the key with the conclusion's id.
+- key is your own short label for a conclusion: c1, c2, c3 and so on, a letter and a number only (never a long name such as c_sh_fy2025_rotic, which code cannot swap). It is not an id. Scores and charts point to conclusions by key. In a score's text, name the conclusion a sentence rests on by its key in brackets, for example (c2): code replaces the key with the conclusion's id.
 
 Small claims (made-up ids and numbers):
 - Wrong: one conclusion "Revenue rose from €1,710 million in FY2021 to €2,412 million in FY2025, up 41.1%. Segment A grew 7.5% and segment B fell 1.6%. Management expects growth of 4.0% next year." Four sentences and six numbers: one doubtful number fails all of it.
@@ -65,6 +65,7 @@ Rules for scores (one per criterion in <criteria>, always, even when you write n
 - A threshold criterion with a numeric bar needs rule_input "<conclusion key>:<computation name>": the computation code compares with the bar. Code recomputes the score from it.
 - confidence is data coverage, not a feeling: high when the data covers what the criterion asks, medium when parts are missing, low when much is missing (for example fewer than the ten years a 10-year criterion asks for, or a proxy that leaves out a component).
 - The text says the score and why, using only numbers that trace to the cited conclusions' data or computations, the rubric bars, or the scale (-1, 0, +1).
+- The score and its text must say the same thing. Decide the score from the cited conclusions under the rubric, then write a text that agrees with it. Where the rubric gives an anchor, the anchor decides. Where an anchor is null, ahead of peers or strong on the criterion is +1, behind peers or weak is -1, and mixed or unclear is 0, reading better and worse the way the criterion means it (a higher ROTIC is better, more debt against earnings is worse). A text that says the company trails, lags or is weaker than its peers or the bar cannot carry +1, and one that says it leads, is ahead or is stronger cannot carry -1. Code checks the text's direction words against the sign, and the verifiers check that the score follows from the text and the conclusions.
 - A criterion marked not_scored must get score null with na_reason. You may still write conclusions for it from the data.
 
 Rules for charts:
@@ -169,6 +170,28 @@ def revise_prompt(prompt: str, previous: dict, problems: list[dict], advice: lis
     head = REVISE if problems else REVISE_ADVICE_ONLY
     parts.append(head + (f" {REVISE_ADVICE}" if advice else ""))
     return "\n\n".join(parts)
+
+
+DIRECTION_FIX = ("Score and text disagree. Decide from the cited conclusions under the rubric which one is right, "
+                 "then send the score with a text that agrees with it.")
+
+
+def direction_problems(scores: list[DraftScore], group: list[str] | None = None,
+                       company: str | None = None) -> list[dict]:
+    """Code's pre-check on score direction (B-fix-score): a judgment score whose text's own direction words clearly
+    contradict its sign ("trails both peers" under +1, seen in run_20261108_5zqdvb) goes back to the drafter in the
+    one revision round, in the same shape as the other pre-check problems. It names the conflict and never says
+    which way to move: the drafter decides from the evidence, and the judges check it again. Threshold scores are
+    left out (code sets them from the bar), and so are 0, N/A and texts with mixed or no direction words."""
+    out = []
+    for ds in scores:
+        crit = RUBRIC["criteria"].get(ds.criterion, {})
+        if (group is not None and ds.criterion not in group) or crit.get("scoring") != "judgment":
+            continue
+        found = direction_conflict(ds.score, ds.text, company)
+        if found:
+            out.append({"score": ds.criterion, "check": "score_direction", "problem": f"{found} {DIRECTION_FIX}"})
+    return out
 
 
 def draft_prompt(company: dict, criteria: list[dict], rows: list[dict], metrics: dict | None = None,
