@@ -2,7 +2,7 @@
 // second (every 5 s once the run is finished) for gateway traffic, and refetches the
 // snapshots (run, plan, report, final report, agents, policy) whenever events arrive.
 import { useEffect, useRef, useState } from "react";
-import type { Agent, AgentReport, GatewayRequestEvent, HumanReport, Item, Plan, Policy, Run } from "../../../contract/types.ts";
+import type { Agent, AgentDecisionEvent, AgentReport, GatewayRequestEvent, HumanReport, Item, Plan, Policy, Run } from "../../../contract/types.ts";
 import { isEvent } from "../../../contract/types.ts";
 import { api } from "./api.ts";
 
@@ -15,10 +15,12 @@ export interface RunData {
   agents: Agent[];
   policy: Policy | null;
   traffic: GatewayRequestEvent[];
+  // Bobby's calls, from agent.decision events.
+  decisions: AgentDecisionEvent[];
   error: string | null;
 }
 
-const EMPTY: RunData = { run: null, plan: null, items: {}, report: null, summary: null, agents: [], policy: null, traffic: [], error: null };
+const EMPTY: RunData = { run: null, plan: null, items: {}, report: null, summary: null, agents: [], policy: null, traffic: [], decisions: [], error: null };
 const FINISHED = new Set(["done", "stopped", "failed"]);
 const TRAFFIC_CAP = 2000;
 
@@ -69,6 +71,8 @@ export function useRun(runId: string): RunData & { refresh: () => void } {
             lastSeq.current = page.events[page.events.length - 1].seq;
             const rows = page.events.filter((e): e is GatewayRequestEvent => isEvent(e, "gateway.request"));
             if (rows.length) setData((d) => ({ ...d, traffic: [...d.traffic, ...rows].slice(-TRAFFIC_CAP) }));
+            const calls = page.events.filter((e): e is AgentDecisionEvent => isEvent(e, "agent.decision"));
+            if (calls.length) setData((d) => ({ ...d, decisions: [...d.decisions, ...calls] }));
           }
           if (page.events.length < 500) {
             if (FINISHED.has(page.run_status)) delay = 5000;

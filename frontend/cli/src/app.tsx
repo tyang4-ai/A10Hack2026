@@ -4,7 +4,7 @@
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import { useEffect, useMemo, useState } from "react";
 import type { Citation, DocumentPage, Item, Run, Source, SourceDecision, Stage, SummarySentence } from "../../../contract/types.ts";
-import { MODE_LABEL, STAGES, STAGE_LABEL, formatValue, usd } from "../../src/lib/format.ts";
+import { CACHE_LABEL, MODE_LABEL, STAGES, STAGE_LABEL, formatValue, usd } from "../../src/lib/format.ts";
 import { API_BASE, ApiError, api } from "./api.ts";
 import { useRun } from "./useRun.ts";
 
@@ -242,6 +242,14 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
       if (n >= 1 && n <= TABS.length) return setTab(TABS[n - 1][0]);
       if (key.tab || key.rightArrow) return setTab(TABS[(TABS.findIndex(([t]) => t === current) + 1) % TABS.length][0]);
       if (key.leftArrow) return setTab(TABS[(TABS.findIndex(([t]) => t === current) + TABS.length - 1) % TABS.length][0]);
+      if (input === "r" && run?.status === "stopped") {
+        setNote("Resuming…");
+        api.resume(runId, "Resumed by the analyst from the terminal").then(
+          () => (setNote("Run resumed."), data.refresh()),
+          (e) => setNote(errText(e)),
+        );
+        return;
+      }
       if (input === "s" && live) {
         if (!stopArmed) return setStopArmed(true);
         setStopArmed(false);
@@ -269,6 +277,7 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
         <Text wrap="truncate-end">
           <Text bold>Axelrod</Text>  <Text bold color="white">{run.company}</Text> <Text color="gray">{run.run_id.split("_").pop()}</Text>
           {run.mode !== "live" && <Text color="black" backgroundColor="yellow"> {MODE_LABEL} </Text>}
+          {run.cache_mode !== "off" && <Text color="yellow"> {CACHE_LABEL}</Text>}
           {run.status !== "done" && <Text color={sc}>  ● {sw}</Text>}
         </Text>
         <Text color="gray" wrap="truncate-end">
@@ -320,7 +329,7 @@ function RunScreen({ runId, onBack }: { runId: string; onBack: () => void }) {
         {current === "policy" && <PolicyPane data={data} drafts={drafts} width={cols - 2} />}
       </Box>
       <Box justifyContent="space-between">
-        <Keys>{`1-5 or ←→ tabs  ${live ? (stopArmed ? "s again to STOP the run  " : "s stop  ") : ""}esc projects  q quit`}</Keys>
+        <Keys>{`1-5 or ←→ tabs  ${live ? (stopArmed ? "s again to STOP the run  " : "s stop  ") : run.status === "stopped" ? "r resume  " : ""}esc projects  q quit`}</Keys>
         {note ? <Text color="gray">{note}</Text> : data.error ? <Text color="red">{data.error}</Text> : null}
       </Box>
     </Box>
@@ -454,15 +463,27 @@ function TrafficPane({ data, height, width }: { data: RunData; height: number; w
 // ---------------------------------------------------------------------------
 
 const AGENT_COLOR = { queued: "gray", working: "cyan", done: "green", failed: "red", stopped: "yellow" } as const;
+const CALL_COLOR = { proceed: "green", rework: "yellow", escalate: "red" } as const;
 
+// Bobby (the orchestrator) first, then his goons by role, then his calls.
 function AgentsPane({ data, width }: { data: RunData; width: number }) {
+  const bobby = data.agents.find((a) => a.role === "orchestrator");
   const byRole = new Map<string, typeof data.agents>();
-  for (const a of data.agents) byRole.set(a.role, [...(byRole.get(a.role) ?? []), a]);
+  for (const a of data.agents) if (a.role !== "orchestrator") byRole.set(a.role, [...(byRole.get(a.role) ?? []), a]);
   const working = data.agents.filter((a) => a.status === "working");
   return (
     <Box flexDirection="column">
+      {bobby && (
+        <Text>
+          <Text color={AGENT_COLOR[bobby.status]}>● </Text>
+          <Text bold>{bobby.name ?? bobby.agent_id}</Text>
+          <Text color="gray"> orchestrator, {bobby.status}</Text>
+        </Text>
+      )}
+      {bobby && <Text color="gray">Bobby&apos;s goons</Text>}
       {[...byRole].map(([role, list]) => (
-        <Text key={role}>
+        <Text key={role} wrap="truncate-end">
+          {"  "}
           {pad(role, 12)}
           <Text color="gray">{pad(String(list.length), 4)}</Text>
           {list.map((a) => (
@@ -472,18 +493,25 @@ function AgentsPane({ data, width }: { data: RunData; width: number }) {
           ))}
         </Text>
       ))}
-      {byRole.size === 0 && <Text color="gray">No agents yet.</Text>}
-      <Text color="gray">
-        {Object.entries(AGENT_COLOR)
-          .map(([k]) => k)
-          .join("  ")}
-      </Text>
+      {byRole.size === 0 && !bobby && <Text color="gray">No agents yet.</Text>}
+      <Text color="gray">queued  working  done  failed  stopped</Text>
+      {data.decisions.length > 0 && (
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold>Bobby&apos;s calls</Text>
+          {data.decisions.slice(-5).map((e) => (
+            <Text key={e.seq} wrap="truncate-end">
+              <Text color={CALL_COLOR[e.data.decision]}>{pad(e.data.decision.toUpperCase(), 9)}</Text>
+              {trunc(e.data.summary, width - 10)}
+            </Text>
+          ))}
+        </Box>
+      )}
       {working.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           <Text bold>Working now</Text>
           {working.map((a) => (
-            <Text key={a.agent_id}>
-              <Text color="cyan">{pad(a.agent_id, 20)}</Text>
+            <Text key={a.agent_id} wrap="truncate-end">
+              <Text color="cyan">{pad(a.name ?? a.agent_id, 20)}</Text>
               {trunc(a.task, width - 22)}
             </Text>
           ))}

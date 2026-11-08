@@ -57,6 +57,7 @@ export const api = {
   plan: (id: string) => call<Plan>("GET", `${r(id)}/plan`),
   approve: (id: string, req: ApprovalRequest) => call<ApprovalResponse>("POST", `${r(id)}/approval`, req),
   stop: (id: string, reason: string) => call<Run>("POST", `${r(id)}/stop`, { reason }),
+  resume: (id: string, reason: string) => call<Run>("POST", `${r(id)}/resume`, { reason }),
   report: (id: string) => call<AgentReport>("GET", `${r(id)}/report`),
   summary: (id: string) => call<HumanReport>("GET", `${r(id)}/summary`),
   agents: (id: string) => call<AgentList>("GET", `${r(id)}/agents`),
