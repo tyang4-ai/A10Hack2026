@@ -1,0 +1,5203 @@
+{
+  "run_id": "run_20261108_whhj0d",
+  "written_at": "2026-11-08T05:45:36.315Z",
+  "items": [
+    {
+      "id": "C-001",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:31.616Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 33 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "19 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (5 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-001",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-243",
+        "basis": "judges 3/3; weakest input D-243 (0.90)"
+      }
+    },
+    {
+      "id": "C-002",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:32.203Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 32 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "17 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (4 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 2 of 3 judges. Dissent: The evidence provides data in USD, but all claimed values and intermediate calculations are presented in EUR (€), creating a unit mismatch that is unexplained and unsupported.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-002",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 2,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 0.6667,
+        "inherited": 0.95,
+        "completeness": 1.0,
+        "weakest_ref": "D-003",
+        "basis": "judges 2/3; weakest input D-003 (0.95)"
+      }
+    },
+    {
+      "id": "C-003",
+      "kind": "conclusion",
+      "status": "fail",
+      "verified_at": "2026-11-08T05:44:34.082Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 32 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "13 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "fail",
+          "detail": "'3.8%' and '-3.8%' do not match any cited value, computation display or rubric threshold",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [
+            "3.8%",
+            "-3.8%"
+          ],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 32 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "fail",
+              "detail": "tax_rate_fy23_phi = -0.138783, which rounds half up to -13.9%, but the display says 13.9%",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (4 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "recompute",
+          "before": "Philips' NOPAT is computed as operating income plus amortization of intangible assets less taxes at the year's effective rate, since no equity income, operating-lease interest component or non-controlling interest is given in the data; in FY2022 and FY2023 both operating income and the pre-tax income used for the tax rate are negative. TICAP is computed as total assets less cash less goodwill less current liabilities net of short-term debt, as a proxy for non-interest-bearing current liabilities. For FY2023, operating income and amortization are used with an effective tax rate derived from a negative pre-tax income and a negative tax expense; average TICAP uses FY2022 and FY2023 year-end balances; FY2023 ROTIC is 3.8%. For FY2024, operating income and amortization are used, with average TICAP from FY2023 and FY2024; FY2024 ROTIC is -33.4%. For FY2025, operating income and amortization are used, with average TICAP from FY2024 and FY2025; FY2025 ROTIC is 18.1%. Across the three fiscal years computed, the mean ROTIC is -3.8%.",
+          "after": "Philips' NOPAT is computed as operating income plus amortization of intangible assets less taxes at the year's effective rate, since no equity income, operating-lease interest component or non-controlling interest is given in the data; in FY2022 and FY2023 both operating income and the pre-tax income used for the tax rate are negative. TICAP is computed as total assets less cash less goodwill less current liabilities net of short-term debt, as a proxy for non-interest-bearing current liabilities. For FY2023, operating income and amortization are used with an effective tax rate derived from a negative pre-tax income and a negative tax expense; average TICAP uses FY2022 and FY2023 year-end balances; FY2023 ROTIC is 3.8%. For FY2024, operating income and amortization are used, with average TICAP from FY2023 and FY2024; FY2024 ROTIC is -33.4%. For FY2025, operating income and amortization are used, with average TICAP from FY2024 and FY2025; FY2025 ROTIC is 18.1%. Across the three fiscal years computed, the mean ROTIC is -3.8%.",
+          "note": "Recomputed by code: dropped tax_rate_fy23_phi (its sign changed).",
+          "at": "2026-11-08T05:44:34.067Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 32 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "fail",
+              "detail": "nopat_fy23_phi: unknown name tax_rate_fy23_phi; rotic_fy23_phi: unknown name nopat_fy23_phi; mean_rotic_phi: unknown name rotic_fy23_phi",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (4 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "recompute",
+          "before": "Philips' NOPAT is computed as operating income plus amortization of intangible assets less taxes at the year's effective rate, since no equity income, operating-lease interest component or non-controlling interest is given in the data; in FY2022 and FY2023 both operating income and the pre-tax income used for the tax rate are negative. TICAP is computed as total assets less cash less goodwill less current liabilities net of short-term debt, as a proxy for non-interest-bearing current liabilities. For FY2023, operating income and amortization are used with an effective tax rate derived from a negative pre-tax income and a negative tax expense; average TICAP uses FY2022 and FY2023 year-end balances; FY2023 ROTIC is 3.8%. For FY2024, operating income and amortization are used, with average TICAP from FY2023 and FY2024; FY2024 ROTIC is -33.4%. For FY2025, operating income and amortization are used, with average TICAP from FY2024 and FY2025; FY2025 ROTIC is 18.1%. Across the three fiscal years computed, the mean ROTIC is -3.8%.",
+          "after": "Philips' NOPAT is computed as operating income plus amortization of intangible assets less taxes at the year's effective rate, since no equity income, operating-lease interest component or non-controlling interest is given in the data; in FY2022 and FY2023 both operating income and the pre-tax income used for the tax rate are negative. TICAP is computed as total assets less cash less goodwill less current liabilities net of short-term debt, as a proxy for non-interest-bearing current liabilities. For FY2023, operating income and amortization are used with an effective tax rate derived from a negative pre-tax income and a negative tax expense; average TICAP uses FY2022 and FY2023 year-end balances; FY2023 ROTIC is 3.8%. For FY2024, operating income and amortization are used, with average TICAP from FY2023 and FY2024; FY2024 ROTIC is -33.4%. For FY2025, operating income and amortization are used, with average TICAP from FY2024 and FY2025; FY2025 ROTIC is 18.1%. Across the three fiscal years computed, the mean ROTIC is -3.8%.",
+          "note": "Recomputed by code: dropped nopat_fy23_phi (unknown name tax_rate_fy23_phi); dropped rotic_fy23_phi (unknown name nopat_fy23_phi); dropped mean_rotic_phi (unknown name rotic_fy23_phi).",
+          "at": "2026-11-08T05:44:34.077Z"
+        },
+        {
+          "attempt": 3,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 32 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "13 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "fail",
+              "detail": "'3.8%' and '-3.8%' do not match any cited value, computation display or rubric threshold",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "3.8%",
+                "-3.8%"
+              ],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "not_determinable",
+          "before": "Philips' NOPAT is computed as operating income plus amortization of intangible assets less taxes at the year's effective rate, since no equity income, operating-lease interest component or non-controlling interest is given in the data; in FY2022 and FY2023 both operating income and the pre-tax income used for the tax rate are negative. TICAP is computed as total assets less cash less goodwill less current liabilities net of short-term debt, as a proxy for non-interest-bearing current liabilities. For FY2023, operating income and amortization are used with an effective tax rate derived from a negative pre-tax income and a negative tax expense; average TICAP uses FY2022 and FY2023 year-end balances; FY2023 ROTIC is 3.8%. For FY2024, operating income and amortization are used, with average TICAP from FY2023 and FY2024; FY2024 ROTIC is -33.4%. For FY2025, operating income and amortization are used, with average TICAP from FY2024 and FY2025; FY2025 ROTIC is 18.1%. Across the three fiscal years computed, the mean ROTIC is -3.8%.",
+          "after": null,
+          "note": "Still failing after two repairs. Kept as fail and declared as a hole, excluded from scoring.",
+          "at": "2026-11-08T05:44:34.082Z"
+        }
+      ],
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 0.0,
+        "support": 0.0,
+        "inherited": 0.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Verification fail"
+      }
+    },
+    {
+      "id": "C-004",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:31.876Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 9 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "1 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (5 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-004",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-135",
+        "basis": "judges 3/3; weakest input D-135 (0.90)"
+      }
+    },
+    {
+      "id": "C-005",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:31.723Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 5 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (4 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-005",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-115",
+        "basis": "judges 3/3; weakest input D-115 (0.90)"
+      }
+    },
+    {
+      "id": "C-006",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:31.823Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 12 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (5 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "tier_rule",
+          "method": "code",
+          "result": "pass",
+          "detail": "Tier 3 items (D-147, D-170 and D-193) are not the only support",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 2 of 3 judges. Dissent: The claim refers to \"Precision Therapy segment market\" but the evidence only supports \"Precision Therapy segment\" growth assumptions; the exact characterization of this as a market growth assumption is not clearly stated in the evidence.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-006",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 2,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 23,
+        "band": "low",
+        "strength": 0.2333,
+        "support": 0.6667,
+        "inherited": 0.35,
+        "completeness": 1.0,
+        "weakest_ref": "D-147",
+        "basis": "judges 2/3; weakest input D-147 (0.35)"
+      }
+    },
+    {
+      "id": "C-007",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:32.311Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 6 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (2 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-007",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 95,
+        "band": "high",
+        "strength": 0.95,
+        "support": 1.0,
+        "inherited": 0.95,
+        "completeness": 1.0,
+        "weakest_ref": "D-117",
+        "basis": "judges 3/3; weakest input D-117 (0.95)"
+      }
+    },
+    {
+      "id": "C-008",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:32.190Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 8 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "4 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (9 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 2 of 3 judges. Dissent: The claim states Siemens Group financing liabilities \"made up the large majority of total debt-like obligations\" with 91.9% share, but the evidence shows this is only 91.9%, not explicitly characterizing it as \"large majority.\"",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-008",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 2,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 0.6667,
+        "inherited": 0.95,
+        "completeness": 1.0,
+        "weakest_ref": "D-123",
+        "basis": "judges 2/3; weakest input D-123 (0.95)"
+      }
+    },
+    {
+      "id": "C-009",
+      "kind": "conclusion",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:39.016Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 6 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "4 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (8 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-009",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 6 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "4 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (7 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 1 of 3 judges said supported. The claim states that Siemens Group liabilities \"remained the large majority of total debt-like obligations\" (92.0%), but the evidence does not support this interpretive judgment about what constitutes the \"large majority.\"",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-009",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "remained the large majority of total debt-like obligations",
+                "remained the large majority"
+              ],
+              "votes_for": 1,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "A year later, at September 30, 2026, SHL's reported financial debt (short-term plus long-term) was €866 million and pension provisions were €333 million. Liabilities to the Siemens Group were €2,932 million current and €10,943 million non-current, totaling €13,875 million, which remained the large majority of total debt-like obligations of €15,074 million (financial debt plus Siemens Group liabilities plus pensions). Cash and cash equivalents were €2,542 million at the same date.",
+          "after": "A year later, at September 30, 2026, SHL's reported financial debt (short-term plus long-term) was €866 million and pension provisions were €333 million. Liabilities to the Siemens Group were €2,932 million current and €10,943 million non-current, totaling €13,875 million, representing 92.0% of total debt-like obligations of €15,074 million (financial debt plus Siemens Group liabilities plus pensions). Cash and cash equivalents were €2,542 million at the same date.",
+          "note": "Repairer: Replaced the unsupported interpretive phrase \"remained the large majority\" with the computed figure (92.0%) that the evidence actually supports.",
+          "at": "2026-11-08T05:44:37.635Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 6 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "4 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (8 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "Supported by 3 of 3 judges",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-009",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 3,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:39.016Z"
+        }
+      ],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-247",
+        "basis": "judges 3/3; weakest input D-247 (0.90)"
+      }
+    },
+    {
+      "id": "C-010",
+      "kind": "conclusion",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:41.771Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 11 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "1 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (11 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-010",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 11 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "1 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (11 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 1 of 3 judges said supported. The claim states the announcement intends to \"transfer 30% of the Siemens Healthineers shares to Siemens AG shareholders\" but the evidence specifies this would be done \"preferably in the form of a direct spin-off\"—a qualifier the claim omits.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-010",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "transfer 30% of the Siemens Healthineers shares to Siemens AG shareholders"
+              ],
+              "votes_for": 1,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Of the non-current Siemens Group financing liabilities of €10,855 million at September 30, 2025, €10,837 million was loans, including five US dollar-denominated loans with carrying amounts of €1,438 million, €1,059 million, €1,482 million, €1,266 million and €843 million, and a €500 million euro loan maturing in fiscal year 2028; together these six identified loans total €6,588 million. If Siemens AG's shares or voting rights in Siemens Healthineers AG fall below 50% plus one share, financing agreements between Siemens Healthineers AG and the Siemens Group provide for early termination rights for Siemens AG or affiliated companies, with market value compensation for some loans, and loans whose market value at September 30, 2025 was, according to preliminary estimates, significantly below book value carry a compensation clause for early termination whose currently estimated one-off positive effect could be offset by correspondingly higher financing expenses in later periods due to currently higher market interest rates. Siemens AG announced on November 12, 2025 that it intends to deconsolidate Siemens Healthineers and transfer 30% of the Siemens Healthineers shares to Siemens AG shareholders.",
+          "after": "Of the non-current Siemens Group financing liabilities of €10,855 million at September 30, 2025, €10,837 million was loans, including five US dollar-denominated loans with carrying amounts of €1,438 million, €1,059 million, €1,482 million, €1,266 million and €843 million, and a €500 million euro loan maturing in fiscal year 2028; together these six identified loans total €6,588 million. If Siemens AG's shares or voting rights in Siemens Healthineers AG fall below 50% plus one share, financing agreements between Siemens Healthineers AG and the Siemens Group provide for early termination rights for Siemens AG or affiliated companies, with market value compensation for some loans, and loans whose market value at September 30, 2025 was, according to preliminary estimates, significantly below book value carry a compensation clause for early termination whose currently estimated one-off positive effect could be offset by correspondingly higher financing expenses in later periods due to currently higher market interest rates. Siemens AG announced on November 12, 2025 that it intends to deconsolidate Siemens Healthineers and transfer 30% of the Siemens Healthineers shares, preferably in the form of a direct spin-off, to Siemens AG shareholders.",
+          "note": "Repairer: Added the omitted qualifier that the 30% transfer would preferably take the form of a direct spin-off, matching D-114 exactly.",
+          "at": "2026-11-08T05:44:39.670Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 11 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "1 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (11 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "Supported by 3 of 3 judges",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-010",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 3,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:41.771Z"
+        }
+      ],
+      "certainty": {
+        "score": 95,
+        "band": "high",
+        "strength": 0.95,
+        "support": 1.0,
+        "inherited": 0.95,
+        "completeness": 1.0,
+        "weakest_ref": "D-194",
+        "basis": "judges 3/3; weakest input D-194 (0.95)"
+      }
+    },
+    {
+      "id": "C-011",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:31.737Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 4 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "1 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (4 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-011",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-176",
+        "basis": "judges 3/3; weakest input D-176 (0.90)"
+      }
+    },
+    {
+      "id": "C-012",
+      "kind": "conclusion",
+      "status": "fail",
+      "verified_at": "2026-11-08T05:44:45.003Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 5 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "3 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (8 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "fail",
+          "detail": "Not supported: 0 of 3 judges said supported. The claim states the computed coverage percentage \"covers about 16.7%\" but the computation shows exactly 16.7%, and the word \"about\" hedges a precise result and is not supported by the evidence.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-012",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [
+            "covers about 16.7%",
+            "€14,617 million sum of these five-year debt maturities and the fiscal year 2026 dividends paid"
+          ],
+          "votes_for": 0,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 6 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "5 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (10 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 0 of 3 judges said supported. The claim refers to \"the proposed fiscal year 2026 dividend of €1,118 million\" but the evidence shows this as \"Dividends paid to shareholders\" (already executed), not a proposed dividend.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-012",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "the proposed fiscal year 2026 dividend",
+                "Adding the proposed fiscal year 2026 dividend of €1,118 million gives a combined five-year funding requirement of €14,617 million",
+                "proposed fiscal year 2026 dividend of €1,118 million",
+                "(c1)"
+              ],
+              "votes_for": 0,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Five-year debt maturities due fiscal years 2026 through 2030 (non-derivative financial liabilities of €6,243 million in fiscal year 2026, €2,098 million in fiscal year 2027, and €5,158 million in fiscal years 2028 to 2030) total €13,499 million. Adding the proposed fiscal year 2026 dividend of €1,118 million gives a combined five-year funding requirement of €14,617 million. Fiscal year 2026 free cash flow of €2,446 million (D-343) covers about 16.7% of this amount, and the two-year fiscal 2025-2026 free cash flow sum of €5,160 million (c1) covers about 35.3% of it.",
+          "after": "Five-year debt maturities due fiscal years 2026 through 2030 (non-derivative financial liabilities of €6,243 million in fiscal year 2026, €2,098 million in fiscal year 2027, and €5,158 million in fiscal years 2028 to 2030) total €13,499 million. Adding the fiscal year 2026 dividends paid to shareholders of €1,118 million gives a combined five-year funding requirement of €14,617 million. Fiscal year 2026 free cash flow of €2,446 million (D-343) covers about 16.7% of this amount.",
+          "note": "Repairer: Removed the unsupported characterization of the dividend as \"proposed\" (evidence shows it as already paid) and dropped the two-year free cash flow coverage figure since (c1) is not an available cited evidence id. Dropped D-109.",
+          "at": "2026-11-08T05:44:37.912Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 5 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "3 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (8 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 0 of 3 judges said supported. The computation for total_funding_need uses D-244 + D-260 + D-278 - D-155, but the claim text says \"Adding the fiscal year 2026 dividends paid to shareholders of €1,118 million\" which means adding, not subtracting.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-012",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "Adding the fiscal year 2026 dividends paid to shareholders of €1,118 million gives a combined five-year funding requirement of €14,617 million"
+              ],
+              "votes_for": 0,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Five-year debt maturities due fiscal years 2026 through 2030 (non-derivative financial liabilities of €6,243 million in fiscal year 2026, €2,098 million in fiscal year 2027, and €5,158 million in fiscal years 2028 to 2030) total €13,499 million. Adding the fiscal year 2026 dividends paid to shareholders of €1,118 million gives a combined five-year funding requirement of €14,617 million. Fiscal year 2026 free cash flow of €2,446 million (D-343) covers about 16.7% of this amount.",
+          "after": "Five-year debt maturities due fiscal years 2026 through 2030 (non-derivative financial liabilities of €6,243 million in fiscal year 2026, €2,098 million in fiscal year 2027, and €5,158 million in fiscal years 2028 to 2030) total €13,499 million. Fiscal year 2026 dividends paid to shareholders were €1,118 million. Fiscal year 2026 free cash flow of €2,446 million (D-343) covers about 16.7% of the €14,617 million sum of these five-year debt maturities and the fiscal year 2026 dividends paid.",
+          "note": "Repairer: Rephrased to state the dividend figure separately and present the €14,617 million total as the sum used in the coverage computation, removing the incorrect \"adding...gives\" framing flagged as unsupported by the subtraction in the formula.",
+          "at": "2026-11-08T05:44:43.360Z"
+        },
+        {
+          "attempt": 3,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 5 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "3 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (8 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 0 of 3 judges said supported. The claim states the computed coverage percentage \"covers about 16.7%\" but the computation shows exactly 16.7%, and the word \"about\" hedges a precise result and is not supported by the evidence.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-012",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "covers about 16.7%",
+                "€14,617 million sum of these five-year debt maturities and the fiscal year 2026 dividends paid"
+              ],
+              "votes_for": 0,
+              "votes_total": 3
+            }
+          ],
+          "action": "not_determinable",
+          "before": "Five-year debt maturities due fiscal years 2026 through 2030 (non-derivative financial liabilities of €6,243 million in fiscal year 2026, €2,098 million in fiscal year 2027, and €5,158 million in fiscal years 2028 to 2030) total €13,499 million. Fiscal year 2026 dividends paid to shareholders were €1,118 million. Fiscal year 2026 free cash flow of €2,446 million (D-343) covers about 16.7% of the €14,617 million sum of these five-year debt maturities and the fiscal year 2026 dividends paid.",
+          "after": null,
+          "note": "Still failing after two repairs. Kept as fail and declared as a hole, excluded from scoring.",
+          "at": "2026-11-08T05:44:45.003Z"
+        }
+      ],
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 0.0,
+        "support": 0.0,
+        "inherited": 0.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Verification fail"
+      }
+    },
+    {
+      "id": "C-013",
+      "kind": "conclusion",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:32.835Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 5 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "1 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (5 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-013",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 95,
+        "band": "high",
+        "strength": 0.95,
+        "support": 1.0,
+        "inherited": 0.95,
+        "completeness": 1.0,
+        "weakest_ref": "D-160",
+        "basis": "judges 3/3; weakest input D-160 (0.95)"
+      }
+    },
+    {
+      "id": "C-014",
+      "kind": "conclusion",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:39.545Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 6 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "computation",
+          "method": "code",
+          "result": "pass",
+          "detail": "1 computation(s) re-evaluated from data values",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the conclusion traces to a cited value or computation (7 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-C-014",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 6 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "1 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (7 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 0 of 3 judges said supported. The claim states R&D expenses grew by 2.7% from FY2024 to FY2026, but the evidence shows expenses of €1,918M (FY2024) and €1,969M (FY2026), which equals 2.66% growth, and the claim also attributes the patent count to \"the company\" when evidence specifies \"Siemens Healthineers.\"",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-014",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "the company held more than 16,000 granted patents",
+                "R&D expenses equaled 8% of revenue in fiscal year 2025"
+              ],
+              "votes_for": 0,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Research and development expenses were €1,918 million in fiscal year 2024, €1,958 million in fiscal year 2025 and €1,969 million in fiscal year 2026. R&D expenses equaled 8% of revenue in fiscal year 2025. R&D expenses grew from fiscal year 2024 to fiscal year 2026 by 2.7%. At fiscal year-end 2025, the R&D workforce exceeded 13,000 employees and the company held more than 16,000 granted patents.",
+          "after": "Research and development expenses were €1,918 million in fiscal year 2024, €1,958 million in fiscal year 2025 and €1,969 million in fiscal year 2026. R&D intensity (R&D expenses as a ratio of revenue) was 8% in fiscal year 2025. R&D expenses grew from fiscal year 2024 to fiscal year 2026 by 2.7%. At fiscal year-end 2025, the R&D workforce exceeded 13,000 employees, and Siemens Healthineers had more than 16,000 granted patents as of September 30, 2025.",
+          "note": "Repairer: Clarified that the 8% figure is R&D intensity (ratio to revenue) per D-285, and attributed the patent count to Siemens Healthineers specifically rather than \"the company\" per D-312, keeping the already-verified computation and other figures unchanged.",
+          "at": "2026-11-08T05:44:38.145Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 6 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "computation",
+              "method": "code",
+              "result": "pass",
+              "detail": "1 computation(s) re-evaluated from data values",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the conclusion traces to a cited value or computation (7 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "Supported by 3 of 3 judges",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-C-014",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 3,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:39.545Z"
+        }
+      ],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-204",
+        "basis": "judges 3/3; weakest input D-204 (0.90)"
+      }
+    },
+    {
+      "id": "G-001",
+      "kind": "chart",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:46.734Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 2 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "chart_values",
+          "method": "code",
+          "result": "pass",
+          "detail": "7 of 7 points equal their data items or computations",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "fail",
+              "detail": "C-003 is fail",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "chart_values",
+              "method": "code",
+              "result": "fail",
+              "detail": "Philips FY2023: C-003:rotic_fy23_phi names no computation",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "downgrade",
+          "before": "ROTIC: Siemens Healthineers vs GE HealthCare vs Philips",
+          "after": "ROTIC: Siemens Healthineers vs GE HealthCare vs Philips",
+          "note": "Code dropped 3 point(s) whose ref did not pass and rebuilt the rest.",
+          "at": "2026-11-08T05:44:46.732Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 2 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "chart_values",
+              "method": "code",
+              "result": "pass",
+              "detail": "7 of 7 points equal their data items or computations",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:46.734Z"
+        }
+      ],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 1.0,
+        "weakest_ref": "C-002",
+        "basis": "built by code from refs; weakest input C-002 (0.63)"
+      }
+    },
+    {
+      "id": "G-002",
+      "kind": "chart",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:33.013Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 9 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "chart_values",
+          "method": "code",
+          "result": "pass",
+          "detail": "9 of 9 points equal their data items or computations",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-135",
+        "basis": "built by code from refs; weakest input D-135 (0.90)"
+      }
+    },
+    {
+      "id": "G-003",
+      "kind": "chart",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:33.015Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 3 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "chart_values",
+          "method": "code",
+          "result": "pass",
+          "detail": "3 of 3 points equal their data items or computations",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-115",
+        "basis": "built by code from refs; weakest input D-115 (0.90)"
+      }
+    },
+    {
+      "id": "G-004",
+      "kind": "chart",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:45.021Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 4 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "chart_values",
+          "method": "code",
+          "result": "pass",
+          "detail": "6 of 6 points equal their data items or computations",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "fail",
+              "detail": "C-009 is fail",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "chart_values",
+              "method": "code",
+              "result": "pass",
+              "detail": "6 of 6 points equal their data items or computations",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "Failed while C-009 had not passed. Checked again after the repair.",
+          "at": "2026-11-08T05:44:45.021Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 4 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "chart_values",
+              "method": "code",
+              "result": "pass",
+              "detail": "6 of 6 points equal their data items or computations",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:45.021Z"
+        }
+      ],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 1.0,
+        "weakest_ref": "C-008",
+        "basis": "built by code from refs; weakest input C-008 (0.63)"
+      }
+    },
+    {
+      "id": "G-005",
+      "kind": "chart",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:46.736Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 2 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "chart_values",
+          "method": "code",
+          "result": "pass",
+          "detail": "2 of 2 points equal their data items or computations",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "fail",
+              "detail": "C-012 is fail",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "chart_values",
+              "method": "code",
+              "result": "pass",
+              "detail": "4 of 4 points equal their data items or computations",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "downgrade",
+          "before": "Free Cash Flow vs Five-Year Funding Need",
+          "after": "Free Cash Flow vs Five-Year Funding Need",
+          "note": "Code dropped 2 point(s) whose ref did not pass and rebuilt the rest.",
+          "at": "2026-11-08T05:44:46.736Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 2 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "chart_values",
+              "method": "code",
+              "result": "pass",
+              "detail": "2 of 2 points equal their data items or computations",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:46.736Z"
+        }
+      ],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-343",
+        "basis": "built by code from refs; weakest input D-343 (0.90)"
+      }
+    },
+    {
+      "id": "G-006",
+      "kind": "chart",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:33.020Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 3 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "chart_values",
+          "method": "code",
+          "result": "pass",
+          "detail": "3 of 3 points equal their data items or computations",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "D-204",
+        "basis": "built by code from refs; weakest input D-204 (0.90)"
+      }
+    },
+    {
+      "id": "E-001",
+      "kind": "extrapolation",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:48.041Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "threshold_rule",
+          "method": "code",
+          "result": "pass",
+          "detail": "Recomputed C-001:mean_rotic = 9.4%, which meets the -1 bar (< 10%): score -1",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the score text traces to a cited value or computation (5 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-E-001",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "threshold_rule",
+              "method": "code",
+              "result": "fail",
+              "detail": "Recomputed C-001:mean_rotic = 9.4%, which meets the -1 bar (< 10%), so the score is -1, not +1",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the score text traces to a cited value or computation (3 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "recompute",
+          "before": "Across the four fiscal years that could be computed (FY2022, FY2023, FY2025, FY2026) out of the ten the criterion asks for, SHL's mean ROTIC is 9.4%, close to but just below the 15% threshold for a plus-one score and well above the 10% minus-one bar, so the score is set at the midpoint. Several years (FY2024, and years before FY2022) could not be computed because total assets, cash and goodwill were not all available in the data, and the FY2022 and FY2025 computations use year-end TICAP as a proxy for the average because the prior year-end balance was unavailable, so confidence is low.",
+          "after": "ROTIC level (10y) scores -1 under the framework: the recomputed value 9.4% meets the -1 bar (< 10%).",
+          "note": "Code recomputed C-001:mean_rotic = 9.4%, which meets the -1 bar (< 10%): score +1 became -1.",
+          "at": "2026-11-08T05:44:46.713Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "threshold_rule",
+              "method": "code",
+              "result": "pass",
+              "detail": "Recomputed C-001:mean_rotic = 9.4%, which meets the -1 bar (< 10%): score -1",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the score text traces to a cited value or computation (5 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "Supported by 3 of 3 judges",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-E-001",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 3,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:48.041Z"
+        }
+      ],
+      "certainty": {
+        "score": 54,
+        "band": "low",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 0.6,
+        "weakest_ref": "C-001",
+        "basis": "judges 3/3; weakest input C-001 (0.90); data coverage low (0.60)"
+      }
+    },
+    {
+      "id": "E-002",
+      "kind": "extrapolation",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:52.891Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 2 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the score text traces to a cited value or computation (2 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-E-002",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "fail",
+              "detail": "C-003 is fail",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "fail",
+              "detail": "'-3.8%' does not match any cited value, computation display or rubric threshold",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "-3.8%"
+              ],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "downgrade",
+          "before": "On the same proxy method (operating EBIT plus acquired-intangible amortization less tax at the effective rate, over total assets less cash less goodwill and, where available, net of non-interest-bearing current liabilities), SHL's mean ROTIC across FY2022, FY2023, FY2025 and FY2026 is 9.4%, versus GE HealthCare's mean of 26.2% across FY2023-FY2025 and Philips' mean of -3.8% across FY2023-FY2025. SHL's figure is below GE HealthCare's but above Philips', and the three series are not perfectly comparable: GE HealthCare's and Philips' TICAP proxies net current liabilities of short-term debt (not available for SHL), SHL's fiscal year ends three months earlier, and Philips' FY2022-FY2023 figures reflect negative operating income and pre-tax income.",
+          "after": "On the same proxy method (operating EBIT plus acquired-intangible amortization less tax at the effective rate, over total assets less cash less goodwill and, where available, net of non-interest-bearing current liabilities), SHL's mean ROTIC across FY2022, FY2023, FY2025 and FY2026 is 9.4%, versus GE HealthCare's mean of 26.2% across FY2023-FY2025 and Philips' mean of -3.8% across FY2023-FY2025. SHL's figure is below GE HealthCare's but above Philips', and the three series are not perfectly comparable: GE HealthCare's and Philips' TICAP proxies net current liabilities of short-term debt (not available for SHL), SHL's fiscal year ends three months earlier, and Philips' FY2022-FY2023 figures reflect negative operating income and pre-tax income.",
+          "note": "Dropped C-003, which did not pass.",
+          "at": "2026-11-08T05:44:46.715Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 2 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "fail",
+              "detail": "'-3.8%' does not match any cited value, computation display or rubric threshold",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "-3.8%"
+              ],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "downgrade",
+          "before": "On the same proxy method (operating EBIT plus acquired-intangible amortization less tax at the effective rate, over total assets less cash less goodwill and, where available, net of non-interest-bearing current liabilities), SHL's mean ROTIC across FY2022, FY2023, FY2025 and FY2026 is 9.4%, versus GE HealthCare's mean of 26.2% across FY2023-FY2025 and Philips' mean of -3.8% across FY2023-FY2025. SHL's figure is below GE HealthCare's but above Philips', and the three series are not perfectly comparable: GE HealthCare's and Philips' TICAP proxies net current liabilities of short-term debt (not available for SHL), SHL's fiscal year ends three months earlier, and Philips' FY2022-FY2023 figures reflect negative operating income and pre-tax income.",
+          "after": "On the same proxy method (operating EBIT plus acquired-intangible amortization less tax at the effective rate, over total assets less cash less goodwill and, where available, net of non-interest-bearing current liabilities), SHL's mean ROTIC across FY2022, FY2023, FY2025 and FY2026 is 9.4%, versus GE HealthCare's mean of 26.2% across FY2023-FY2025. SHL's figure is below GE HealthCare's, and the two series are not perfectly comparable: GE HealthCare's TICAP proxy nets current liabilities of short-term debt (not available for SHL), and SHL's fiscal year ends three months earlier.",
+          "note": "Repairer: Removed all unsupported Philips figures and comparisons since no Philips evidence is present, leaving only the SHL vs GE HealthCare comparison, and lowered the score toward 0 since only one peer comparison remains.",
+          "at": "2026-11-08T05:44:51.249Z"
+        },
+        {
+          "attempt": 3,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 2 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the score text traces to a cited value or computation (2 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "Supported by 3 of 3 judges",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-E-002",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 3,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:52.891Z"
+        }
+      ],
+      "certainty": {
+        "score": 38,
+        "band": "low",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 0.6,
+        "weakest_ref": "C-002",
+        "basis": "judges 3/3; weakest input C-002 (0.63); data coverage low (0.60)"
+      }
+    },
+    {
+      "id": "E-003",
+      "kind": "extrapolation",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:44:34.036Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 4 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the score text traces to a cited value or computation (13 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 3 of 3 judges",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-E-003",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 20,
+        "band": "low",
+        "strength": 0.2333,
+        "support": 1.0,
+        "inherited": 0.2333,
+        "completeness": 0.85,
+        "weakest_ref": "C-006",
+        "basis": "judges 3/3; weakest input C-006 (0.23); data coverage medium (0.85)"
+      }
+    },
+    {
+      "id": "E-004",
+      "kind": "extrapolation",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:54.371Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 3 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the score text traces to a cited value or computation (9 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "support",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "Supported by 2 of 3 judges. Dissent: The claim states total debt-like obligations were €15,074 million at September 30, 2026 against cash of €2,542 million, but the evidence at C-009 does not provide a net debt calculation for FY2026, and the claim's interpretive framing of leverage risk as \"a factor to weigh\" exceeds what the evidence",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-E-004",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 2,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 3 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the score text traces to a cited value or computation (9 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Not supported: 1 of 3 judges said supported. The claim states debt-like obligations were €15,074 million at September 30, 2026, but evidence C-008 shows total debt-like obligations were €15,281 million in FY2025, inconsistent with the cited comparison; additionally, \"most of the identified loans\" being US dollar-denominated cannot be verified ",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-E-004",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "debt-like obligations were €15,074 million at September 30, 2026 against cash of €2,542 million",
+                "most of the identified loans are US dollar-denominated",
+                "weighs negatively"
+              ],
+              "votes_for": 1,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Net debt including pensions stood at €12,472 million, 2.8 times EBITDA at September 30, 2025 (c1), and debt-like obligations were €15,074 million at September 30, 2026 against cash of €2,542 million (c2). Liabilities to the Siemens Group made up 91.9% of total debt-like obligations in FY2025 and 92.0% in FY2026 (c1, c2), and most of the identified loans are US dollar-denominated and subject to early-termination and market-value compensation clauses once Siemens AG's stake falls below 50% plus one share, a change already announced for a 30% share transfer (c3). This concentration of leverage in related-party loans with a change-of-control trigger, combined with net debt to EBITDA near 3 times, weighs negatively.",
+          "after": "Net debt including pensions stood at €12,472 million, 2.8 times EBITDA at September 30, 2025 (c1), and total debt-like obligations were €15,074 million at September 30, 2026, against cash of €2,542 million (c2). Liabilities to the Siemens Group made up 91.9% of total debt-like obligations in FY2025 and 92.0% in FY2026 (c1, c2). Of the identified non-current Siemens Group loans at September 30, 2025, five were US dollar-denominated with a sixth loan in euros, and these financing agreements include early-termination and market-value compensation clauses that would be triggered if Siemens AG's stake falls below 50% plus one share, a change already announced for a 30% share transfer (c3). This concentration of leverage in related-party loans with a change-of-control trigger, combined with net debt to EBITDA near 3 times, is a factor to weigh in assessing leverage risk.",
+          "note": "Repairer: Removed the unsupported \"most of the identified loans\" generalization (only five of six identified loans are confirmed USD-denominated), corrected the figure to match the cited €15,074 million FY2026 total from C-009 rather than mischaracterizing it against FY2025, softened the unsupported \"weighs negatively\" conclusion, and lowered the score/confidence since the net evidence only partially supports a negative leverage judgment.",
+          "at": "2026-11-08T05:44:52.898Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 3 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the score text traces to a cited value or computation (9 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "support",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "Supported by 2 of 3 judges. Dissent: The claim states total debt-like obligations were €15,074 million at September 30, 2026 against cash of €2,542 million, but the evidence at C-009 does not provide a net debt calculation for FY2026, and the claim's interpretive framing of leverage risk as \"a factor to weigh\" exceeds what the evidence",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-E-004",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 2,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:54.371Z"
+        }
+      ],
+      "certainty": {
+        "score": 25,
+        "band": "low",
+        "strength": 0.4222,
+        "support": 0.6667,
+        "inherited": 0.6333,
+        "completeness": 0.6,
+        "weakest_ref": "C-008",
+        "basis": "judges 2/3; weakest input C-008 (0.63); data coverage low (0.60)"
+      }
+    },
+    {
+      "id": "E-005",
+      "kind": "extrapolation",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:46.724Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "N/A with a stated reason, and the cited conclusions resolve",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "fail",
+              "detail": "C-012 is fail",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "threshold_rule",
+              "method": "code",
+              "result": "pass",
+              "detail": "Recomputed C-012:fcf_fy26_coverage = 0.17x, which meets the -1 bar (< 1x): score -1",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "fail",
+              "detail": "'35.3%' does not match any cited value, computation display or rubric threshold",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "35.3%"
+              ],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": "not_determinable",
+          "before": "Fiscal year 2026 free cash flow of €2,446 million (c1) covers about 16.7% of the five-year non-derivative financial liability maturities plus the fiscal year 2026 dividend (€14,617 million, c2), far below the 1x threshold for the minus-one anchor. Even combining two years of free cash flow (€5,160 million, c2) covers only about 35.3% of that five-year need (c2). Siemens Healthineers also carries separate liabilities to the Siemens Group of €10,307 million due through fiscal year 2030 (c3), with early termination rights for Siemens AG if its shareholding falls below 50% plus one share, which could accelerate some of this debt. Coverage is well under 1x on these figures.",
+          "after": "Liquidity is not scored.",
+          "note": "Code: the rule input's conclusion failed, so the score is not determinable.",
+          "at": "2026-11-08T05:44:46.723Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "N/A with a stated reason, and the cited conclusions resolve",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "No numbers to trace",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:46.724Z"
+        }
+      ],
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Not scored: The threshold input C-012:fcf_fy26_coverage did not pass verification."
+      }
+    },
+    {
+      "id": "E-006",
+      "kind": "extrapolation",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:44:45.012Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "N/A with a stated reason, and the cited conclusions resolve",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "fail",
+              "detail": "C-014 is fail",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "No numbers to trace",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "Failed while C-014 had not passed. Checked again after the repair.",
+          "at": "2026-11-08T05:44:45.012Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "N/A with a stated reason, and the cited conclusions resolve",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "No numbers to trace",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass",
+          "at": "2026-11-08T05:44:45.012Z"
+        }
+      ],
+      "certainty": {
+        "score": null,
+        "band": "none",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": null,
+        "basis": "Not scored: Research stage is about the analyst's own coverage history, which no source in this run can state. It is declared as a gap instead of guessed."
+      }
+    }
+  ],
+  "sentences": [
+    {
+      "id": "H-001",
+      "kind": "sentence",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:45:32.689Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-001",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "faithfulness",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Only 1 of 3 judges found it faithful. The evidence shows two criteria in the na_criteria array (Liquidity and Research stage), but these represent criteria marked as not applicable, not \"left not applicable\" in the context of scoring—in fact, the rollup shows 4 criteria scored, 2 in_scope that were not scored (one for Financial Strength category).",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-H-001",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "two left not applicable",
+                "six criteria scored and two left not applicable"
+              ],
+              "votes_for": 1,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Siemens Healthineers scores a weighted average of 0.0 on the BOFFIN framework, with four of six criteria scored and two left not applicable, as of the Q4 FY2026 results release.",
+          "after": "Siemens Healthineers scores a weighted average of 0.0 on the BOFFIN framework, with four of six in-scope criteria scored, as of the Q4 FY2026 results release.",
+          "note": "Weakened toward the cited items.",
+          "at": "2026-11-08T05:45:31.731Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "faithfulness",
+              "method": "llm_judge",
+              "result": "pass",
+              "detail": "3 of 3 judges found it faithful to the cited items.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-H-001",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": 3,
+              "votes_total": 3
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass.",
+          "at": "2026-11-08T05:45:32.689Z"
+        }
+      ],
+      "certainty": {
+        "score": 23,
+        "band": "low",
+        "strength": 0.2333,
+        "support": 1.0,
+        "inherited": 0.2333,
+        "completeness": 1.0,
+        "weakest_ref": "rollup",
+        "basis": "judges 3/3; weakest cited rollup (0.23)"
+      }
+    },
+    {
+      "id": "H-002",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.717Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 2 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-002",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 1.0,
+        "weakest_ref": "E-002",
+        "basis": "judges 3/3; weakest cited E-002 (0.63)"
+      }
+    },
+    {
+      "id": "H-003",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.570Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 3 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-003",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 23,
+        "band": "low",
+        "strength": 0.2333,
+        "support": 1.0,
+        "inherited": 0.2333,
+        "completeness": 1.0,
+        "weakest_ref": "E-003",
+        "basis": "judges 3/3; weakest cited E-003 (0.23)"
+      }
+    },
+    {
+      "id": "H-004",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.997Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 3 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-004",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 42,
+        "band": "low",
+        "strength": 0.4222,
+        "support": 1.0,
+        "inherited": 0.4222,
+        "completeness": 1.0,
+        "weakest_ref": "E-004",
+        "basis": "judges 3/3; weakest cited E-004 (0.42)"
+      }
+    },
+    {
+      "id": "H-005",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.650Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the sentence traces to a cited value or computation (2 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-005",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 1.0,
+        "weakest_ref": "E-002",
+        "basis": "judges 3/3; weakest cited E-002 (0.63)"
+      }
+    },
+    {
+      "id": "H-006",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.111Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "Every number in the sentence traces to a cited value or computation (3 checked)",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-006",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 90,
+        "band": "high",
+        "strength": 0.9,
+        "support": 1.0,
+        "inherited": 0.9,
+        "completeness": 1.0,
+        "weakest_ref": "E-001",
+        "basis": "judges 3/3; weakest cited E-001 (0.90)"
+      }
+    },
+    {
+      "id": "H-008",
+      "kind": "sentence",
+      "status": "fixed",
+      "verified_at": "2026-11-08T05:45:34.226Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "copy_exact",
+          "method": "code",
+          "result": "pass",
+          "detail": "Equals G-001 exactly",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        }
+      ],
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the sentence traces to a cited value or computation (4 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "faithfulness",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Only 1 of 3 judges found it faithful. The chart shows Siemens Healthineers ROTIC data for FY2022, FY2023, FY2025, and FY2026 (no FY2024), but the sentence claims data spans \"from fiscal year 2022 to fiscal year 2026,\" implying continuous data including the missing FY2024 year.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-H-008",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "from fiscal year 2022 to fiscal year 2026"
+              ],
+              "votes_for": 1,
+              "votes_total": 3
+            }
+          ],
+          "action": "downgrade",
+          "before": "Siemens Healthineers' return on total invested capital stayed in a range of roughly 7% to 11% from fiscal year 2022 to fiscal year 2026, well below GE HealthCare's range of about 25% to 27% from fiscal year 2023 to fiscal year 2025.",
+          "after": "Siemens Healthineers' return on total invested capital ranged from roughly 7% to 11% across fiscal years 2022, 2023, 2025, and 2026, well below GE HealthCare's range of about 25% to 27% from fiscal year 2023 to fiscal year 2025.",
+          "note": "Weakened toward the cited items.",
+          "at": "2026-11-08T05:45:31.843Z"
+        },
+        {
+          "attempt": 2,
+          "status": "fail",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "numbers_traced",
+              "method": "code",
+              "result": "pass",
+              "detail": "Every number in the sentence traces to a cited value or computation (4 checked)",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "faithfulness",
+              "method": "llm_judge",
+              "result": "fail",
+              "detail": "Only 0 of 3 judges found it faithful. The sentence claims GE HealthCare's range is \"fiscal year 2023 to fiscal year 2025\" but the evidence shows GE HealthCare data for FY2023, FY2024, and FY2025, missing FY2024 in the sentence's stated period.",
+              "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+              "agent_id": "verifier-H-008",
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [
+                "from fiscal year 2023 to fiscal year 2025",
+                "well below"
+              ],
+              "votes_for": 0,
+              "votes_total": 3
+            }
+          ],
+          "action": "recite",
+          "before": "Siemens Healthineers' return on total invested capital ranged from roughly 7% to 11% across fiscal years 2022, 2023, 2025, and 2026, well below GE HealthCare's range of about 25% to 27% from fiscal year 2023 to fiscal year 2025.",
+          "after": "ROTIC: Siemens Healthineers vs GE HealthCare vs Philips",
+          "note": "Replaced with the exact text of G-001, its own words.",
+          "at": "2026-11-08T05:45:34.224Z"
+        },
+        {
+          "attempt": 3,
+          "status": "fixed",
+          "checks": [
+            {
+              "check": "citations_resolve",
+              "method": "code",
+              "result": "pass",
+              "detail": "All 1 cited id(s) exist and passed",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            },
+            {
+              "check": "copy_exact",
+              "method": "code",
+              "result": "pass",
+              "detail": "Equals G-001 exactly",
+              "model_id": null,
+              "agent_id": null,
+              "diff": null,
+              "closest_locator": null,
+              "unsupported_spans": [],
+              "votes_for": null,
+              "votes_total": null
+            }
+          ],
+          "action": null,
+          "before": null,
+          "after": null,
+          "note": "All checks pass.",
+          "at": "2026-11-08T05:45:34.226Z"
+        }
+      ],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 1.0,
+        "weakest_ref": "G-001",
+        "basis": "copied verbatim; weakest cited G-001 (0.63)"
+      }
+    },
+    {
+      "id": "H-009",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.244Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-009",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 63,
+        "band": "medium",
+        "strength": 0.6333,
+        "support": 1.0,
+        "inherited": 0.6333,
+        "completeness": 1.0,
+        "weakest_ref": "G-004",
+        "basis": "judges 3/3; weakest cited G-004 (0.63)"
+      }
+    },
+    {
+      "id": "H-010",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:28.943Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-010",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-01",
+        "basis": "judges 3/3; weakest cited HOLE-01 (1.00)"
+      }
+    },
+    {
+      "id": "H-011",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.361Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-011",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-02",
+        "basis": "judges 3/3; weakest cited HOLE-02 (1.00)"
+      }
+    },
+    {
+      "id": "H-012",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.754Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-012",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-03",
+        "basis": "judges 3/3; weakest cited HOLE-03 (1.00)"
+      }
+    },
+    {
+      "id": "H-013",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.922Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-013",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-04",
+        "basis": "judges 3/3; weakest cited HOLE-04 (1.00)"
+      }
+    },
+    {
+      "id": "H-014",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:29.902Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-014",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-05",
+        "basis": "judges 3/3; weakest cited HOLE-05 (1.00)"
+      }
+    },
+    {
+      "id": "H-015",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:36.278Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-015",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-06",
+        "basis": "judges 3/3; weakest cited HOLE-06 (1.00)"
+      }
+    },
+    {
+      "id": "H-016",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.050Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-016",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-07",
+        "basis": "judges 3/3; weakest cited HOLE-07 (1.00)"
+      }
+    },
+    {
+      "id": "H-017",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.214Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-017",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-08",
+        "basis": "judges 3/3; weakest cited HOLE-08 (1.00)"
+      }
+    },
+    {
+      "id": "H-018",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.210Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-018",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-09",
+        "basis": "judges 3/3; weakest cited HOLE-09 (1.00)"
+      }
+    },
+    {
+      "id": "H-019",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.181Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-019",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-10",
+        "basis": "judges 3/3; weakest cited HOLE-10 (1.00)"
+      }
+    },
+    {
+      "id": "H-020",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.335Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-020",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-11",
+        "basis": "judges 3/3; weakest cited HOLE-11 (1.00)"
+      }
+    },
+    {
+      "id": "H-021",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.531Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-021",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-12",
+        "basis": "judges 3/3; weakest cited HOLE-12 (1.00)"
+      }
+    },
+    {
+      "id": "H-022",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.502Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-022",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-13",
+        "basis": "judges 3/3; weakest cited HOLE-13 (1.00)"
+      }
+    },
+    {
+      "id": "H-023",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.681Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-023",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-14",
+        "basis": "judges 3/3; weakest cited HOLE-14 (1.00)"
+      }
+    },
+    {
+      "id": "H-024",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:30.654Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-024",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-15",
+        "basis": "judges 3/3; weakest cited HOLE-15 (1.00)"
+      }
+    },
+    {
+      "id": "H-025",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.027Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-025",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-16",
+        "basis": "judges 3/3; weakest cited HOLE-16 (1.00)"
+      }
+    },
+    {
+      "id": "H-026",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:32.263Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-026",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-17",
+        "basis": "judges 3/3; weakest cited HOLE-17 (1.00)"
+      }
+    },
+    {
+      "id": "H-027",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.135Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-027",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-18",
+        "basis": "judges 3/3; weakest cited HOLE-18 (1.00)"
+      }
+    },
+    {
+      "id": "H-028",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.062Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-028",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-19",
+        "basis": "judges 3/3; weakest cited HOLE-19 (1.00)"
+      }
+    },
+    {
+      "id": "H-029",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.059Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-029",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-20",
+        "basis": "judges 3/3; weakest cited HOLE-20 (1.00)"
+      }
+    },
+    {
+      "id": "H-030",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.084Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-030",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-21",
+        "basis": "judges 3/3; weakest cited HOLE-21 (1.00)"
+      }
+    },
+    {
+      "id": "H-031",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.242Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-031",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-22",
+        "basis": "judges 3/3; weakest cited HOLE-22 (1.00)"
+      }
+    },
+    {
+      "id": "H-032",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.321Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-032",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-23",
+        "basis": "judges 3/3; weakest cited HOLE-23 (1.00)"
+      }
+    },
+    {
+      "id": "H-033",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.431Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-033",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-24",
+        "basis": "judges 3/3; weakest cited HOLE-24 (1.00)"
+      }
+    },
+    {
+      "id": "H-034",
+      "kind": "sentence",
+      "status": "pass",
+      "verified_at": "2026-11-08T05:45:31.524Z",
+      "checks": [
+        {
+          "check": "citations_resolve",
+          "method": "code",
+          "result": "pass",
+          "detail": "All 1 cited id(s) exist and passed",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "numbers_traced",
+          "method": "code",
+          "result": "pass",
+          "detail": "No numbers to trace",
+          "model_id": null,
+          "agent_id": null,
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": null,
+          "votes_total": null
+        },
+        {
+          "check": "faithfulness",
+          "method": "llm_judge",
+          "result": "pass",
+          "detail": "3 of 3 judges found it faithful to the cited items.",
+          "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "agent_id": "verifier-H-034",
+          "diff": null,
+          "closest_locator": null,
+          "unsupported_spans": [],
+          "votes_for": 3,
+          "votes_total": 3
+        }
+      ],
+      "attempts": [],
+      "certainty": {
+        "score": 100,
+        "band": "high",
+        "strength": 1.0,
+        "support": 1.0,
+        "inherited": 1.0,
+        "completeness": 1.0,
+        "weakest_ref": "HOLE-25",
+        "basis": "judges 3/3; weakest cited HOLE-25 (1.00)"
+      }
+    }
+  ]
+}

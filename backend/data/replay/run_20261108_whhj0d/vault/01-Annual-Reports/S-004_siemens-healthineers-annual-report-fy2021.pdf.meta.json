@@ -1,0 +1,29 @@
+{
+  "doc_id": "DOC-006",
+  "source_id": "S-004",
+  "title": "Siemens Healthineers Annual Report FY2021",
+  "url": "https://corporate.webassets.siemens-healthineers.com/df1896911b345f04/bc8ba64c5954/Siemens_Healthineers_Annual-Report_2021.pdf",
+  "content_type": "pdf",
+  "paginated": true,
+  "pages": 118,
+  "sha256": "606c6352a535dd641e707c175b17a6e21362cdb5af5613ab3704a71447025718",
+  "bytes": 1813068,
+  "fetched_at": "2026-11-08T05:41:42.469Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_whhj0d/siemens-healthineers/01-Annual-Reports/S-004_siemens-healthineers-annual-report-fy2021.pdf",
+    "text": "runs/run_20261108_whhj0d/siemens-healthineers/01-Annual-Reports/S-004_siemens-healthineers-annual-report-fy2021.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (annual_report), not scanned"
+  },
+  "fetch": {
+    "request_id": "REQ-0006",
+    "url": "https://corporate.webassets.siemens-healthineers.com/df1896911b345f04/bc8ba64c5954/Siemens_Healthineers_Annual-Report_2021.pdf",
+    "final_url": "https://corporate.webassets.siemens-healthineers.com/df1896911b345f04/bc8ba64c5954/Siemens_Healthineers_Annual-Report_2021.pdf",
+    "http_status": 200,
+    "content_type": "application/pdf"
+  }
+}

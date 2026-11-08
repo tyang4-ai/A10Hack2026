@@ -1,0 +1,933 @@
+{
+  "frozen": true,
+  "note": "Frozen demo plan: the needs and sources for Siemens Healthineers were prepared before the event, not generated live.",
+  "run_id": "run_20261108_whhj0d",
+  "company": "Siemens Healthineers AG",
+  "ticker": "SHL",
+  "depth": "screen",
+  "as_of": "2026-11-07",
+  "fiscal_note": "FY2026 (year to Sep 30, 2026) is the base. Its figures come from the Q4 FY2026 results release of Nov 5, 2026 (S-002), because the FY2026 Annual Report is only due Nov 26, 2026, so the full statements, notes, debt maturities and credit facilities come from the FY2025 Annual Report (S-001). Segments changed on Oct 1, 2025 (Imaging, Precision Therapy and Diagnostics replace Imaging, Diagnostics, Varian and Advanced Therapies), and Siemens AG plans to deconsolidate SHL, which changes the shareholder structure and lets the Siemens Group end its loans early.",
+  "needs": [
+    {
+      "need_id": "N-01",
+      "label": "SHL returns on tangible capital",
+      "dimension": "financials",
+      "question": "For each fiscal year from FY2018 to FY2026, what are SHL's NOPAT inputs (EBIT, amortization from IFRS 3 purchase price allocation, income tax and tax rate, income attributable to non-controlling interests) and TICAP inputs (total assets, cash, goodwill, non-interest-bearing current liabilities)?",
+      "data_types": [
+        "financial_filing",
+        "press_release"
+      ],
+      "criteria": [
+        "rotic_level",
+        "rotic_vs_peers"
+      ],
+      "rationale": "ROTIC is NOPAT over average TICAP. SHL listed in March 2018, so balance sheets exist from Sep 30, 2018 and at most eight years of average TICAP (FY2019 to FY2026) can be built. That is short of the ten-year window, so the score must carry low confidence. The same SHL figures are the company side of rotic_vs_peers."
+    },
+    {
+      "need_id": "N-02",
+      "label": "Peer returns on tangible capital",
+      "dimension": "competition",
+      "question": "What are NOPAT and TICAP inputs for GE HealthCare and Philips over the same years, taken from their SEC XBRL filings and computed the same way as for SHL?",
+      "data_types": [
+        "structured_financials"
+      ],
+      "criteria": [
+        "rotic_vs_peers"
+      ],
+      "rationale": "The framework compares like with like. Both peers file with the SEC, so code reads tagged audited figures with no agent. Their fiscal years end on Dec 31, three months after SHL's, and Philips reports under IFRS in euros while GE HealthCare reports under US GAAP in dollars. ROTIC is a ratio, so the currency does not matter, but the year offset has to be stated."
+    },
+    {
+      "need_id": "N-03",
+      "label": "Revenue series by year and segment",
+      "dimension": "financials",
+      "question": "How has SHL's revenue grown each year since FY2018, in total and by segment, on a reported and a comparable basis?",
+      "data_types": [
+        "financial_filing",
+        "press_release"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "rationale": "Secular growth starts from the company's own revenue record. The segment series breaks on Oct 1, 2025: Imaging, Diagnostics, Varian and Advanced Therapies ran to the end of FY2025, and FY2026 reports Imaging, Precision Therapy and Diagnostics. Any segment trend has to say so."
+    },
+    {
+      "need_id": "N-04",
+      "label": "End-market growth and decline risks",
+      "dimension": "market_share",
+      "question": "How fast are SHL's addressable markets growing, what growth does management expect for FY2027, and does anything point to secular decline, such as diagnostics weakness in China or tariffs?",
+      "data_types": [
+        "financial_filing",
+        "press_release",
+        "news_article",
+        "other"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "rationale": "Secular growth scores -1 only on evidence of decline ahead. The annual report sizes the markets and names the long-term trends, the results release gives the FY2027 outlook, and outside coverage checks whether the Diagnostics problems look structural."
+    },
+    {
+      "need_id": "N-05",
+      "label": "Debt, leases and pensions against earnings",
+      "dimension": "financials",
+      "question": "What are SHL's financial debt, lease liabilities, pension provisions, net debt and net debt to EBITDA, how much of the debt is owed to the Siemens Group, and what happens to those loans when Siemens AG deconsolidates SHL?",
+      "data_types": [
+        "financial_filing",
+        "press_release"
+      ],
+      "criteria": [
+        "leverage"
+      ],
+      "rationale": "Leverage weighs debt, leases and pension obligations against earnings power. Most of SHL's debt is loans from the Siemens Group, and the FY2025 report says those loans can be terminated early once Siemens AG holds less than half the votes, so the changed shareholder structure is a leverage question."
+    },
+    {
+      "need_id": "N-06",
+      "label": "Free cash flow against what it must fund",
+      "dimension": "financials",
+      "question": "What free cash flow does SHL generate, and what must it cover over the next five years: debt maturities, drawn credit facilities and dividends?",
+      "data_types": [
+        "financial_filing",
+        "press_release"
+      ],
+      "criteria": [
+        "liquidity"
+      ],
+      "rationale": "Liquidity scores free cash flow coverage of five-year maturities, facilities and dividends (above 2x is +1, below 1x is -1). That needs the cash flow statement, the maturity analysis, the credit facility note and the dividend proposal."
+    },
+    {
+      "need_id": "N-07",
+      "label": "R&D spend, pipeline and forecastability",
+      "dimension": "technology",
+      "question": "How much does SHL spend on R&D, what is the pipeline focused on, and how predictable is the business going into FY2027?",
+      "data_types": [
+        "financial_filing",
+        "press_release"
+      ],
+      "criteria": [
+        "research_stage"
+      ],
+      "rationale": "Research stage is about the analyst's own coverage history, which no public source can answer, so that part stays a declared gap unless the analyst supplies it. This need gives the drafter the R&D and outlook evidence for the other side of the anchor, whether the company is too hard to forecast."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "S-001",
+      "title": "Siemens Healthineers Annual Report FY2025",
+      "url": "https://corporate.webassets.siemens-healthineers.com/a364b935102e7df5/d7fdacda458e/siemens-healthineers-ir-annual-report-2025.pdf",
+      "domain": "corporate.webassets.siemens-healthineers.com",
+      "kind": "annual_report",
+      "data_types": [
+        "financial_filing"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 1,
+      "scores": {
+        "reliability": 0.95,
+        "relevance": 0.95
+      },
+      "rationale": "The latest audited statements and notes: income statement, balance sheet, cash flows, goodwill, intangibles, financial debt, credit facilities, maturities, segments, dividends, R&D and the subsequent-events note on the Siemens AG deconsolidation. FY2026 statements are not audited yet, so this is the base for everything the release does not cover.",
+      "need_ids": [
+        "N-01",
+        "N-03",
+        "N-04",
+        "N-05",
+        "N-06",
+        "N-07"
+      ],
+      "criteria": [
+        "rotic_level",
+        "rotic_vs_peers",
+        "secular_growth",
+        "leverage",
+        "liquidity",
+        "research_stage"
+      ],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-002",
+      "title": "Siemens Healthineers Q4 FY2026 earnings release and financial results",
+      "url": "https://corporate.webassets.siemens-healthineers.com/8410b8eff08f9fd0/df64669e4035/siemens-healthineers-Q4_FY2026_Earnings-Release-and-Financial-Results.pdf",
+      "domain": "corporate.webassets.siemens-healthineers.com",
+      "kind": "company_ir",
+      "data_types": [
+        "press_release"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 2,
+      "scores": {
+        "reliability": 0.9,
+        "relevance": 0.95
+      },
+      "rationale": "The FY2026 figures, released Nov 5, 2026: full-year income statement, balance sheet at Sep 30, 2026, cash flows, the EBITDA and purchase price allocation reconciliation by the new segments, the FY2027 outlook and the dividend proposal. BOFFIN treats a filing older than the last full fiscal year as stale, so this release is the FY2026 base until the annual report comes out on Nov 26, 2026. It is the full PDF linked from the press release, which also mentions the different shareholder structure and the Diagnostics carve-out.",
+      "need_ids": [
+        "N-01",
+        "N-03",
+        "N-04",
+        "N-05",
+        "N-06",
+        "N-07"
+      ],
+      "criteria": [
+        "rotic_level",
+        "rotic_vs_peers",
+        "secular_growth",
+        "leverage",
+        "liquidity",
+        "research_stage"
+      ],
+      "vault_folder": "02-Quarterly-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-003",
+      "title": "Siemens Healthineers Annual Report FY2023",
+      "url": "https://corporate.webassets.siemens-healthineers.com/f548fca6fac5ebe0/8bda062e9d1e/siemens-healthineers-ir-annual-report-2023.pdf",
+      "domain": "corporate.webassets.siemens-healthineers.com",
+      "kind": "annual_report",
+      "data_types": [
+        "financial_filing"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 5,
+      "scores": {
+        "reliability": 0.95,
+        "relevance": 0.7
+      },
+      "rationale": "ROTIC history: income statements for FY2023 and FY2022, balance sheets at Sep 30, 2023 and 2022, and the purchase price allocation line from the segment reconciliation. The FY2025 report only goes back to Sep 30, 2024.",
+      "need_ids": [
+        "N-01",
+        "N-03"
+      ],
+      "criteria": [
+        "rotic_level",
+        "rotic_vs_peers",
+        "secular_growth"
+      ],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-004",
+      "title": "Siemens Healthineers Annual Report FY2021",
+      "url": "https://corporate.webassets.siemens-healthineers.com/df1896911b345f04/bc8ba64c5954/Siemens_Healthineers_Annual-Report_2021.pdf",
+      "domain": "corporate.webassets.siemens-healthineers.com",
+      "kind": "annual_report",
+      "data_types": [
+        "financial_filing"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 6,
+      "scores": {
+        "reliability": 0.95,
+        "relevance": 0.6
+      },
+      "rationale": "ROTIC history: FY2021 and FY2020 income statements, balance sheets at Sep 30, 2021 and 2020, and the purchase price allocation line. FY2021 includes the Varian acquisition, which roughly doubled goodwill, so the ROTIC series has a step here.",
+      "need_ids": [
+        "N-01",
+        "N-03"
+      ],
+      "criteria": [
+        "rotic_level",
+        "rotic_vs_peers",
+        "secular_growth"
+      ],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-005",
+      "title": "Siemens Healthineers Annual Report FY2019",
+      "url": "https://corporate.webassets.siemens-healthineers.com/1800000006835562/383ab5036ed8/1800000006835562-12e08501046c-Siemens-Healthineers-Annual-Report-2019.pdf",
+      "domain": "corporate.webassets.siemens-healthineers.com",
+      "kind": "annual_report",
+      "data_types": [
+        "financial_filing"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 7,
+      "scores": {
+        "reliability": 0.95,
+        "relevance": 0.5
+      },
+      "rationale": "ROTIC history back to listing: FY2019 and FY2018 income statements, balance sheets at Sep 30, 2019 and 2018, and the amortization of intangibles acquired in business combinations. These years predate IFRS 16, so the lease interest add-back cannot be built the same way. Lowest relevance of the priority sources.",
+      "need_ids": [
+        "N-01",
+        "N-03"
+      ],
+      "criteria": [
+        "rotic_level",
+        "rotic_vs_peers",
+        "secular_growth"
+      ],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-006",
+      "title": "Reuters via Euronext: Siemens Healthineers begins carve-out of diagnostics unit amid China weakness",
+      "url": "https://live.euronext.com/en/financial-news/siemens-healthineers-begins-carve-out-diagnostics-unit-amid-china-weakness",
+      "domain": "live.euronext.com",
+      "kind": "news",
+      "data_types": [
+        "news_article"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_2",
+      "rank": 1,
+      "scores": {
+        "reliability": 0.75,
+        "relevance": 0.6
+      },
+      "rationale": "Independent wire coverage of the FY2026 results, published Nov 5, 2026: slower FY2027 growth, China weakness in Diagnostics, the carve-out into Olyrian Diagnostics by mid-2028 and an analyst's view. It cross-checks the release, and any figure it gives must not contradict the tier 1 number. Fetched after every priority source.",
+      "need_ids": [
+        "N-04"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "04-News-Coverage",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-007",
+      "title": "SEC XBRL company facts: GE HealthCare (peer)",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001932393.json",
+      "domain": "data.sec.gov",
+      "kind": "xbrl_facts",
+      "data_types": [
+        "structured_financials"
+      ],
+      "access": {
+        "method": "api",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 3,
+      "scores": {
+        "reliability": 0.95,
+        "relevance": 0.8
+      },
+      "rationale": "The closest listed peer in imaging. Audited US GAAP figures tagged by filing and period from its 10-Ks (FY2022 to FY2025, Dec year end), read by code with no agent: operating income, intangible amortization, taxes, assets, cash, goodwill, current liabilities.",
+      "need_ids": [
+        "N-02"
+      ],
+      "criteria": [
+        "rotic_vs_peers"
+      ],
+      "vault_folder": "08-Competitors",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-008",
+      "title": "SEC XBRL company facts: Philips (peer)",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000313216.json",
+      "domain": "data.sec.gov",
+      "kind": "xbrl_facts",
+      "data_types": [
+        "structured_financials"
+      ],
+      "access": {
+        "method": "api",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "priority",
+      "rank": 4,
+      "scores": {
+        "reliability": 0.95,
+        "relevance": 0.75
+      },
+      "rationale": "A second European health technology peer that files a 20-F with the SEC. IFRS figures in euros tagged by period (FY2020 to FY2025, Dec year end), read by code with no agent. Philips is more diversified than SHL, so it is the weaker comparison of the two.",
+      "need_ids": [
+        "N-02"
+      ],
+      "criteria": [
+        "rotic_vs_peers"
+      ],
+      "vault_folder": "08-Competitors",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-009",
+      "title": "Simply Wall St blog: Why Siemens Healthineers is up 8.6% after cutting its 2026 outlook",
+      "url": "https://simplywall.st/stocks/de/healthcare/etr-shl/siemens-healthineers-shares/news/why-siemens-healthineers-xtrashl-is-up-86-after-cutting-2026/amp",
+      "domain": "simplywall.st",
+      "kind": "other",
+      "data_types": [
+        "other"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_3",
+      "rank": 1,
+      "scores": {
+        "reliability": 0.35,
+        "relevance": 0.3
+      },
+      "rationale": "An investing blog post from Aug 5, 2026 on the Q3 outlook cut and the Diagnostics weakness. Low trust: automated commentary, never the only support for a number, scanned by Guardrails before any agent reads it.",
+      "need_ids": [
+        "N-04"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "04-News-Coverage",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    },
+    {
+      "source_id": "S-010",
+      "title": "Axelrod test page: planted prompt injection (simulated)",
+      "url": "http://127.0.0.1:8001/test-pages/injection.html",
+      "domain": "127.0.0.1",
+      "kind": "other",
+      "data_types": [
+        "other"
+      ],
+      "access": {
+        "method": "http_get",
+        "auth": "none",
+        "secret_ref": null
+      },
+      "tier": "tier_3",
+      "rank": 2,
+      "scores": {
+        "reliability": 0.1,
+        "relevance": 0.1
+      },
+      "rationale": "SIMULATED. Our own test page in this repo, not a real source. It hides a prompt injection and links to an unapproved domain, so the demo can show the Guardrails scan flag and quarantine it and the gateway block the link. Nothing on it is a fact about SHL. Served by Axelrod's own API at http://127.0.0.1:8001/test-pages/injection.html (TEST_PAGE_URL), because the GitHub repo stays private until submission. Still simulated: the API marks the page with X-Axelrod-Simulated: true.",
+      "need_ids": [
+        "N-04"
+      ],
+      "criteria": [
+        "secular_growth"
+      ],
+      "vault_folder": "10-Demand-Evidence",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {
+        "bytes": 0,
+        "pages": 0,
+        "data_items": 0,
+        "data_items_verified": 0
+      },
+      "error": null
+    }
+  ],
+  "extract_pages": {
+    "S-001": [
+      [
+        7,
+        8
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        15,
+        15
+      ],
+      [
+        22,
+        22
+      ],
+      [
+        25,
+        25
+      ],
+      [
+        138,
+        138
+      ],
+      [
+        140,
+        141
+      ],
+      [
+        152,
+        152
+      ],
+      [
+        156,
+        156
+      ],
+      [
+        159,
+        160
+      ],
+      [
+        162,
+        162
+      ],
+      [
+        169,
+        169
+      ],
+      [
+        177,
+        177
+      ],
+      [
+        182,
+        182
+      ],
+      [
+        184,
+        184
+      ],
+      [
+        189,
+        189
+      ]
+    ],
+    "S-002": [
+      [
+        1,
+        1
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        15,
+        15
+      ],
+      [
+        17,
+        17
+      ],
+      [
+        19,
+        19
+      ]
+    ],
+    "S-003": [
+      [
+        53,
+        53
+      ],
+      [
+        55,
+        55
+      ],
+      [
+        99,
+        99
+      ]
+    ],
+    "S-004": [
+      [
+        44,
+        44
+      ],
+      [
+        46,
+        46
+      ],
+      [
+        85,
+        85
+      ]
+    ],
+    "S-005": [
+      [
+        62,
+        62
+      ],
+      [
+        64,
+        64
+      ],
+      [
+        95,
+        95
+      ]
+    ]
+  },
+  "need_pages": {
+    "N-01": {
+      "S-001": [
+        [
+          138,
+          138
+        ],
+        [
+          140,
+          140
+        ],
+        [
+          152,
+          152
+        ],
+        [
+          156,
+          156
+        ],
+        [
+          184,
+          184
+        ]
+      ],
+      "S-002": [
+        [
+          6,
+          7
+        ],
+        [
+          13,
+          13
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          19,
+          19
+        ]
+      ],
+      "S-003": [
+        [
+          53,
+          53
+        ],
+        [
+          55,
+          55
+        ],
+        [
+          99,
+          99
+        ]
+      ],
+      "S-004": [
+        [
+          44,
+          44
+        ],
+        [
+          46,
+          46
+        ],
+        [
+          85,
+          85
+        ]
+      ],
+      "S-005": [
+        [
+          62,
+          62
+        ],
+        [
+          64,
+          64
+        ],
+        [
+          95,
+          95
+        ]
+      ]
+    },
+    "N-03": {
+      "S-001": [
+        [
+          15,
+          15
+        ],
+        [
+          138,
+          138
+        ],
+        [
+          182,
+          182
+        ]
+      ],
+      "S-002": [
+        [
+          6,
+          6
+        ],
+        [
+          13,
+          13
+        ]
+      ],
+      "S-003": [
+        [
+          53,
+          53
+        ]
+      ],
+      "S-004": [
+        [
+          44,
+          44
+        ]
+      ],
+      "S-005": [
+        [
+          62,
+          62
+        ]
+      ]
+    },
+    "N-04": {
+      "S-001": [
+        [
+          8,
+          8
+        ],
+        [
+          13,
+          13
+        ],
+        [
+          25,
+          25
+        ]
+      ],
+      "S-002": [
+        [
+          1,
+          1
+        ],
+        [
+          8,
+          8
+        ]
+      ]
+    },
+    "N-05": {
+      "S-001": [
+        [
+          140,
+          140
+        ],
+        [
+          159,
+          160
+        ],
+        [
+          162,
+          162
+        ],
+        [
+          189,
+          189
+        ]
+      ],
+      "S-002": [
+        [
+          15,
+          15
+        ],
+        [
+          19,
+          19
+        ]
+      ]
+    },
+    "N-06": {
+      "S-001": [
+        [
+          22,
+          22
+        ],
+        [
+          141,
+          141
+        ],
+        [
+          160,
+          160
+        ],
+        [
+          169,
+          169
+        ],
+        [
+          177,
+          177
+        ],
+        [
+          182,
+          182
+        ],
+        [
+          189,
+          189
+        ]
+      ],
+      "S-002": [
+        [
+          1,
+          1
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          17,
+          17
+        ]
+      ]
+    },
+    "N-07": {
+      "S-001": [
+        [
+          7,
+          7
+        ],
+        [
+          138,
+          138
+        ]
+      ],
+      "S-002": [
+        [
+          13,
+          13
+        ]
+      ]
+    }
+  }
+}

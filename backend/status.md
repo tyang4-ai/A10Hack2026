@@ -5,8 +5,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
-- Running: A-deploy (W2, waiting on the port approval). Rehearsal R0b (full SHL run, laptop, live). Verifier (G3). W1 is 5/5 done.
+- Running: A-deploy (W2, waiting on the port approval), verifier (G3). Verifier (G3). W1 is 5/5 done.
 - Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
+- **Rehearsal R0b done (9:46 PM): run_20261108_whhj0d, full SHL run, laptop, live models.** Report final: 403 items (341 pass, 40 fixed, 22 fail = 94.5% pass or fixed), 25 holes, report certainty 92. Scores: rotic_level -1 (9.4%, low), rotic_vs_peers 0 (low), secular_growth +1, leverage 0, liquidity N/A (its coverage computation failed), research_stage N/A (by design). 4 of 6 scored, weighted average 0.0. Brief final: 33 sentences (31 pass, 2 fixed, 1 removed), 2.8 pages, certainty 85. $2.06, about 5 min. contract_smoke 21/21. Exported as the replay fallback (`backend/data/replay/run_20261108_whhj0d`, 31 MB, text only).
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
 ## Plans
@@ -102,6 +103,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
+- (9:46 PM, pass to Tong) A real, finished SHL run now exists as a replay: `backend/data/replay/run_20261108_whhj0d` on the backend branch. Any backend started from this branch serves it as `mode: replay` (labeled recorded), so Tong can build the report, brief, document and vault panels against real data before the EC2 URL exists. Run it with `STORE=local python -m uvicorn backend.axelrod.api:app --port 8001`, then point VITE_API_URL at it.
+
 - (9:22 PM, demo script) **ROTIC scores -1, not +1.** On our SHL data the ROTIC proxy is a 9.8% mean (FY2023 8.4%, FY2025 11.0%, FY2026 10.0%), just under the 10% bar, and only 3 of 10 fiscal years have the inputs, so certainty is low. vs peers (FY2025): SHL 11.0%, GE HealthCare 25.2%, Philips 18.1%, so that also scores -1. The builder did not tune toward a score, and we shouldn't. docs/PLAN.md's beat "ROTIC scores +1, but with low certainty" needs new words. Suggested: "ROTIC scores -1, and we flag low certainty: only three of ten years since listing have the inputs. We tell you how much to trust each line, and why." The final R1 run may differ a little, so I'll confirm the numbers after it.
 
 - (8:52 PM, pitch wording) Baseline result (`backend/data/baseline/results.md`, labeled experiment): a plain Claude report's **quotes were all exact** (0 of 59 failed our quote check). Don't say "plain Claude makes up numbers". The honest line: on the same pages, the plain report's **reasoning and scores went unchecked**. It scored research_stage +1 from an invented coverage history and called €2.7bn of free cash flow enough to cover €6.2bn of maturities. 12 of its 59 claims also fail the period check. Our checks caught 24 of 25 planted errors in the harness report. There are also 20 key numbers in results.md for you to hand-check.
@@ -134,3 +137,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 8:49 PM: B-live done. All demo beats pass live. DEMO.md written. Tail shows NEXT lines by default (orchestrator, cli.py), "Source revoked: S-006" capitalization fixed (checks.py).
 - Sat 8:38 PM: rehearsal R0 done (failed at summarize). Live gateway beats ok. Launched three fix builders.
 - Sat 9:42 PM: all R0 fixes in (brief, extract, draft, repair, checks). Started rehearsal R0b.
+- Sat 9:46 PM: R0b full rehearsal done (94.5% items pass or fixed, brief 2.8 pages, $2.06). Exported and committed as the replay fallback.
