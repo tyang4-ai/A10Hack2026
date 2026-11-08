@@ -1,0 +1,2 @@
+# Replays are recorded text with exact character offsets. Never convert line endings.
+* -text
