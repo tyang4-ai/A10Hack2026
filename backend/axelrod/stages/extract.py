@@ -283,8 +283,13 @@ def cite_on_page(doc_id: str, pages: list[str], page: int, quote: str, role: str
 
 # Table headers code can find above a row: "(in millions of €, earnings per share in €)" and year runs
 # such as "2025 \n2024" (one cell per line) or a header line like "Sep 30, 2025 Sep 30, 2024".
-_UNIT_HEADER = re.compile(r"\((?:[Ii]n|[Aa]mounts in) (?:(?:€|EUR|\$|USD|US\$)\s?)?"
-                          r"(?:thousands|millions|billions|m|bn)\b[^()\n]*\)")
+_UNIT_HEADER = re.compile(r"\([^\S\n]?(?:[Ii]n|[Aa]mounts in) (?:(?:€|EUR|\$|USD|US\$)\s?)?"
+                          r"(?:thousands|millions|billions|m|bn)\b[^()\n]*\)")  # SHL FY2018: "( in ... )"
+# The same header without brackets, at the end of a table title line: Philips prints "Consolidated balance
+# sheets in millions of EUR". A currency is required, so prose such as "in millions of units" is not one.
+_CUR_WORD = r"(?:€|EUR|\$|USD|US\$|euros?|dollars?)"
+_UNIT_LINE = re.compile(rf"(?<![\w(])(?:[Ii]n|[Aa]mounts in) (?:{_CUR_WORD}\s?(?:thousands|millions|billions)"
+                        rf"|(?:thousands|millions|billions) of {_CUR_WORD})(?![\w])(?=[^\S\n]*(?:\n|$))")
 _NAMES_UNIT = re.compile(r"thousand|million|billion|\bmn\b|\bbn\b|€|\$|£|\bEUR\b|\bUSD\b|\bCHF\b", re.IGNORECASE)
 _YEAR_RUN = re.compile(r"(?<![\w.,])(?:19|20)\d{2}(?:[ \t ]*\n?[ \t ]*(?:19|20)\d{2})+(?![\w.,%])")
 
@@ -344,12 +349,20 @@ def _period_context(doc_id: str, pages: list[str], ev: m.Citation, raw: Extracte
     page = ev.locator.page
     page_text = _page(pages, page)
     at = ev.locator.char_start
+    ev_norm = text.normalize(ev.quote)
+    needs_period = value is not None and bool(value.period) and not _names_period(ev_norm, value.period)
+    trailing = _trailing_header(page_text, ev) if needs_period else None
+    if trailing is not None:  # a header printed after its rows: code picks it by position, the agent can't
+        return _with_quarter_labels(doc_id, page_text, _cite_span(doc_id, page_text, page, *trailing,
+                                                                  "period_context"))
     pc = _agent_header(doc_id, page_text, page, raw.period_quote, "period_context", at, _names_period_header)
     if pc is not None or value is None or not value.period:
         return _with_quarter_labels(doc_id, page_text, pc) if pc is not None else None
-    ev_norm = text.normalize(ev.quote)
-    needs_period = not _names_period(ev_norm, value.period)
     several = len({y for y, _, _ in period_mentions(ev_norm)}) >= 2
+    if needs_period and _due_value(ev_norm) and _clause_free(ev_norm, value, due_ok=True):
+        pc = _balance_date(doc_id, page_text, ev, ev_norm, value)  # a maturity: the date it is a balance at
+        if pc is not None:
+            return pc
     if needs_period:
         pc = _header_above(doc_id, page_text, page, at, "period_context", _year_spans(page_text))
         if pc is not None:
@@ -480,10 +493,11 @@ _CLAUSE_CUT = re.compile(r"[;()\[\]]|,\s|\s(?:compared\s+(?:with|to)|versus|vs\.
 _PRIOR_WORDS = re.compile(r"\b(?:prior|previous)[\s-]year\b|\byear[\s-](?:earlier|before|ago)\b", re.IGNORECASE)
 
 
-def _clause_free(ev_norm: str, value: m.Value) -> bool:
+def _clause_free(ev_norm: str, value: m.Value, *, due_ok: bool = False) -> bool:
     """True when some appearance of the value sits in a clause of the evidence that names no period and
     is not a prior-year comparative ("(2024: 9%)", "(prior year: €1.00)"). Only then may the period come
-    from the context: a value whose own clause names a year is checked against that year."""
+    from the context: a value whose own clause names a year is checked against that year. With due_ok, a
+    due year in the clause ("maturing in fiscal year 2023") does not count as the clause's period."""
     hits = _value_tokens(ev_norm, value.as_reported)
     if not hits:
         return True  # value_in_quote fails on its own
@@ -494,7 +508,8 @@ def _clause_free(ev_norm: str, value: m.Value) -> bool:
         left = max([ce for cs, ce in cuts if ce <= h.start], default=0)
         right = min([cs for cs, ce in cuts if cs >= h.end], default=len(ev_norm))
         clause = ev_norm[left:right]
-        if not period_mentions(clause) and not _PRIOR_WORDS.search(clause):
+        named = [(s, e) for _, s, e in period_mentions(clause) if not (due_ok and _is_due_year(clause, s, e))]
+        if not named and not _PRIOR_WORDS.search(clause):
             return True
     return False
 
@@ -509,15 +524,33 @@ _QUARTER_LEFT = re.compile(r"(?:\bQ[1-4]\s?|\b(?:first|second|third|fourth)[\s-]
                            re.IGNORECASE)
 _BARE_YEAR = re.compile(r"(?:19|20)\d{2}")
 MAX_HEADING_CHARS = 80
+# A due year of a maturity ("US$0.9 billion maturing until fiscal year 2021", "due in 2027", "2031 and
+# thereafter") says when an amount falls due, not which period the amount belongs to: that is the balance date.
+_DUE_LEFT = re.compile(r"\b(?:matur(?:e|es|ed|ing|ity|ities)|due|repayable|payable|expir(?:e|es|ed|ing)|redeemable)"
+                       r"\s+(?:(?:in|until|till|by|after|before|through|from|within|on|between)\s+)?(?:the\s+)?"
+                       r"(?:(?:end\s+of\s+)?(?:fiscal|financial)\s*$|(?:fiscal|financial)\s+years?\s*$|FY\s?$|$)",
+                       re.IGNORECASE)
+_DUE_RIGHT = re.compile(r"^\s*(?:and|or)\s+(?:thereafter|later|beyond)\b", re.IGNORECASE)
+_DUE_PHRASE = re.compile(r"\b(?:matur(?:e|es|ed|ing)|due|repayable|redeemable)\s+(?:(?:in|until|till|by|after|"
+                         r"through|within|between)\s+)?(?:the\s+)?(?:(?:fiscal|financial)\s+years?\s+|FY\s?)?"
+                         r"(?:19|20)\d{2}\b", re.IGNORECASE)
+
+
+def _is_due_year(seg: str, s: int, e: int) -> bool:
+    """True when the period mention seg[s:e] is a due year: "maturing in fiscal year 2023", "2031 and thereafter"."""
+    return bool(_DUE_LEFT.search(seg[max(0, s - 40):s]) or _DUE_RIGHT.match(seg[e:e + 20]))
 
 
 def _anchors(seg: str, *, heading: bool) -> list[tuple[int, int, int]]:
     """Period mentions that say which period a value belongs to: not a prior-year comparative
-    ("(2024: 9%)"), not a comparison base ("over fiscal year 2026"), and not a bare year in running
-    text ("by 2030"), which may mean anything. A heading line may name a bare year ("Annual Report 2025")."""
+    ("(2024: 9%)"), not a comparison base ("over fiscal year 2026"), not a due year ("maturing in fiscal
+    year 2023"), and not a bare year in running text ("by 2030"), which may mean anything. A heading line
+    may name a bare year ("Annual Report 2025")."""
     out = []
     for y, s, e in period_mentions(seg):
         if re.match(r"\s?\)?\s?:", seg[e:e + 4]) or _COMPARE_LEFT.search(seg[max(0, s - 40):s]):
+            continue
+        if _is_due_year(seg, s, e):
             continue
         if not heading and _BARE_YEAR.fullmatch(seg[s:e]):
             continue
@@ -597,6 +630,40 @@ def _leading_period(doc_id: str, page_text: str, ev: m.Citation, ev_norm: str, v
     return _cite_inside(doc_id, page_text, ev, ev_norm[s:e], "period_context")
 
 
+def _due_value(ev_norm: str) -> bool:
+    """True when the evidence states a maturity: an amount or rate with a due year ("US$0.9 billion
+    maturing until fiscal year 2021", "2.2% for the loan maturing in fiscal year 2023")."""
+    return bool(_DUE_PHRASE.search(ev_norm))
+
+
+MAX_BALANCE_DATE_LINES = 15      # how far up a maturity sentence looks for its "As of ..." date
+
+
+def _balance_date(doc_id: str, page_text: str, ev: m.Citation, ev_norm: str, value: m.Value) -> m.Citation | None:
+    """The balance date a maturity sentence belongs to: the evidence's own leading period before the value
+    ("As of September 30, 2018, ... US$0.9 billion maturing until ..."), else the nearest period mention above
+    it in the same text (comparatives and due years skipped). Prose only: a table row, a table's rows or a
+    column header line above (two or more periods) end the search, since a table's header is its own. None
+    when nothing is found, so the table header above is tried next."""
+    if len(_label_and_cells(ev_norm.strip())[1]) >= 2:
+        return None  # a table row with a due year in its label: the table header decides
+    own = _anchors(ev_norm, heading=False)
+    if own and _verbatim(page_text, ev):
+        pc = _leading_period(doc_id, page_text, ev, ev_norm, value, own)
+        if pc is not None:
+            return pc
+    for pos, body, _ in list(reversed(_lines(page_text, ev.locator.char_start)))[:MAX_BALANCE_DATE_LINES]:
+        if body.strip() and _CELL_LINE.fullmatch(body):
+            return None  # the rows of a table
+        found = _anchors(body, heading=False)
+        if len({y for y, _, _ in found}) >= 2:
+            return None  # a column header line ("Sep 30, 2025 Sep 30, 2024")
+        if found:
+            _, s, e = found[-1]
+            return _cite_span(doc_id, page_text, ev.locator.page, pos + s, pos + e, "period_context")
+    return None
+
+
 def _agent_header(doc_id: str, page_text: str, page: int, quote: str, role: str, before: int,
                   ok) -> m.Citation | None:
     """The agent's header line, if it is on the page above the evidence and passes ok(quote)."""
@@ -621,7 +688,12 @@ def _header_above(doc_id: str, page_text: str, page: int, before: int, role: str
 
 
 def _unit_spans(page_text: str) -> list[tuple[int, int]]:
-    return [mm.span() for mm in _UNIT_HEADER.finditer(page_text)]
+    """Unit headers on the page, bracketed ("(in millions of €)") or ending a title line ("... in millions
+    of EUR"), in page order. Each one also marks where a table starts."""
+    spans = {mm.span() for mm in _UNIT_HEADER.finditer(page_text)}
+    spans |= {mm.span() for mm in _UNIT_LINE.finditer(page_text)
+              if not any(s <= mm.start() < e for s, e in spans)}
+    return sorted(spans)
 
 
 def _year_spans(page_text: str) -> list[tuple[int, int]]:
@@ -650,6 +722,87 @@ def _year_spans(page_text: str) -> list[tuple[int, int]]:
     if block and block[2] >= 2:
         spans.append((block[0], block[1]))
     return spans
+
+
+# ---------------------------------------------------------------------------
+# Year headers printed after their rows (Philips' statements)
+# ---------------------------------------------------------------------------
+# Philips' PDF text gives a statement as: title "... in millions of EUR", "for the year ended December 31,",
+# every row, and only then "Note \n2025 \n2024 \n2023" (the column header comes out after the rows). A table
+# with several blocks repeats it after each block. SHL prints the header first. Code tells them apart per
+# table: when the table's head (from its unit line down to its first amount) holds no year header, the
+# header is the first one printed after the row's block.
+
+_NOTE_LINE = re.compile(r"Notes?", re.IGNORECASE)
+
+
+def _amount_line(line: str) -> bool:
+    """A line holding a table amount: a number that is not a year, date, note or footnote marker (those
+    are small whole numbers), so a header line with "Cash flows 1" still counts as header."""
+    return any(abs(t.number) >= 100 or t.places or t.number < 0 or t.pct
+               for t in scan_numbers(text.normalize(line)))
+
+
+def _line_spans(page_text: str) -> list[tuple[int, int, str]]:
+    """(start, end, text) of every line, end exclusive of the line break."""
+    out = []
+    pos = 0
+    for line in page_text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        out.append((pos, pos + len(body), body))
+        pos += len(line)
+    return out
+
+
+def _after_rows(lines: list[tuple[int, int, str]], at: int) -> bool:
+    """True when the last line before offset at (blank and "Note" lines aside) is a cell line, so a header
+    starting at at is printed right after table rows."""
+    for s, e, body in reversed([ln for ln in lines if ln[1] <= at]):
+        st = body.strip()
+        if not st or _NOTE_LINE.fullmatch(st):
+            continue
+        return bool(_CELL_LINE.fullmatch(body))
+    return False
+
+
+def _head_has_years(page_text: str, lines: list[tuple[int, int, str]], top: tuple[int, int],
+                    years: list[tuple[int, int]]) -> bool:
+    """True when the table that starts at unit line top prints its year header first: a year header between
+    the unit line and the table's first amount, or right above the unit line (not right after rows)."""
+    first = next((s for s, e, body in lines if s >= top[1] and _amount_line(body)), len(page_text))
+    for ys, ye in years:
+        if top[1] <= ys and ye <= first:
+            return True
+        if ye <= top[0] and not _amount_line(page_text[ye:top[0]]) and not _after_rows(lines, ys):
+            return True
+    return False
+
+
+def _trailing_header(page_text: str, ev: m.Citation) -> tuple[int, int] | None:
+    """The year header of the row's block when the table prints it after its rows (see above), else None.
+    The header must follow rows, sit before the next table's unit line, and nothing between the row and it
+    may name a period, so a header of another table is never borrowed."""
+    s, e = ev.locator.char_start, ev.locator.char_end
+    nq = text.normalize(ev.quote).strip()
+    label, cells = _label_and_cells(nq)
+    if not cells or not re.search(r"[A-Za-z]{2}", label) or not _verbatim(page_text, ev):
+        return None  # only a table row has a block header
+    units = _unit_spans(page_text)
+    top = max((u for u in units if u[1] <= s), key=lambda u: u[1], default=None)
+    if top is None:
+        return None
+    lines = _line_spans(page_text)
+    years = sorted(set(_year_spans(page_text)))
+    if _head_has_years(page_text, lines, top, years):
+        return None
+    nxt = min((u[0] for u in units if u[0] >= e), default=len(page_text))
+    below = [y for y in years if y[0] >= e and y[1] <= nxt]
+    if not below:
+        return None
+    y = min(below)
+    if not _after_rows(lines, y[0]) or period_mentions(text.normalize(page_text[e:y[0]])):
+        return None
+    return y
 
 
 _QUARTER_NAMES = {1: "first", 2: "second", 3: "third", 4: "fourth"}
