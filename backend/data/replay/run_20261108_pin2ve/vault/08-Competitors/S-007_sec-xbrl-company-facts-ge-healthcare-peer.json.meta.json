@@ -1,0 +1,29 @@
+{
+  "doc_id": "DOC-003",
+  "source_id": "S-007",
+  "title": "SEC XBRL company facts: GE HealthCare (peer)",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001932393.json",
+  "content_type": "json",
+  "paginated": false,
+  "pages": 1,
+  "sha256": "5941140207ff0fc3427a9a31b20115cee6ca7eb8b3dac715a2b95af4d7e2183b",
+  "bytes": 1286276,
+  "fetched_at": "2026-11-08T06:10:09.929Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_pin2ve/siemens-healthineers/08-Competitors/S-007_sec-xbrl-company-facts-ge-healthcare-peer.json",
+    "text": "runs/run_20261108_pin2ve/siemens-healthineers/08-Competitors/S-007_sec-xbrl-company-facts-ge-healthcare-peer.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (xbrl_facts), not scanned"
+  },
+  "fetch": {
+    "request_id": "REQ-0003",
+    "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001932393.json",
+    "final_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001932393.json",
+    "http_status": 200,
+    "content_type": "application/json"
+  }
+}

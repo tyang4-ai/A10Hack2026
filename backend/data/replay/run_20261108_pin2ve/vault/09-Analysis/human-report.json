@@ -1,0 +1,2067 @@
+{
+  "run_id": "run_20261108_pin2ve",
+  "title": "Siemens Healthineers (SHL): BOFFIN screen",
+  "company": "Siemens Healthineers",
+  "ticker": "SHL",
+  "as_of": "2026-11-07",
+  "status": "final",
+  "sections": [
+    {
+      "heading": "Bottom line",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "sentences": [
+            {
+              "id": "H-001",
+              "text": "Siemens Healthineers scores a weighted average of -0.6 on the BOFFIN framework, with three of six in-scope criteria actually scored, covering zero percent of the maximum possible score and reaching twenty percent on a normalized basis.",
+              "mode": "derived",
+              "derived_from": [
+                "rollup"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-001",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:57.689Z"
+              },
+              "certainty": {
+                "score": 0,
+                "band": "low",
+                "strength": 0.0,
+                "support": 1.0,
+                "inherited": 0.0,
+                "completeness": 1.0,
+                "weakest_ref": "rollup",
+                "basis": "judges 3/3; weakest cited rollup (0.00)"
+              }
+            },
+            {
+              "id": "H-002",
+              "text": "The negative result rests on a computed return on total invested capital that trails GE HealthCare's, a liquidity test in which free cash flow covers only a fraction of five-year obligations, and growth that depends on a Diagnostics business facing China-related weakness.",
+              "mode": "derived",
+              "derived_from": [
+                "E-002",
+                "E-005",
+                "C-008"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 3 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "2 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-002",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [
+                      "growth that depends on a Diagnostics business facing China-related weakness"
+                    ],
+                    "votes_for": 2,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.702Z"
+              },
+              "certainty": {
+                "score": 16,
+                "band": "low",
+                "strength": 0.1555,
+                "support": 0.6667,
+                "inherited": 0.2333,
+                "completeness": 1.0,
+                "weakest_ref": "C-008",
+                "basis": "judges 2/3; weakest cited C-008 (0.23)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Dominant Business",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "sentences": [
+            {
+              "id": "H-003",
+              "text": "Over the years each company's data allows, SHL's mean ROTIC across FY2023, FY2025 and FY2026 is 9.1%, below GE HealthCare's mean ROTIC across FY2023-FY2025 of 25.2%. Against GE HealthCare, SHL's computed ROTIC is lower.",
+              "mode": "copied",
+              "derived_from": [
+                "E-002"
+              ],
+              "verification": {
+                "status": "fixed",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "copy_exact",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Equals E-002 exactly",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  }
+                ],
+                "attempts": [
+                  {
+                    "attempt": 1,
+                    "status": "fail",
+                    "checks": [
+                      {
+                        "check": "citations_resolve",
+                        "method": "code",
+                        "result": "pass",
+                        "detail": "All 1 cited id(s) exist and passed",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      },
+                      {
+                        "check": "copy_exact",
+                        "method": "code",
+                        "result": "fail",
+                        "detail": "Differs from the text of E-002 in 172 character(s)",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": [
+                          {
+                            "op": "equal",
+                            "agent": "Over the years ",
+                            "source": "Over the years "
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "for whi",
+                            "source": "ea"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "ch",
+                            "source": "ch"
+                          },
+                          {
+                            "op": "insert",
+                            "agent": "",
+                            "source": " company's"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": " data allows, S",
+                            "source": " data allows, S"
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "iemen",
+                            "source": "HL'"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "s",
+                            "source": "s"
+                          },
+                          {
+                            "op": "delete",
+                            "agent": " Healthineers'",
+                            "source": ""
+                          },
+                          {
+                            "op": "equal",
+                            "agent": " mean ",
+                            "source": " mean "
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "return on total invested capital",
+                            "source": "ROTIC"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": " across ",
+                            "source": " across "
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "fiscal years ",
+                            "source": "FY"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "2023, ",
+                            "source": "2023, "
+                          },
+                          {
+                            "op": "insert",
+                            "agent": "",
+                            "source": "FY"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "2025 and ",
+                            "source": "2025 and "
+                          },
+                          {
+                            "op": "insert",
+                            "agent": "",
+                            "source": "FY"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "2026 is 9.1%, below GE HealthCare's mean ",
+                            "source": "2026 is 9.1%, below GE HealthCare's mean "
+                          },
+                          {
+                            "op": "insert",
+                            "agent": "",
+                            "source": "ROTIC across FY2023-FY2025 "
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "of 25.2%",
+                            "source": "of 25.2%"
+                          },
+                          {
+                            "op": "insert",
+                            "agent": "",
+                            "source": "."
+                          },
+                          {
+                            "op": "equal",
+                            "agent": " ",
+                            "source": " "
+                          },
+                          {
+                            "op": "insert",
+                            "agent": "",
+                            "source": "Ag"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "a",
+                            "source": "a"
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "c",
+                            "source": "inst GE HealthCa"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "r",
+                            "source": "r"
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "os",
+                            "source": "e, SHL'"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "s ",
+                            "source": "s "
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "f",
+                            "source": "computed ROTIC "
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "is",
+                            "source": "is"
+                          },
+                          {
+                            "op": "replace",
+                            "agent": "ca",
+                            "source": " "
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "l",
+                            "source": "l"
+                          },
+                          {
+                            "op": "replace",
+                            "agent": " y",
+                            "source": "ow"
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "e",
+                            "source": "e"
+                          },
+                          {
+                            "op": "delete",
+                            "agent": "a",
+                            "source": ""
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "r",
+                            "source": "r"
+                          },
+                          {
+                            "op": "delete",
+                            "agent": "s 2023 to 2025",
+                            "source": ""
+                          },
+                          {
+                            "op": "equal",
+                            "agent": ".",
+                            "source": "."
+                          }
+                        ],
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      }
+                    ],
+                    "action": "recite",
+                    "before": "Over the years for which data allows, Siemens Healthineers' mean return on total invested capital across fiscal years 2023, 2025 and 2026 is 9.1%, below GE HealthCare's mean of 25.2% across fiscal years 2023 to 2025.",
+                    "after": "Over the years each company's data allows, SHL's mean ROTIC across FY2023, FY2025 and FY2026 is 9.1%, below GE HealthCare's mean ROTIC across FY2023-FY2025 of 25.2%. Against GE HealthCare, SHL's computed ROTIC is lower.",
+                    "note": "Text replaced with the exact text of E-002.",
+                    "at": "2026-11-08T06:13:56.713Z"
+                  },
+                  {
+                    "attempt": 2,
+                    "status": "fixed",
+                    "checks": [
+                      {
+                        "check": "citations_resolve",
+                        "method": "code",
+                        "result": "pass",
+                        "detail": "All 1 cited id(s) exist and passed",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      },
+                      {
+                        "check": "copy_exact",
+                        "method": "code",
+                        "result": "pass",
+                        "detail": "Equals E-002 exactly",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      }
+                    ],
+                    "action": null,
+                    "before": null,
+                    "after": null,
+                    "note": "All checks pass.",
+                    "at": "2026-11-08T06:13:56.713Z"
+                  }
+                ],
+                "verified_at": "2026-11-08T06:13:56.713Z"
+              },
+              "certainty": {
+                "score": 40,
+                "band": "low",
+                "strength": 0.4,
+                "support": 1.0,
+                "inherited": 0.4,
+                "completeness": 1.0,
+                "weakest_ref": "E-002",
+                "basis": "copied verbatim; weakest cited E-002 (0.40)"
+              }
+            },
+            {
+              "id": "H-004",
+              "text": "Against GE HealthCare, Siemens Healthineers' computed return on total invested capital is lower, scoring zero under the framework's judgment rule.",
+              "mode": "derived",
+              "derived_from": [
+                "E-002"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-004",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.109Z"
+              },
+              "certainty": {
+                "score": 40,
+                "band": "low",
+                "strength": 0.4,
+                "support": 1.0,
+                "inherited": 0.4,
+                "completeness": 1.0,
+                "weakest_ref": "E-002",
+                "basis": "judges 3/3; weakest cited E-002 (0.40)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Compounder",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "sentences": [
+            {
+              "id": "H-005",
+              "text": "Return on total invested capital over ten years scores minus one under the framework because the recomputed value of 9.1% falls below the ten percent threshold for that score.",
+              "mode": "derived",
+              "derived_from": [
+                "E-001"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-005",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.433Z"
+              },
+              "certainty": {
+                "score": 60,
+                "band": "medium",
+                "strength": 0.6,
+                "support": 1.0,
+                "inherited": 0.6,
+                "completeness": 1.0,
+                "weakest_ref": "E-001",
+                "basis": "judges 3/3; weakest cited E-001 (0.60)"
+              }
+            }
+          ]
+        },
+        {
+          "type": "chart",
+          "chart_id": "G-001",
+          "caption": {
+            "id": "H-008",
+            "text": "Revenue rose from €13,429 million in fiscal year 2018 to €23,630 million in fiscal year 2026.",
+            "mode": "derived",
+            "derived_from": [
+              "G-001"
+            ],
+            "verification": {
+              "status": "pass",
+              "checks": [
+                {
+                  "check": "citations_resolve",
+                  "method": "code",
+                  "result": "pass",
+                  "detail": "All 1 cited id(s) exist and passed",
+                  "model_id": null,
+                  "agent_id": null,
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": null,
+                  "votes_total": null
+                },
+                {
+                  "check": "numbers_traced",
+                  "method": "code",
+                  "result": "pass",
+                  "detail": "Every number in the sentence traces to a cited value or computation (2 checked)",
+                  "model_id": null,
+                  "agent_id": null,
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": null,
+                  "votes_total": null
+                },
+                {
+                  "check": "faithfulness",
+                  "method": "llm_judge",
+                  "result": "pass",
+                  "detail": "3 of 3 judges found it faithful to the cited items.",
+                  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                  "agent_id": "verifier-H-008",
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": 3,
+                  "votes_total": 3
+                }
+              ],
+              "attempts": [],
+              "verified_at": "2026-11-08T06:13:57.872Z"
+            },
+            "certainty": {
+              "score": 90,
+              "band": "high",
+              "strength": 0.9,
+              "support": 1.0,
+              "inherited": 0.9,
+              "completeness": 1.0,
+              "weakest_ref": "G-001",
+              "basis": "judges 3/3; weakest cited G-001 (0.90)"
+            }
+          }
+        },
+        {
+          "type": "chart",
+          "chart_id": "G-002",
+          "caption": {
+            "id": "H-009",
+            "text": "Comparable revenue growth was 5.9% in fiscal year 2025 and 4.0% in both fiscal year 2026 and the low end of the fiscal year 2027 outlook.",
+            "mode": "derived",
+            "derived_from": [
+              "G-002"
+            ],
+            "verification": {
+              "status": "pass",
+              "checks": [
+                {
+                  "check": "citations_resolve",
+                  "method": "code",
+                  "result": "pass",
+                  "detail": "All 1 cited id(s) exist and passed",
+                  "model_id": null,
+                  "agent_id": null,
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": null,
+                  "votes_total": null
+                },
+                {
+                  "check": "numbers_traced",
+                  "method": "code",
+                  "result": "pass",
+                  "detail": "Every number in the sentence traces to a cited value or computation (2 checked)",
+                  "model_id": null,
+                  "agent_id": null,
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": null,
+                  "votes_total": null
+                },
+                {
+                  "check": "faithfulness",
+                  "method": "llm_judge",
+                  "result": "pass",
+                  "detail": "3 of 3 judges found it faithful to the cited items.",
+                  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                  "agent_id": "verifier-H-009",
+                  "diff": null,
+                  "closest_locator": null,
+                  "unsupported_spans": [],
+                  "votes_for": 3,
+                  "votes_total": 3
+                }
+              ],
+              "attempts": [],
+              "verified_at": "2026-11-08T06:13:57.807Z"
+            },
+            "certainty": {
+              "score": 90,
+              "band": "high",
+              "strength": 0.9,
+              "support": 1.0,
+              "inherited": 0.9,
+              "completeness": 1.0,
+              "weakest_ref": "G-002",
+              "basis": "judges 3/3; weakest cited G-002 (0.90)"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "heading": "Financial Strength",
+      "blocks": [
+        {
+          "type": "bullets",
+          "sentences": [
+            {
+              "id": "H-010",
+              "text": "Liquidity scores minus one because five-year free cash flow covers only 0.6 to 0.7 times the combined five-year non-derivative financial-liability maturities of €13,499 million, the €451 million drawn on revolving credit facilities, and five years of dividends at €1.00 per share, below the one-times threshold for that score.",
+              "mode": "derived",
+              "derived_from": [
+                "E-005"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (5 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-010",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.269Z"
+              },
+              "certainty": {
+                "score": 90,
+                "band": "high",
+                "strength": 0.9,
+                "support": 1.0,
+                "inherited": 0.9,
+                "completeness": 1.0,
+                "weakest_ref": "E-005",
+                "basis": "judges 3/3; weakest cited E-005 (0.90)"
+              }
+            },
+            {
+              "id": "H-011",
+              "text": "On a narrower basis covering only fiscal 2025 dividends paid and long-term debt repayment, free cash flow covered these by 2.2 times, though this narrower test does not change the broader five-year liquidity score.",
+              "mode": "derived",
+              "derived_from": [
+                "E-005",
+                "C-014"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 2 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-011",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.224Z"
+              },
+              "certainty": {
+                "score": 90,
+                "band": "high",
+                "strength": 0.9,
+                "support": 1.0,
+                "inherited": 0.9,
+                "completeness": 1.0,
+                "weakest_ref": "E-005",
+                "basis": "judges 3/3; weakest cited E-005 (0.90)"
+              }
+            },
+            {
+              "id": "H-012",
+              "text": "At September 30, 2025, total financial debt was €14,793 million, combining €755 million of short- and long-term financial debt with €14,038 million owed to the Siemens Group, and net debt including pensions to EBITDA was reported at 2.8 times.",
+              "mode": "derived",
+              "derived_from": [
+                "C-010"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (4 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-012",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:57.988Z"
+              },
+              "certainty": {
+                "score": 95,
+                "band": "high",
+                "strength": 0.95,
+                "support": 1.0,
+                "inherited": 0.95,
+                "completeness": 1.0,
+                "weakest_ref": "C-010",
+                "basis": "judges 3/3; weakest cited C-010 (0.95)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Research Stage",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "sentences": [
+            {
+              "id": "H-013",
+              "text": "Research and development expenses rose from €1,918 million in fiscal year 2024 to €1,969 million in fiscal year 2026, a rise of €51 million over the two years.",
+              "mode": "derived",
+              "derived_from": [
+                "C-015"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (3 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-013",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:59.003Z"
+              },
+              "certainty": {
+                "score": 60,
+                "band": "medium",
+                "strength": 0.6,
+                "support": 1.0,
+                "inherited": 0.6,
+                "completeness": 1.0,
+                "weakest_ref": "C-015",
+                "basis": "judges 3/3; weakest cited C-015 (0.60)"
+              }
+            },
+            {
+              "id": "H-014",
+              "text": "In fiscal year 2025 research and development intensity was 8% of revenue, supported by more than thirteen thousand research and development employees, more than twenty-five thousand technical intellectual property rights and more than sixteen thousand granted patents as of September 30, 2025.",
+              "mode": "derived",
+              "derived_from": [
+                "C-015"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Every number in the sentence traces to a cited value or computation (1 checked)",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-014",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.798Z"
+              },
+              "certainty": {
+                "score": 60,
+                "band": "medium",
+                "strength": 0.6,
+                "support": 1.0,
+                "inherited": 0.6,
+                "completeness": 1.0,
+                "weakest_ref": "C-015",
+                "basis": "judges 3/3; weakest cited C-015 (0.60)"
+              }
+            },
+            {
+              "id": "H-015",
+              "text": "Research stage is not scored.",
+              "mode": "copied",
+              "derived_from": [
+                "E-006"
+              ],
+              "verification": {
+                "status": "fixed",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "copy_exact",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "Equals E-006 exactly",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  }
+                ],
+                "attempts": [
+                  {
+                    "attempt": 1,
+                    "status": "fail",
+                    "checks": [
+                      {
+                        "check": "citations_resolve",
+                        "method": "code",
+                        "result": "pass",
+                        "detail": "All 1 cited id(s) exist and passed",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      },
+                      {
+                        "check": "copy_exact",
+                        "method": "code",
+                        "result": "fail",
+                        "detail": "Differs from the text of E-006 in 106 character(s)",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": [
+                          {
+                            "op": "equal",
+                            "agent": "Research stage i",
+                            "source": "Research stage i"
+                          },
+                          {
+                            "op": "delete",
+                            "agent": "tself i",
+                            "source": ""
+                          },
+                          {
+                            "op": "equal",
+                            "agent": "s not scored",
+                            "source": "s not scored"
+                          },
+                          {
+                            "op": "delete",
+                            "agent": " because it depends on the analyst's own coverage history, which no source in this report can state",
+                            "source": ""
+                          },
+                          {
+                            "op": "equal",
+                            "agent": ".",
+                            "source": "."
+                          }
+                        ],
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      }
+                    ],
+                    "action": "recite",
+                    "before": "Research stage itself is not scored because it depends on the analyst's own coverage history, which no source in this report can state.",
+                    "after": "Research stage is not scored.",
+                    "note": "Text replaced with the exact text of E-006.",
+                    "at": "2026-11-08T06:13:56.741Z"
+                  },
+                  {
+                    "attempt": 2,
+                    "status": "fixed",
+                    "checks": [
+                      {
+                        "check": "citations_resolve",
+                        "method": "code",
+                        "result": "pass",
+                        "detail": "All 1 cited id(s) exist and passed",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      },
+                      {
+                        "check": "copy_exact",
+                        "method": "code",
+                        "result": "pass",
+                        "detail": "Equals E-006 exactly",
+                        "model_id": null,
+                        "agent_id": null,
+                        "diff": null,
+                        "closest_locator": null,
+                        "unsupported_spans": [],
+                        "votes_for": null,
+                        "votes_total": null
+                      }
+                    ],
+                    "action": null,
+                    "before": null,
+                    "after": null,
+                    "note": "All checks pass.",
+                    "at": "2026-11-08T06:13:56.741Z"
+                  }
+                ],
+                "verified_at": "2026-11-08T06:13:56.741Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "E-006",
+                "basis": "copied verbatim; weakest cited E-006 (1.00)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Scorecard",
+      "blocks": [
+        {
+          "type": "scorecard"
+        }
+      ]
+    },
+    {
+      "heading": "What we could not determine",
+      "blocks": [
+        {
+          "type": "bullets",
+          "sentences": [
+            {
+              "id": "H-016",
+              "text": "The secular growth score could not be verified, because the underlying claim about demographic tailwinds did not pass evidence checks.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-01"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-016",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.744Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-01",
+                "basis": "judges 3/3; weakest cited HOLE-01 (1.00)"
+              }
+            },
+            {
+              "id": "H-017",
+              "text": "The leverage score could not be verified, because the claim about the net debt to EBITDA ratio did not pass evidence checks even though part of it was supported.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-02"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-017",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.612Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-02",
+                "basis": "judges 3/3; weakest cited HOLE-02 (1.00)"
+              }
+            },
+            {
+              "id": "H-018",
+              "text": "The research stage score could not be set, because it requires knowledge of the analyst's own coverage history, which no source in this report can supply.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-03"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-018",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.705Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-03",
+                "basis": "judges 3/3; weakest cited HOLE-03 (1.00)"
+              }
+            },
+            {
+              "id": "H-019",
+              "text": "One data point was excluded because only a lower-tier source supported it, with no higher-tier source confirming the figure.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-04"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-019",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.626Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-04",
+                "basis": "judges 3/3; weakest cited HOLE-04 (1.00)"
+              }
+            },
+            {
+              "id": "H-020",
+              "text": "Three data points were excluded because their source quotes did not match the fiscal year they were meant to support.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-05",
+                "HOLE-06",
+                "HOLE-07"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 3 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-020",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.900Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-05",
+                "basis": "judges 3/3; weakest cited HOLE-05 (1.00)"
+              }
+            },
+            {
+              "id": "H-021",
+              "text": "A fourth data point was excluded for the same period-mismatch reason, concerning a fiscal year 2026 figure whose source instead referenced fiscal year 2027.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-08"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-021",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:59.359Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-08",
+                "basis": "judges 3/3; weakest cited HOLE-08 (1.00)"
+              }
+            },
+            {
+              "id": "H-022",
+              "text": "A conclusion about non-interest-bearing current liabilities could not be used because a cited contract-liabilities figure appeared to be missing from its calculation.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-09"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-022",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:58.948Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-09",
+                "basis": "judges 3/3; weakest cited HOLE-09 (1.00)"
+              }
+            },
+            {
+              "id": "H-023",
+              "text": "A conclusion containing several percentage and euro figures could not be used because those figures did not match any cited value.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-10"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-023",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:59.011Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-10",
+                "basis": "judges 3/3; weakest cited HOLE-10 (1.00)"
+              }
+            },
+            {
+              "id": "H-024",
+              "text": "A conclusion containing a growth percentage could not be used because that figure did not match any cited value.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-11"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-024",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:59.259Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-11",
+                "basis": "judges 3/3; weakest cited HOLE-11 (1.00)"
+              }
+            },
+            {
+              "id": "H-025",
+              "text": "A conclusion describing euro-denominated loan maturities could not be used because its listed maturity years and amounts did not match the underlying evidence.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-12"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-025",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:59.336Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-12",
+                "basis": "judges 3/3; weakest cited HOLE-12 (1.00)"
+              }
+            },
+            {
+              "id": "H-026",
+              "text": "One source page was withheld entirely after a security scan found a planted prompt injection on it.",
+              "mode": "derived",
+              "derived_from": [
+                "HOLE-13"
+              ],
+              "verification": {
+                "status": "pass",
+                "checks": [
+                  {
+                    "check": "citations_resolve",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "All 1 cited id(s) exist and passed",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "numbers_traced",
+                    "method": "code",
+                    "result": "pass",
+                    "detail": "No numbers to trace",
+                    "model_id": null,
+                    "agent_id": null,
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": null,
+                    "votes_total": null
+                  },
+                  {
+                    "check": "faithfulness",
+                    "method": "llm_judge",
+                    "result": "pass",
+                    "detail": "3 of 3 judges found it faithful to the cited items.",
+                    "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                    "agent_id": "verifier-H-026",
+                    "diff": null,
+                    "closest_locator": null,
+                    "unsupported_spans": [],
+                    "votes_for": 3,
+                    "votes_total": 3
+                  }
+                ],
+                "attempts": [],
+                "verified_at": "2026-11-08T06:13:59.444Z"
+              },
+              "certainty": {
+                "score": 100,
+                "band": "high",
+                "strength": 1.0,
+                "support": 1.0,
+                "inherited": 1.0,
+                "completeness": 1.0,
+                "weakest_ref": "HOLE-13",
+                "basis": "judges 3/3; weakest cited HOLE-13 (1.00)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "holes": [
+    {
+      "hole_id": "HOLE-01",
+      "criterion": "secular_growth",
+      "item_id": "E-003",
+      "reason": "The score failed verification after repair (support: Not supported: 1 of 3 judges said supported. The claim cites demographic tailwinds as \"a doubling of the over-60 population by 2050\" but evidence says \"more than do..."
+    },
+    {
+      "hole_id": "HOLE-02",
+      "criterion": "leverage",
+      "item_id": "E-004",
+      "reason": "The score failed verification after repair (support: Not supported: 1 of 3 judges said supported. The claim states net debt including pensions to EBITDA was 2.8x in FY2025, which is supported; however, critical refere..."
+    },
+    {
+      "hole_id": "HOLE-03",
+      "criterion": "research_stage",
+      "item_id": "E-006",
+      "reason": "Research stage is about the analyst's own coverage history, which no source in this run can state. It is declared as a gap instead of guessed."
+    },
+    {
+      "hole_id": "HOLE-04",
+      "criterion": null,
+      "item_id": "D-195",
+      "reason": "Data item failed verification (tier_rule: Only a tier 3 source supports this number, and no priority or tier 2 item states it). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-05",
+      "criterion": null,
+      "item_id": "D-222",
+      "reason": "Data item failed verification (period_match: The evidence quote does not mention FY2026). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-06",
+      "criterion": null,
+      "item_id": "D-229",
+      "reason": "Data item failed verification (period_match: The evidence quote does not mention FY2026). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-07",
+      "criterion": null,
+      "item_id": "D-245",
+      "reason": "Data item failed verification (period_match: The period_context quote does not mention Q4 FY2026 (it names 2027)). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-08",
+      "criterion": null,
+      "item_id": "D-250",
+      "reason": "Data item failed verification (period_match: The period_context quote does not mention FY2026 (it names 2027)). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-09",
+      "criterion": null,
+      "item_id": "C-002",
+      "reason": "Conclusion failed verification (support: Not supported: 1 of 3 judges said supported. D-298 (Contract liabilities €3,627 million) is missing from the nibcl_fy2023 calculation despite being explicitly referenced in the..."
+    },
+    {
+      "hole_id": "HOLE-10",
+      "criterion": null,
+      "item_id": "C-005",
+      "reason": "Conclusion failed verification (numbers_traced: '13.9%', 'EUR 502.2 million', '4.5%' and '-15.5%' do not match any cited value, computation display or rubric threshold). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-11",
+      "criterion": null,
+      "item_id": "C-007",
+      "reason": "Conclusion failed verification (numbers_traced: '5.0%' does not match any cited value, computation display or rubric threshold). Excluded from scoring."
+    },
+    {
+      "hole_id": "HOLE-12",
+      "criterion": null,
+      "item_id": "C-012",
+      "reason": "Conclusion failed verification (support: Not supported: 0 of 3 judges said supported. The claim incorrectly lists euro-denominated loans as maturing in \"fiscal 2026, 2028, 2029, 2030 and 2032\" with eight carrying amou..."
+    },
+    {
+      "hole_id": "HOLE-13",
+      "criterion": null,
+      "item_id": null,
+      "reason": "S-010 (Axelrod test page: planted prompt injection (simulated)) was quarantined after the prompt-attack scan: Prompt attack detected in content (page 1 of 1: Bedrock Guardrails intervened on chunk 1 of 1: PROMPT_ATTAC..."
+    }
+  ],
+  "disclaimer": "Not financial or legal advice. Scores under the BOFFIN framework only. Valuation is not scored.",
+  "stats": {
+    "sentences": 24,
+    "passed": 22,
+    "fixed": 2,
+    "failed": 0,
+    "words": 639,
+    "est_pages": 2.8
+  },
+  "certainty": {
+    "mean": 75,
+    "high_pct": 64,
+    "high": 17,
+    "medium": 3,
+    "low": 4,
+    "none": 0,
+    "coverage_scored": 3,
+    "coverage_in_scope": 6,
+    "method": "Word-weighted mean over sentence certainties. high_pct is the share of words in high-band sentences."
+  },
+  "markdown_path": "runs/run_20261108_pin2ve/siemens-healthineers/09-Analysis/human-report.md",
+  "as_of_seq": 2393
+}

@@ -1,0 +1,29 @@
+{
+  "doc_id": "DOC-008",
+  "source_id": "S-006",
+  "title": "Reuters via Euronext: Siemens Healthineers begins carve-out of diagnostics unit amid China weakness",
+  "url": "https://live.euronext.com/en/financial-news/siemens-healthineers-begins-carve-out-diagnostics-unit-amid-china-weakness",
+  "content_type": "html",
+  "paginated": false,
+  "pages": 2,
+  "sha256": "3d61919a91e96d3a93a318b62d796dc152c4a34623b7d7fa7baffa28a3677e1e",
+  "bytes": 236127,
+  "fetched_at": "2026-11-08T05:41:43.937Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_whhj0d/siemens-healthineers/04-News-Coverage/S-006_reuters-via-euronext-siemens-healthineers-begins-carve-out-o.html",
+    "text": "runs/run_20261108_whhj0d/siemens-healthineers/04-News-Coverage/S-006_reuters-via-euronext-siemens-healthineers-begins-carve-out-o.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "bedrock_guardrails",
+    "verdict": "clean",
+    "detail": "2 page(s) scanned, no prompt attack detected"
+  },
+  "fetch": {
+    "request_id": "REQ-0008",
+    "url": "https://live.euronext.com/en/financial-news/siemens-healthineers-begins-carve-out-diagnostics-unit-amid-china-weakness",
+    "final_url": "https://live.euronext.com/en/financial-news/siemens-healthineers-begins-carve-out-diagnostics-unit-amid-china-weakness",
+    "http_status": 200,
+    "content_type": "text/html; charset=UTF-8"
+  }
+}

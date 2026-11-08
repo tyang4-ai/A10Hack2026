@@ -1,0 +1,29 @@
+{
+  "doc_id": "DOC-009",
+  "source_id": "S-009",
+  "title": "Simply Wall St blog: Why Siemens Healthineers is up 8.6% after cutting its 2026 outlook",
+  "url": "https://simplywall.st/stocks/de/healthcare/etr-shl/siemens-healthineers-shares/news/why-siemens-healthineers-xtrashl-is-up-86-after-cutting-2026/amp",
+  "content_type": "html",
+  "paginated": false,
+  "pages": 2,
+  "sha256": "8e903a270d8e76b6771c361a608c67cdf90a78b9cb7f4529151598208554673e",
+  "bytes": 202912,
+  "fetched_at": "2026-11-08T06:10:15.747Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_pin2ve/siemens-healthineers/04-News-Coverage/S-009_simply-wall-st-blog-why-siemens-healthineers-is-up-8-6-after.html",
+    "text": "runs/run_20261108_pin2ve/siemens-healthineers/04-News-Coverage/S-009_simply-wall-st-blog-why-siemens-healthineers-is-up-8-6-after.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "bedrock_guardrails",
+    "verdict": "clean",
+    "detail": "2 page(s) scanned, no prompt attack detected"
+  },
+  "fetch": {
+    "request_id": "REQ-0009",
+    "url": "https://simplywall.st/stocks/de/healthcare/etr-shl/siemens-healthineers-shares/news/why-siemens-healthineers-xtrashl-is-up-86-after-cutting-2026/amp",
+    "final_url": "https://simplywall.st/stocks/de/healthcare/etr-shl/siemens-healthineers-shares/news/why-siemens-healthineers-xtrashl-is-up-86-after-cutting-2026/amp",
+    "http_status": 200,
+    "content_type": "text/html; charset=utf-8"
+  }
+}

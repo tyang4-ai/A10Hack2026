@@ -1,0 +1,78 @@
+{
+  "frozen": true,
+  "_label": "TEST SAMPLE for backend/tests/test_store.py and test_api.py. Not the real SHL plan. URLs use the reserved .test TLD so nothing can be fetched.",
+  "company": "Siemens Healthineers AG",
+  "ticker": "SHL",
+  "aliases": ["siemens healthineers", "shl", "healthineers"],
+  "depth": "screen",
+  "as_of": "2026-11-07",
+  "fiscal_note": "Test sample: FY2025 (ended Sep 30, 2025) is the base year.",
+  "needs": [
+    {
+      "need_id": "N-01",
+      "label": "ROTIC inputs",
+      "dimension": "financials",
+      "question": "What were operating income, tax and invested capital in FY2025?",
+      "data_types": ["financial_filing"],
+      "criteria": ["rotic_level"],
+      "rationale": "Test sample need."
+    },
+    {
+      "need_id": "N-02",
+      "label": "Demand signal",
+      "dimension": "downstream",
+      "question": "Is demand for imaging systems growing?",
+      "data_types": ["news_article"],
+      "criteria": ["secular_growth"],
+      "rationale": "Test sample need."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "S-001",
+      "title": "Annual Report FY2025 (test sample)",
+      "url": "https://ir.healthineers-sample.test/reports/annual-report-2025.pdf",
+      "domain": "ir.healthineers-sample.test",
+      "kind": "annual_report",
+      "data_types": ["financial_filing"],
+      "access": {"method": "http_get", "auth": "none", "secret_ref": null},
+      "tier": "priority",
+      "rank": 1,
+      "scores": {"reliability": 0.97, "relevance": 0.95},
+      "rationale": "Test sample source: the audited statements.",
+      "need_ids": ["N-01"],
+      "criteria": ["rotic_level"],
+      "vault_folder": "01-Annual-Reports",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {"bytes": 0, "pages": 0, "data_items": 0, "data_items_verified": 0},
+      "error": null
+    },
+    {
+      "source_id": "S-002",
+      "title": "Trade press: imaging demand (test sample)",
+      "url": "https://news.imaging-sample.test/2025/10/demand",
+      "domain": "news.imaging-sample.test",
+      "kind": "news",
+      "data_types": ["news_article"],
+      "access": {"method": "http_get", "auth": "none", "secret_ref": null},
+      "tier": "tier_2",
+      "rank": 1,
+      "scores": {"reliability": 0.65, "relevance": 0.6},
+      "rationale": "Test sample source: a demand signal.",
+      "need_ids": ["N-02"],
+      "criteria": ["secular_growth"],
+      "vault_folder": "04-News-Coverage",
+      "proposed_by": "planner",
+      "approval": "pending",
+      "status": "proposed",
+      "doc_ids": [],
+      "stats": {"bytes": 0, "pages": 0, "data_items": 0, "data_items_verified": 0},
+      "error": null
+    }
+  ],
+  "extract_pages": {"S-001": [[150, 156], [170, 172]]},
+  "need_pages": {"N-01": {"S-001": [[150, 152]]}}
+}

@@ -1,0 +1,3404 @@
+{
+  "label": "Experiment, run on 2026-11-07, not part of the demo run.",
+  "simulated": false,
+  "date": "2026-11-07",
+  "run_id": "run_20261108_63kwb8",
+  "created_at": "2026-11-08T04:43:07.884Z",
+  "headline": "Our checks caught 24 of 25 planted errors in the harness report. A plain Claude report gave 59 claims, and 0 of them failed our own quote check.",
+  "models": {
+    "harness": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "baseline": "us.anthropic.claude-sonnet-5"
+  },
+  "documents": [
+    {
+      "tag": "AR2025",
+      "doc_id": "DOC-001",
+      "source_id": "S-001",
+      "title": "Siemens Healthineers Annual Report FY2025",
+      "pages": [
+        7,
+        8,
+        13,
+        15,
+        22,
+        25,
+        138,
+        140,
+        141,
+        152,
+        156,
+        159,
+        160,
+        162,
+        169,
+        177,
+        182,
+        184,
+        189
+      ]
+    },
+    {
+      "tag": "Q4FY2026",
+      "doc_id": "DOC-002",
+      "source_id": "S-002",
+      "title": "Siemens Healthineers Q4 FY2026 earnings release and financial results",
+      "pages": [
+        1,
+        6,
+        7,
+        8,
+        13,
+        15,
+        17,
+        19
+      ]
+    },
+    {
+      "tag": "AR2023",
+      "doc_id": "DOC-003",
+      "source_id": "S-003",
+      "title": "Siemens Healthineers Annual Report FY2023",
+      "pages": [
+        53,
+        55,
+        99
+      ]
+    },
+    {
+      "tag": "AR2021",
+      "doc_id": "DOC-004",
+      "source_id": "S-004",
+      "title": "Siemens Healthineers Annual Report FY2021",
+      "pages": [
+        44,
+        46,
+        85
+      ]
+    },
+    {
+      "tag": "AR2019",
+      "doc_id": "DOC-005",
+      "source_id": "S-005",
+      "title": "Siemens Healthineers Annual Report FY2019",
+      "pages": [
+        62,
+        64,
+        95
+      ]
+    }
+  ],
+  "pages": 36,
+  "sources": [
+    [
+      "S-001",
+      "extracted",
+      null
+    ],
+    [
+      "S-002",
+      "extracted",
+      null
+    ],
+    [
+      "S-003",
+      "extracted",
+      null
+    ],
+    [
+      "S-004",
+      "extracted",
+      null
+    ],
+    [
+      "S-005",
+      "extracted",
+      null
+    ]
+  ],
+  "period_match_reasons": {
+    "harness": {
+      "not named": 18,
+      "other year": 7,
+      "other": 0
+    },
+    "baseline": {
+      "not named": 12,
+      "other year": 0,
+      "other": 0
+    }
+  },
+  "coverage": {
+    "harness": {
+      "also_on_other_side": 39,
+      "passing_numbers": 201,
+      "missing_on_other_side": [
+        "D-002",
+        "D-006",
+        "D-015",
+        "D-016",
+        "D-018",
+        "D-019",
+        "D-020",
+        "D-031",
+        "D-034",
+        "D-035",
+        "D-036",
+        "D-038",
+        "D-039",
+        "D-040",
+        "D-041",
+        "D-044",
+        "D-045",
+        "D-047",
+        "D-048",
+        "D-049",
+        "D-050",
+        "D-051",
+        "D-056",
+        "D-057",
+        "D-058",
+        "D-061",
+        "D-066",
+        "D-067",
+        "D-070",
+        "D-071",
+        "D-072",
+        "D-073",
+        "D-075",
+        "D-076",
+        "D-077",
+        "D-079",
+        "D-081",
+        "D-082",
+        "D-086",
+        "D-087",
+        "D-088",
+        "D-089",
+        "D-090",
+        "D-091",
+        "D-092",
+        "D-094",
+        "D-095",
+        "D-096",
+        "D-097",
+        "D-098",
+        "D-100",
+        "D-101",
+        "D-102",
+        "D-104",
+        "D-106",
+        "D-107",
+        "D-108",
+        "D-109",
+        "D-110",
+        "D-112",
+        "D-113",
+        "D-114",
+        "D-115",
+        "D-116",
+        "D-118",
+        "D-119",
+        "D-120",
+        "D-121",
+        "D-122",
+        "D-124",
+        "D-125",
+        "D-126",
+        "D-128",
+        "D-133",
+        "D-135",
+        "D-136",
+        "D-137",
+        "D-139",
+        "D-140",
+        "D-141",
+        "D-143",
+        "D-144",
+        "D-145",
+        "D-146",
+        "D-147",
+        "D-149",
+        "D-150",
+        "D-151",
+        "D-152",
+        "D-154",
+        "D-157",
+        "D-158",
+        "D-160",
+        "D-161",
+        "D-162",
+        "D-163",
+        "D-164",
+        "D-165",
+        "D-166",
+        "D-167",
+        "D-168",
+        "D-171",
+        "D-172",
+        "D-174",
+        "D-175",
+        "D-176",
+        "D-179",
+        "D-180",
+        "D-182",
+        "D-183",
+        "D-184",
+        "D-186",
+        "D-188",
+        "D-189",
+        "D-190",
+        "D-192",
+        "D-193",
+        "D-194",
+        "D-197",
+        "D-198",
+        "D-199",
+        "D-200",
+        "D-201",
+        "D-206",
+        "D-208",
+        "D-209",
+        "D-210",
+        "D-212",
+        "D-213",
+        "D-215",
+        "D-216",
+        "D-217",
+        "D-218",
+        "D-221",
+        "D-222",
+        "D-224",
+        "D-225",
+        "D-226",
+        "D-227",
+        "D-228",
+        "D-229",
+        "D-231",
+        "D-232",
+        "D-233",
+        "D-234",
+        "D-235",
+        "D-237",
+        "D-238",
+        "D-239",
+        "D-241",
+        "D-242",
+        "D-243",
+        "D-245",
+        "D-246",
+        "D-248",
+        "D-249",
+        "D-251",
+        "D-252",
+        "D-253",
+        "D-255",
+        "D-256",
+        "D-259"
+      ]
+    },
+    "baseline": {
+      "also_on_other_side": 28,
+      "passing_numbers": 43,
+      "missing_on_other_side": [
+        "claim 2",
+        "claim 3",
+        "claim 4",
+        "claim 6",
+        "claim 40",
+        "claim 41",
+        "claim 42",
+        "claim 45",
+        "claim 46",
+        "claim 48",
+        "claim 50",
+        "claim 52",
+        "claim 54",
+        "claim 56",
+        "claim 58"
+      ]
+    }
+  },
+  "harness": {
+    "stats": {
+      "items": 259,
+      "pass": 220,
+      "fail_any": 39,
+      "blocked": 0,
+      "fail_quote_exact": 14,
+      "fail_value_in_quote": 0,
+      "fail_unit_context": 0,
+      "fail_period_match": 25,
+      "page_off": 0,
+      "fail_numbers_traced": 0,
+      "no_value": 19
+    },
+    "fixed_by_recite": 15,
+    "usage": {
+      "model_calls": 36,
+      "tokens_in": 118300,
+      "tokens_out": 41784,
+      "cost_usd": 0.359943,
+      "budget_usd": null
+    },
+    "seconds": 28.81045560000348
+  },
+  "baseline": {
+    "stats": {
+      "items": 59,
+      "pass": 46,
+      "fail_any": 13,
+      "blocked": 0,
+      "fail_quote_exact": 0,
+      "fail_value_in_quote": 1,
+      "fail_unit_context": 1,
+      "fail_period_match": 12,
+      "page_off": 0,
+      "fail_numbers_traced": 3,
+      "no_value": 3
+    },
+    "usage": {
+      "model_calls": 1,
+      "tokens_in": 43841,
+      "tokens_out": 9771,
+      "cost_usd": 0.203931,
+      "budget_usd": null
+    },
+    "seconds": 69.80155570001807,
+    "error": null,
+    "summary": "Siemens Healthineers enters FY2027 on a solid operating footing: FY2026 revenue rose to €23,630m (+4.0% comparable) with adjusted EBIT of ~€3.8bn (16.2% margin) and free cash flow of ~€2.4bn, following a strong FY2025 (revenue €23,375m, +5.9% comparable, FCF €2,714m). Leverage is moderate and improving (net debt including pensions/EBITDA of 2.8x at FY2025-end, down from 3.3x), but the capital structure is dominated by intercompany loans and credit facilities from the Siemens Group (~€12.8bn of loans, €4.5bn of facilities) that face early-termination risk given Siemens AG's announced plan (Nov 12, 2025) to deconsolidate SHL and spin off 30% of shares. Liquidity looks adequate, with FCF and undrawn facilities covering near-term maturities and dividends more than 2x. Secular demand drivers (aging population, addressable imaging/diagnostics/radiotherapy markets of €31-37bn and €6-7bn respectively) remain intact and underpin continued mid-single-digit growth guidance for FY2027 (4.0-5.0% comparable revenue, EPS €2.20-2.40). Key open questions are peer ROTIC benchmarking (not available in these filings) and the precise impact of the Siemens deconsolidation on financing costs and segment structure (new Imaging/Precision Therapy/Diagnostics segmentation from Oct 1, 2025).",
+    "criteria": [
+      {
+        "criterion": "rotic_level",
+        "score": 0,
+        "reasoning": "NOPAT proxy: FY2025 EBIT €3,154m less ~22-24% tax ≈ €2,400m against average total capital employed. Total assets €44,370m (AR2025 p.140) and total equity €18,091m give TICAP in the €30-35bn range once net debt and goodwill-heavy balance sheet are netted, implying ROTIC in the low-to-mid teens, not clearly above 15% nor below 10%. Only partial multi-year data was provided (FY2019-FY2026 snapshots, not a full continuous 10y series), so confidence is low."
+      },
+      {
+        "criterion": "rotic_vs_peers",
+        "score": null,
+        "reasoning": "No peer ROTIC figures were provided in these pages, so a direct comparison cannot be made; segment adjusted EBIT margins (Imaging 23.1%, Precision Therapy 14.9%, Diagnostics 3.2% in FY2026, Q4FY2026 p.7) show internal dispersion but no external peer benchmark is available."
+      },
+      {
+        "criterion": "secular_growth",
+        "score": 1,
+        "reasoning": "Addressable markets are large and growing: Imaging >€31bn, Diagnostics ~€37bn, Varian >€6bn, Advanced Therapies >€7bn in FY2025 (AR2025 p.13), driven by aging population (over-60s to more than double by 2050, AR2025 p.8) and rising non-communicable disease burden. Comparable revenue growth of 5.9% in FY2025 and 4.0% in FY2026, with FY2027 guidance of 4.0-5.0% (Q4FY2026 p.1 and p.6), confirms continued growth rather than decline."
+      },
+      {
+        "criterion": "leverage",
+        "score": 0,
+        "reasoning": "Net debt including pensions was €12,472m against EBITDA of €4,450m, a leverage ratio of 2.8x as of Sept 30, 2025 (AR2025 p.162), down from 3.3x a year earlier - a moderate, improving level. However, most debt (€10,837m non-current + €1,919m current of ~€12,756m total loans, AR2025 p.160) is intercompany debt to the Siemens Group, which is now subject to early-termination/market-value-compensation clauses tied to the planned deconsolidation (AR2025 p.189), adding refinancing uncertainty even though absolute leverage multiples look reasonable."
+      },
+      {
+        "criterion": "liquidity",
+        "score": 1,
+        "reasoning": "FY2025 free cash flow of €2,714m (AR2025 p.22) and FY2026 of €2,446m (Q4FY2026 p.6) comfortably exceed the FY2026 maturity of €6,243m non-derivative financial liabilities spread over one year, and even cover the 5-year maturities profile (FY2026 €6,243m + FY2027 €2,098m + FY2028-30 €5,158m = ~€13.5bn, AR2025 p.177) when combined with the €2.5bn + €2.0bn Siemens AG credit facilities (AR2025 p.160) and dividends (~€1.1bn, AR2025 p.141/169). Two years of FCF (~€5.2bn) alone cover roughly 40% of the 5-year maturities, but together with undrawn facilities of ~€4bn and strong recurring cash generation, coverage exceeds 2x of annual obligations, though reliance on intercompany facilities set to change with deconsolidation is a watch item."
+      },
+      {
+        "criterion": "research_stage",
+        "score": 1,
+        "reasoning": "The analyst has tracked Siemens Healthineers across multiple annual reports from FY2019 through FY2025 and the Q4 FY2026 release, a continuous coverage history spanning more than seven years, satisfying the >1 year closely-followed threshold."
+      }
+    ]
+  },
+  "run_usage": {
+    "model_calls": 37,
+    "tokens_in": 162141,
+    "tokens_out": 51555,
+    "cost_usd": 0.563874,
+    "budget_usd": 2.0
+  },
+  "collect_seconds": 1.4659619999874849,
+  "gateway": {
+    "allowed": 42,
+    "blocked": 0
+  },
+  "plants": [
+    {
+      "side": "harness",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "D-001",
+      "change": "'1,117' to '1,171' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 169 (chars 361-580) and differs by 2 character(s): 'For fiscal year 2025, the Managing Board and the Supervisory Board propose to distribut...'"
+    },
+    {
+      "side": "harness",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "D-070",
+      "change": "'−393' to '−339' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-003. The closest span is on page 99 (chars 1241-1346) and differs by 2 character(s): 'Amortization, depreciation and other effects from IFRS 3 purchase price allocation adju...'"
+    },
+    {
+      "side": "harness",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "D-133",
+      "change": "'2,193' to '2,139' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-005. The closest span is on page 95 (chars 598-661) and differs by 2 character(s): 'Siemens Healthineers’ income before income taxes 2,193 1,799'"
+    },
+    {
+      "side": "harness",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "D-194",
+      "change": "'12,559' to '12,595' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-005. The closest span is on page 64 (chars 804-841) and differs by 1 character(s): 'Total non-current assets 13,650 12,55'"
+    },
+    {
+      "side": "harness",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "D-259",
+      "change": "'2,130' to '2,103' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 1348-1449) and differs by 1 character(s): 'Siemens Healthineers 23,375 22,363 ‐ ‐ 23,375 22,363 2,853 2,523 44,370 46,055 2,714 2,13'"
+    },
+    {
+      "side": "harness",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "D-006",
+      "change": "'−818' to '818'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−818', which reads as -818, but the value is 818"
+    },
+    {
+      "side": "harness",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "D-081",
+      "change": "'−1,958' to '1,958'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−1,958', which reads as -1958, but the value is 1958"
+    },
+    {
+      "side": "harness",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "D-106",
+      "change": "'−1,918' to '1,918'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−1,918', which reads as -1918, but the value is 1918"
+    },
+    {
+      "side": "harness",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "D-166",
+      "change": "'– 658' to '658'",
+      "caught": false,
+      "target_hit": false,
+      "fired": [],
+      "detail": "all four checks pass"
+    },
+    {
+      "side": "harness",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "D-220",
+      "change": "'−686' to '686'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−686', which reads as -686, but the value is 686"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "D-001",
+      "change": "FY2025 to FY2024",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "The evidence quote does not mention FY2024 (it names 2025)"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "D-072",
+      "change": "FY2025 to FY2024",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "'17,124' sits in value column 1 of the row, which the header labels 2025, not FY2024"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "D-135",
+      "change": "FY2026 to FY2025",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "'3,196' sits in value column 3 of the row, which the header labels 2026, not FY2025"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "D-194",
+      "change": "FY2018 to FY2017",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "The period_context quote does not mention FY2017 (it names 2018 and 2019)"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "D-259",
+      "change": "FY2024 to FY2023",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "The period_context quote does not mention FY2023 (it names 2024 and 2025)"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "D-001",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The quote writes 'million' next to the number, but the value says thousand"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "D-072",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "D-133",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "D-194",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "harness",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "D-259",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "harness",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "D-002",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 169 (chars 140-225) and differs by 4 character(s): 'In fiscal year 2025, a dividend of €0.95 per share entitled to the dividend was paid.'"
+    },
+    {
+      "side": "harness",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "D-011",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 25 (chars 2128-2500) and differs by 4 character(s): 'The slight decrease in the pace of current global growth is attributable primarily to t...'"
+    },
+    {
+      "side": "harness",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "D-078",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 13 (chars 846-1031) and differs by 4 character(s): 'The size of the global addressable market for the Varian segment (linear accelerators, ...'"
+    },
+    {
+      "side": "harness",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "D-148",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 13 (chars 1883-2172) and differs by 4 character(s): 'The market for the Diagnostics segment experienced slight growth overall in fiscal year...'"
+    },
+    {
+      "side": "harness",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "D-256",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 160 (chars 668-769) and differs by 4 character(s): 'In fiscal year 2025, two loans from the Siemens Group in a total amount of €1.2 billion...'"
+    },
+    {
+      "side": "baseline",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "claim 1",
+      "change": "'23,630' to '23,603' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-002. The closest span is on page 6 (chars 222-257) and differs by 2 character(s): 'Revenue 23,630 23,375 1.1% 4.0%'"
+    },
+    {
+      "side": "baseline",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "claim 11",
+      "change": "'14,793' to '14,739' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 159 (chars 2110-2146) and differs by 2 character(s): 'Total financial debt 14,793 16,208'"
+    },
+    {
+      "side": "baseline",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "claim 31",
+      "change": "'4,081' to '4,018' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 15 (chars 417-449) and differs by 2 character(s): 'Varian 4,081 3,866 5.5% 6.9%'"
+    },
+    {
+      "side": "baseline",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "claim 48",
+      "change": "'1,525' to '1,552' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-003. The closest span is on page 53 (chars 896-922) and differs by 2 character(s): 'Net income 1,525 2,054'"
+    },
+    {
+      "side": "baseline",
+      "kind": "digit swap",
+      "target": "quote_exact",
+      "base": "claim 59",
+      "change": "'13,000' to '31,000' in the quote and the value",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 7 (chars 4903-5025) and differs by 2 character(s): 'Our R&D workforce exceeds 13,000 employees at fiscal year-end 2025 and operates at a nu...'"
+    },
+    {
+      "side": "baseline",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "claim 8",
+      "change": "'−686' to '686'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−686', which reads as -686, but the value is 686"
+    },
+    {
+      "side": "baseline",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "claim 22",
+      "change": "'−1,066' to '1,066'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−1,066', which reads as -1066, but the value is 1066"
+    },
+    {
+      "side": "baseline",
+      "kind": "dropped minus",
+      "target": "value_in_quote",
+      "base": "claim 24",
+      "change": "'−1,118' to '1,118'",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "value_in_quote"
+      ],
+      "detail": "The quote shows '−1,118', which reads as -1118, but the value is 1118"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "claim 1",
+      "change": "FY2026 to FY2025",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "'23,630' sits in value column 1 of the row, which the header labels 2026, not FY2025"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "claim 12",
+      "change": "FY2025 to FY2024",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "'12,472' sits in value column 1 of the row, which the header labels 2025, not FY2024"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "claim 31",
+      "change": "FY2025 to FY2024",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "'4,081' sits in value column 1 of the row, which the header labels 2025, not FY2024"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "claim 48",
+      "change": "FY2023 to FY2022",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "'1,525' sits in value column 1 of the row, which the header labels 2023, not FY2022"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong year",
+      "target": "period_match",
+      "base": "claim 59",
+      "change": "FY2025 to FY2024",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "period_match"
+      ],
+      "detail": "The evidence quote does not mention FY2024 (it names 2025)"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "claim 1",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "claim 10",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "claim 29",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "claim 47",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €, earnings per share in €)' names million, but the value says thousand"
+    },
+    {
+      "side": "baseline",
+      "kind": "wrong scale",
+      "target": "unit_context",
+      "base": "claim 56",
+      "change": "million to thousand",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "unit_context"
+      ],
+      "detail": "The unit_context quote '(in millions of €)' names million, but the value says thousand"
+    },
+    {
+      "side": "baseline",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "claim 35",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 13 (chars 846-1031) and differs by 4 character(s): 'The size of the global addressable market for the Varian segment (linear accelerators, ...'"
+    },
+    {
+      "side": "baseline",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "claim 37",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 8 (chars 1100-1189) and differs by 4 character(s): 'According to forecasts, the number of over-60s is projected to more than double by 2050.'"
+    },
+    {
+      "side": "baseline",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "claim 40",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 15 (chars 1755-1893) and differs by 4 character(s): 'The equipment book-to-bill ratio2 in fiscal year 2025 was a very good 1.14, above the p...'"
+    },
+    {
+      "side": "baseline",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "claim 41",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-002. The closest span is on page 6 (chars 3318-3442) and differs by 4 character(s): 'The equipment book-to-bill ratio was a very good 1.14, on par with the prior-year level...'"
+    },
+    {
+      "side": "baseline",
+      "kind": "flipped not",
+      "target": "quote_exact",
+      "base": "claim 44",
+      "change": "a 'not' flipped in the quote",
+      "caught": true,
+      "target_hit": true,
+      "fired": [
+        "quote_exact"
+      ],
+      "detail": "Quote not found in DOC-001. The closest span is on page 7 (chars 5398-5583) and differs by 4 character(s): 'In fiscal year 2025, we reported R&D expenses of €1,958 million (2024: €1,918 million)....'"
+    }
+  ],
+  "baseline_claims": [
+    {
+      "label": "claim 1",
+      "status": "pass",
+      "statement": "FY2026 revenue was €23,630 million, up 1.1% nominally and 4.0% comparably.",
+      "value": {
+        "number": 23630.0,
+        "as_reported": "23,630",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 6,
+      "found_page": 6,
+      "quote": "Revenue \n23,630 \n23,375 \n1.1% \n4.0%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 2",
+      "status": "pass",
+      "statement": "FY2026 adjusted EBIT was €3,823 million, down 0.8% nominally, with margin of 16.2%.",
+      "value": {
+        "number": 3823.0,
+        "as_reported": "3,823",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 6,
+      "found_page": 6,
+      "quote": "Adjusted EBIT² \n3,823 \n3,855 \n−0.8%",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "numbers_traced",
+          "result": "fail",
+          "detail": "'16.2%' does not match any cited value, computation display or rubric threshold"
+        }
+      ]
+    },
+    {
+      "label": "claim 3",
+      "status": "pass",
+      "statement": "FY2026 net income was €2,243 million, up 3.5% from FY2025.",
+      "value": {
+        "number": 2243.0,
+        "as_reported": "2,243",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 6,
+      "found_page": 6,
+      "quote": "Net income \n2,243 \n2,168 \n3.5%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 4",
+      "status": "pass",
+      "statement": "FY2026 free cash flow was €2,446 million, down 9.9% from FY2025.",
+      "value": {
+        "number": 2446.0,
+        "as_reported": "2,446",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 6,
+      "found_page": 6,
+      "quote": "Free cash flow⁴ \n2,446 \n2,714 \n−9.9%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 5",
+      "status": "pass",
+      "statement": "FY2025 revenue was €23,375 million, up 4.5% nominally and 5.9% on a comparable basis.",
+      "value": {
+        "number": 23375.0,
+        "as_reported": "23,375",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Siemens Healthineers \n23,375 \n22,363 \n4.5% \n5.9%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 6",
+      "status": "pass",
+      "statement": "FY2025 net income was €2,168 million.",
+      "value": {
+        "number": 2168.0,
+        "as_reported": "2,168",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 138,
+      "found_page": 138,
+      "quote": "Net income \n \n2,168 \n1,959",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 7",
+      "status": "pass",
+      "statement": "FY2025 earnings before interest and taxes (EBIT) were €3,154 million.",
+      "value": {
+        "number": 3154.0,
+        "as_reported": "3,154",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 138,
+      "found_page": 138,
+      "quote": "Earnings before interest and taxes \n \n3,154 \n2,807",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 8",
+      "status": "pass",
+      "statement": "FY2025 income tax expenses were €686 million, implying an effective tax rate used for NOPAT calculations.",
+      "value": {
+        "number": -686.0,
+        "as_reported": "−686",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 138,
+      "found_page": 138,
+      "quote": "Income tax expenses \n4 \n−686 \n−564",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 9",
+      "status": "pass",
+      "statement": "FY2025 free cash flow was €2,714 million.",
+      "value": {
+        "number": 2714.0,
+        "as_reported": "2,714",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 22,
+      "found_page": 22,
+      "quote": "Free cash flow \n2,714 \n2,130",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 10",
+      "status": "pass",
+      "statement": "FY2025 cash flows from operating activities were €3,532 million.",
+      "value": {
+        "number": 3532.0,
+        "as_reported": "3,532",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 22,
+      "found_page": 22,
+      "quote": "Cash flows from operating activities \n3,532 \n2,826",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 11",
+      "status": "pass",
+      "statement": "Total financial debt as of Sept 30, 2025 was €14,793 million.",
+      "value": {
+        "number": 14793.0,
+        "as_reported": "14,793",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 159,
+      "found_page": 159,
+      "quote": "Total financial debt \n14,793 \n16,208",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 12",
+      "status": "pass",
+      "statement": "Net debt (including pensions) as of Sept 30, 2025 was €12,472 million.",
+      "value": {
+        "number": 12472.0,
+        "as_reported": "12,472",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 162,
+      "found_page": 162,
+      "quote": "Net debt (including pensions)  \n12,472 \n13,235",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 13",
+      "status": "pass",
+      "statement": "Net debt (including pensions) to EBITDA ratio was 2.8x as of Sept 30, 2025, down from 3.3x a year earlier.",
+      "value": {
+        "number": 2.8,
+        "as_reported": "2.8",
+        "unit": "x",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 162,
+      "found_page": 162,
+      "quote": "Net debt (including pensions)/EBITDA \n2.8 \n3.3",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 14",
+      "status": "pass",
+      "statement": "EBITDA for FY2025 was €4,450 million.",
+      "value": {
+        "number": 4450.0,
+        "as_reported": "4,450",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 162,
+      "found_page": 162,
+      "quote": "EBITDA \n4,450 \n4,030",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 15",
+      "status": "pass",
+      "statement": "Provisions for pensions and similar obligations were €488 million as of Sept 30, 2025.",
+      "value": {
+        "number": 488.0,
+        "as_reported": "488",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 140,
+      "found_page": 140,
+      "quote": "Provisions for pensions and similar obligations \n21 \n488 \n592",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 16",
+      "status": "fail",
+      "statement": "Non-derivative financial liabilities maturing in FY2026 totaled €6,243 million as of Sept 30, 2025.",
+      "value": {
+        "number": 6243.0,
+        "as_reported": "6,243",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 177,
+      "found_page": 177,
+      "quote": "Non-derivative financial liabilities \n6,243 \n2,098 \n5,158 \n6,233",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2026 (it names 2028 and 2030)"
+        }
+      ]
+    },
+    {
+      "label": "claim 17",
+      "status": "pass",
+      "statement": "Non-derivative financial liabilities maturing in fiscal years 2028 to 2030 totaled €5,158 million.",
+      "value": {
+        "number": 5158.0,
+        "as_reported": "5,158",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2028-2030"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 177,
+      "found_page": 177,
+      "quote": "Non-derivative financial liabilities \n6,243 \n2,098 \n5,158 \n6,233",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 18",
+      "status": "fail",
+      "statement": "Non-derivative financial liabilities maturing in fiscal 2031 and thereafter totaled €6,233 million.",
+      "value": {
+        "number": 6233.0,
+        "as_reported": "6,233",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2031 and thereafter"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 177,
+      "found_page": 177,
+      "quote": "Non-derivative financial liabilities \n6,243 \n2,098 \n5,158 \n6,233",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2031 and thereafter (it names 2028 and 2030)"
+        }
+      ]
+    },
+    {
+      "label": "claim 19",
+      "status": "fail",
+      "statement": "Siemens Healthineers has a multicurrency revolving credit facility of up to €2.5 billion with Siemens AG for working capital/short-term credit.",
+      "value": {
+        "number": 2.5,
+        "as_reported": "2.5",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 160,
+      "found_page": 160,
+      "quote": "a multicurrency revolving credit facility of up \nto €2.5 billion (September 30, 2024: €2.5 billion), which serves to finance net working capital and as a short-term credit facility",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025 (it names 2024)"
+        }
+      ]
+    },
+    {
+      "label": "claim 20",
+      "status": "fail",
+      "statement": "Siemens Healthineers has a backup multicurrency revolving credit facility of up to €2.0 billion with Siemens AG.",
+      "value": {
+        "number": 2.0,
+        "as_reported": "2.0",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 160,
+      "found_page": 160,
+      "quote": "a multicurrency revolving credit facility of up to €2.0 billion (September 30, 2024: €2.0 billion) as a backup facility",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025 (it names 2024)"
+        }
+      ]
+    },
+    {
+      "label": "claim 21",
+      "status": "fail",
+      "statement": "As of Sept 30, 2025, €451 million was drawn from the credit facilities with Siemens AG.",
+      "value": {
+        "number": 451.0,
+        "as_reported": "451",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 160,
+      "found_page": 160,
+      "quote": "As \nof the reporting date, an amount of €451 million (September 30, 2024: €0 million) was drawn from these facilities.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025 (it names 2024)"
+        }
+      ]
+    },
+    {
+      "label": "claim 22",
+      "status": "pass",
+      "statement": "Dividends paid to shareholders in FY2025 were €1,066 million.",
+      "value": {
+        "number": -1066.0,
+        "as_reported": "−1,066",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 141,
+      "found_page": 141,
+      "quote": "Dividends paid to shareholders of Siemens Healthineers AG \n−1,066 \n−1,063",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 23",
+      "status": "pass",
+      "statement": "Proposed dividend for FY2025 is €1.00 per share, totaling approximately €1,117 million.",
+      "value": {
+        "number": 1117.0,
+        "as_reported": "1,117",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 169,
+      "found_page": 169,
+      "quote": "the Managing Board and the Supervisory Board propose to distribute a dividend of €1.00 per share entitled to the dividend, in \ntotal representing approximately €1,117 million in expected payments",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 24",
+      "status": "pass",
+      "statement": "Dividends paid to shareholders in FY2026 were €1,118 million.",
+      "value": {
+        "number": -1118.0,
+        "as_reported": "−1,118",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 17,
+      "found_page": 17,
+      "quote": "Dividends paid to shareholders of Siemens Healthineers AG \n−1,118 \n−1,066",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 25",
+      "status": "fail",
+      "statement": "FY2026 proposed dividend is €1.00 per share, same as prior year.",
+      "value": {
+        "number": 1.0,
+        "as_reported": "1.00",
+        "unit": "EUR",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 1,
+      "found_page": 1,
+      "quote": "Proposed dividend of €1.00 per share (prior year: €1.00)",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "claim 26",
+      "status": "fail",
+      "statement": "Imaging segment adjusted EBIT margin was 23.1% in FY2026, slightly below prior year.",
+      "value": {
+        "number": 23.1,
+        "as_reported": "23.1",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 7,
+      "found_page": 7,
+      "quote": "The adjusted EBIT margin in the Imaging segment was 23.1%, slightly below the prior-year level.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "claim 27",
+      "status": "fail",
+      "statement": "Precision Therapy segment adjusted EBIT margin was 14.9% in FY2026, slightly above prior year.",
+      "value": {
+        "number": 14.9,
+        "as_reported": "14.9",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 7,
+      "found_page": 7,
+      "quote": "The adjusted EBIT margin in the Precision Therapy segment of 14.9% was slightly above the prior year.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "claim 28",
+      "status": "fail",
+      "statement": "Diagnostics segment adjusted EBIT margin was 3.2% in FY2026, clearly below prior-year level.",
+      "value": {
+        "number": 3.2,
+        "as_reported": "3.2",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 7,
+      "found_page": 7,
+      "quote": "The adjusted EBIT margin in the Diagnostics segment of 3.2% was clearly below the prior-year level.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "claim 29",
+      "status": "pass",
+      "statement": "Imaging segment total adjusted revenue was €13,182 million in FY2025, up 7.5% nominally.",
+      "value": {
+        "number": 13182.0,
+        "as_reported": "13,182",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Imaging \n13,182 \n12,267 \n7.5% \n8.5%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 30",
+      "status": "pass",
+      "statement": "Diagnostics segment total adjusted revenue was €4,347 million in FY2025, down 1.6% nominally.",
+      "value": {
+        "number": 4347.0,
+        "as_reported": "4,347",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Diagnostics \n4,347 \n4,417 \n−1.6% \n0.4%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 31",
+      "status": "pass",
+      "statement": "Varian segment total adjusted revenue was €4,081 million in FY2025, up 5.5% nominally.",
+      "value": {
+        "number": 4081.0,
+        "as_reported": "4,081",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Varian \n4,081 \n3,866 \n5.5% \n6.9%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 32",
+      "status": "pass",
+      "statement": "Advanced Therapies segment total adjusted revenue was €2,128 million in FY2025, up 2.6% nominally.",
+      "value": {
+        "number": 2128.0,
+        "as_reported": "2,128",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Advanced Therapies \n2,128 \n2,075 \n2.6% \n4.2%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 33",
+      "status": "pass",
+      "statement": "Global addressable market for Imaging segment grew to slightly more than €31 billion in FY2025.",
+      "value": {
+        "number": 31.0,
+        "as_reported": "31",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 13,
+      "found_page": 13,
+      "quote": "The global \naddressable market for the Imaging segment (equipment sales and product-related services) grew to slightly more than \n€31 billion in fiscal year 2025",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 34",
+      "status": "fail",
+      "statement": "Global addressable market for Diagnostics segment was approximately €37 billion in FY2025.",
+      "value": {
+        "number": 37.0,
+        "as_reported": "37",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 13,
+      "found_page": 13,
+      "quote": "The relevant addressable global market for our Diagnostics segment (reagents, consumables, and \nproduct-related services) was approximately €37 billion.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025"
+        }
+      ]
+    },
+    {
+      "label": "claim 35",
+      "status": "pass",
+      "statement": "Global addressable market for Varian segment was more than €6 billion in FY2025.",
+      "value": {
+        "number": 6.0,
+        "as_reported": "6",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 13,
+      "found_page": 13,
+      "quote": "The size of the global addressable market for the Varian segment (linear \naccelerators, radiotherapy imaging, and product-related services) was more than €6 billion in fiscal year 2025.",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 36",
+      "status": "fail",
+      "statement": "Global addressable market for Advanced Therapies segment was over €7 billion in FY2025.",
+      "value": {
+        "number": 7.0,
+        "as_reported": "7",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 13,
+      "found_page": 13,
+      "quote": "The global \naddressable market for Advanced Therapies (angiography systems, mobile C-arms, and product-related services) was over \n€7 billion.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025"
+        }
+      ]
+    },
+    {
+      "label": "claim 37",
+      "status": "pass",
+      "statement": "The number of over-60s globally is projected to more than double by 2050, supporting secular growth.",
+      "value": null,
+      "doc_id": "DOC-001",
+      "cited_page": 8,
+      "found_page": 8,
+      "quote": "According to forecasts, the \nnumber of over-60s is projected to more than double by 2050.",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 38",
+      "status": "pass",
+      "statement": "FY2027 outlook: comparable revenue growth expected between 4.0% and 5.0%.",
+      "value": null,
+      "doc_id": "DOC-002",
+      "cited_page": 1,
+      "found_page": 1,
+      "quote": "For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0% over fiscal year 2026.",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 39",
+      "status": "pass",
+      "statement": "FY2027 outlook: adjusted basic EPS expected between €2.20 and €2.40.",
+      "value": null,
+      "doc_id": "DOC-002",
+      "cited_page": 1,
+      "found_page": 1,
+      "quote": "For adjusted \nbasic earnings per share, we expect a range of between €2.20 and €2.40.",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 40",
+      "status": "pass",
+      "statement": "Equipment book-to-bill ratio for FY2025 was a very good 1.14, above prior-year 1.11.",
+      "value": {
+        "number": 1.14,
+        "as_reported": "1.14",
+        "unit": "x",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "The equipment \nbook-to-bill ratio2 in fiscal year 2025 was a very good 1.14, above the prior-year figure of 1.11 which was also very good.",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 41",
+      "status": "pass",
+      "statement": "Equipment book-to-bill ratio for FY2026 was a very good 1.14, on par with prior-year 1.15.",
+      "value": {
+        "number": 1.14,
+        "as_reported": "1.14",
+        "unit": "x",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 6,
+      "found_page": 6,
+      "quote": "The equipment book-to-bill ratio was a very good 1.14, on par with the prior-year level of 1.15*, which was also very \ngood.",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 42",
+      "status": "pass",
+      "statement": "Siemens AG announced on Nov 12, 2025 its intent to deconsolidate Siemens Healthineers and transfer 30% of shares to Siemens AG shareholders, with early termination rights on financing agreements if Siemens AG's stake falls below 50%+1 share.",
+      "value": {
+        "number": 30.0,
+        "as_reported": "30%",
+        "unit": "%",
+        "scale": "one",
+        "period": "2025-11-12"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 189,
+      "found_page": 189,
+      "quote": "On November 12, 2025, Siemens AG announced that it intends to deconsolidate Siemens Healthineers and transfer 30% of the \nSiemens Healthineers shares, preferably in the form of a direct spin-off, to the shareholders of Siemens AG.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "numbers_traced",
+          "result": "fail",
+          "detail": "'50%' and '1' do not match any cited value, computation display or rubric threshold"
+        }
+      ]
+    },
+    {
+      "label": "claim 43",
+      "status": "fail",
+      "statement": "Total liabilities to the Siemens Group from loans were €12,756 million (current €1,919m + non-current €10,837m) as of Sept 30, 2025.",
+      "value": {
+        "number": 12756.0,
+        "as_reported": "1,919 / 10,837",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 160,
+      "found_page": 160,
+      "quote": "Total liabilities to the Siemens Group  \nfrom loans \n \n \n1,919 \n1,364 \n10,837 \n12,921",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "value_in_quote",
+          "result": "fail",
+          "detail": "as_reported '1,919 / 10,837' reads as 1919, but value.number is 12756"
+        },
+        {
+          "check": "unit_context",
+          "result": "fail",
+          "detail": "The value has scale 'million', but no unit_context citation names it"
+        },
+        {
+          "check": "numbers_traced",
+          "result": "fail",
+          "detail": "'€1,919m' and '€10,837m' do not match any cited value, computation display or rubric threshold"
+        }
+      ]
+    },
+    {
+      "label": "claim 44",
+      "status": "pass",
+      "statement": "R&D expenses in FY2025 were €1,958 million, an R&D intensity of 8% of revenue.",
+      "value": {
+        "number": 1958.0,
+        "as_reported": "1,958",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 7,
+      "found_page": 7,
+      "quote": "In fiscal year 2025, we reported R&D expenses of €1,958 million (2024: €1,918 million). The resulting R&D intensity, defined as \nthe ratio of R&D expenses to revenue, was 8% (2024: 9%).",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 45",
+      "status": "pass",
+      "statement": "FY2025 revenue by region: Americas €10,283 million, up 9.1% nominally, driven by strong US growth.",
+      "value": {
+        "number": 10283.0,
+        "as_reported": "10,283",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Americas \n10,283 \n9,428 \n9.1% \n11.7%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 46",
+      "status": "pass",
+      "statement": "FY2025 revenue in China was €2,482 million, down 2.7% nominally.",
+      "value": {
+        "number": 2482.0,
+        "as_reported": "2,482",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "China \n2,482 \n2,550 \n−2.7% \n−0.9%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 47",
+      "status": "pass",
+      "statement": "FY2023 revenue was €21,680 million.",
+      "value": {
+        "number": 21680.0,
+        "as_reported": "21,680",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2023"
+      },
+      "doc_id": "DOC-003",
+      "cited_page": 53,
+      "found_page": 53,
+      "quote": "Revenue \n30, 31 \n21,680 \n21,714",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 48",
+      "status": "pass",
+      "statement": "FY2023 net income was €1,525 million.",
+      "value": {
+        "number": 1525.0,
+        "as_reported": "1,525",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2023"
+      },
+      "doc_id": "DOC-003",
+      "cited_page": 53,
+      "found_page": 53,
+      "quote": "Net income \n \n1,525 \n2,054",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 49",
+      "status": "pass",
+      "statement": "FY2021 revenue was €17,997 million.",
+      "value": {
+        "number": 17997.0,
+        "as_reported": "17,997",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2021"
+      },
+      "doc_id": "DOC-004",
+      "cited_page": 44,
+      "found_page": 44,
+      "quote": "Revenue\n29, 30\n17,997\n14,460",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 50",
+      "status": "pass",
+      "statement": "FY2021 net income was €1,746 million.",
+      "value": {
+        "number": 1746.0,
+        "as_reported": "1,746",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2021"
+      },
+      "doc_id": "DOC-004",
+      "cited_page": 44,
+      "found_page": 44,
+      "quote": "Net income\n1,746\n1,423",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 51",
+      "status": "pass",
+      "statement": "FY2019 revenue was €14,518 million.",
+      "value": {
+        "number": 14518.0,
+        "as_reported": "14,518",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2019"
+      },
+      "doc_id": "DOC-005",
+      "cited_page": 62,
+      "found_page": 62,
+      "quote": "Revenue\n29, 30\n14,518\n13,429",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 52",
+      "status": "pass",
+      "statement": "FY2019 net income was €1,586 million.",
+      "value": {
+        "number": 1586.0,
+        "as_reported": "1,586",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2019"
+      },
+      "doc_id": "DOC-005",
+      "cited_page": 62,
+      "found_page": 62,
+      "quote": "Net income\n1,586\n1,284",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 53",
+      "status": "pass",
+      "statement": "Total assets as of Sept 30, 2025 were €44,370 million.",
+      "value": {
+        "number": 44370.0,
+        "as_reported": "44,370",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 140,
+      "found_page": 140,
+      "quote": "Total assets \n \n44,370 \n46,055",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 54",
+      "status": "pass",
+      "statement": "Total equity as of Sept 30, 2025 was €18,091 million.",
+      "value": {
+        "number": 18091.0,
+        "as_reported": "18,091",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 140,
+      "found_page": 140,
+      "quote": "Total equity \n \n18,091 \n18,248",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 55",
+      "status": "pass",
+      "statement": "Total assets as of Sept 30, 2026 were €46,707 million.",
+      "value": {
+        "number": 46707.0,
+        "as_reported": "46,707",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Total assets \n46,707 \n44,370",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 56",
+      "status": "pass",
+      "statement": "Total equity as of Sept 30, 2026 was €19,917 million.",
+      "value": {
+        "number": 19917.0,
+        "as_reported": "19,917",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 15,
+      "found_page": 15,
+      "quote": "Total equity \n19,917 \n18,091",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 57",
+      "status": "fail",
+      "statement": "FY2026 income tax rate was 22.4%, below prior-year level.",
+      "value": {
+        "number": 22.4,
+        "as_reported": "22.4%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 7,
+      "found_page": 7,
+      "quote": "The income tax rate was 22.4%, below the prior-year \nlevel.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "claim 58",
+      "status": "pass",
+      "statement": "FY2026 adjusted basic EPS was €2.42, versus €2.39 prior year.",
+      "value": {
+        "number": 2.42,
+        "as_reported": "2.42",
+        "unit": "EUR",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": 6,
+      "found_page": 6,
+      "quote": "Adjusted basic earnings per share³ \n2.42 \n2.39 \n1.1%",
+      "note": null,
+      "not_passing": []
+    },
+    {
+      "label": "claim 59",
+      "status": "pass",
+      "statement": "R&D workforce exceeds 13,000 employees at fiscal year-end 2025.",
+      "value": {
+        "number": 13000.0,
+        "as_reported": "13,000",
+        "unit": "count",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": 7,
+      "found_page": 7,
+      "quote": "Our \nR&D workforce exceeds 13,000 employees at fiscal year-end 2025 and operates at a number of R&D sites around the world",
+      "note": null,
+      "not_passing": []
+    }
+  ],
+  "harness_not_passing": [
+    {
+      "label": "D-003",
+      "status": "fail",
+      "statement": "Management expects comparable revenue growth between 4.0% and 5.0% in fiscal year 2027.",
+      "value": {
+        "number": 4.0,
+        "as_reported": "4.0% and 5.0%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2027"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 8,
+      "quote": "For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0% over fiscal year 2026.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'4.0%' sits next to 2026 in the quote, not FY2027"
+        }
+      ]
+    },
+    {
+      "label": "D-017",
+      "status": "fail",
+      "statement": "Comparable revenue growth was 4.0% in fiscal year 2026.",
+      "value": {
+        "number": 4.0,
+        "as_reported": "4.0%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Comparable revenue growth of 4.0%",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-042",
+      "status": "fail",
+      "statement": "Imaging adjusted external revenue was €12,677 million in fiscal year 2025.",
+      "value": {
+        "number": 12677.0,
+        "as_reported": "12,677",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Adjusted external revenue¹ Imaging 12,677 11,829",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 197-249) and differs by 24 character(s): 'Adjusted external revenue1 Intersegment revenue'"
+        }
+      ]
+    },
+    {
+      "label": "D-043",
+      "status": "fail",
+      "statement": "Comparable revenue growth was 5.9% in Q4 fiscal year 2026.",
+      "value": {
+        "number": 5.9,
+        "as_reported": "5.9%",
+        "unit": "%",
+        "scale": "one",
+        "period": "Q4 FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Strong comparable revenue growth of 5.9%",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention Q4 FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-053",
+      "status": "fail",
+      "statement": "The addressable global market for the Diagnostics segment was approximately €37 billion in fiscal year 2025.",
+      "value": {
+        "number": 37.0,
+        "as_reported": "approximately €37",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 13,
+      "quote": "The relevant addressable global market for our Diagnostics segment (reagents, consumables, and \nproduct-related services) was approximately €37 billion.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-059",
+      "status": "fail",
+      "statement": "Drawn credit facilities from Siemens AG were €451 million as of September 30, 2025.",
+      "value": {
+        "number": 451.0,
+        "as_reported": "451",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "As \nof the reporting date, an amount of €451 million (September 30, 2024: €0 million) was drawn from these facilities.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025 (it names 2024)"
+        }
+      ]
+    },
+    {
+      "label": "D-060",
+      "status": "fail",
+      "statement": "Loans from banks due in fiscal year 2026 were €94 million as of September 30, 2025.",
+      "value": {
+        "number": 94.0,
+        "as_reported": "94",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 177,
+      "quote": "Loans from banks \n94 \n‐ \n‐ \n‐",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2026 (it names 2028 and 2030)"
+        }
+      ]
+    },
+    {
+      "label": "D-068",
+      "status": "fail",
+      "statement": "Imaging comparable revenue growth was 10.0% in Q4 fiscal year 2026.",
+      "value": {
+        "number": 10.0,
+        "as_reported": "10.0%",
+        "unit": "%",
+        "scale": "one",
+        "period": "Q4 FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Imaging comparable revenue growth of 10.0%; adjusted EBIT margin of 21.9%",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention Q4 FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-069",
+      "status": "fail",
+      "statement": "Imaging adjusted external revenue was €11,829 million in fiscal year 2024.",
+      "value": {
+        "number": 11829.0,
+        "as_reported": "11,829",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2024"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Adjusted external revenue¹ Imaging 12,677 11,829",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 197-249) and differs by 24 character(s): 'Adjusted external revenue1 Intersegment revenue'"
+        }
+      ]
+    },
+    {
+      "label": "D-074",
+      "status": "fail",
+      "statement": "R&D intensity was 8% in fiscal year 2025.",
+      "value": {
+        "number": 8.0,
+        "as_reported": "8%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 7,
+      "quote": "The resulting R&D intensity, defined as \nthe ratio of R&D expenses to revenue, was 8% (2024: 9%).",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025 (it names 2024)"
+        }
+      ]
+    },
+    {
+      "label": "D-084",
+      "status": "fail",
+      "statement": "Current liabilities from loans to the Siemens Group were €1,919 million as of September 30, 2025.",
+      "value": {
+        "number": 1919.0,
+        "as_reported": "1,919",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Total liabilities to the Siemens Group from loans Current liabilities Sept 30, 2025 1,919",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 160 (chars 2043-2105) and differs by 34 character(s): 'Total liabilities to the Siemens Group from loans 1,919'"
+        }
+      ]
+    },
+    {
+      "label": "D-085",
+      "status": "fail",
+      "statement": "Liabilities to the Siemens Group due in fiscal year 2026 were €3,457 million as of September 30, 2025.",
+      "value": {
+        "number": 3457.0,
+        "as_reported": "3,457",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 177,
+      "quote": "Liabilities to the Siemens Group¹ \n3,457 \n1,932 \n4,918 \n6,029",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2026 (it names 2028 and 2030)"
+        }
+      ]
+    },
+    {
+      "label": "D-093",
+      "status": "fail",
+      "statement": "Precision Therapy comparable revenue growth was 4.8% in Q4 fiscal year 2026.",
+      "value": {
+        "number": 4.8,
+        "as_reported": "4.8%",
+        "unit": "%",
+        "scale": "one",
+        "period": "Q4 FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Precision Therapy comparable revenue growth of 4.8%; adjusted EBIT margin of 13.8%",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention Q4 FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-099",
+      "status": "fail",
+      "statement": "Capitalized development expenses additions amounted to €119 million in fiscal year 2025.",
+      "value": {
+        "number": 119.0,
+        "as_reported": "119",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 7,
+      "quote": "Additions to capitalized development expenses amounted to \n€119 million (2024: €151 million).",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025 (it names 2024)"
+        }
+      ]
+    },
+    {
+      "label": "D-103",
+      "status": "fail",
+      "statement": "The global addressable market for Advanced Therapies was over €7 billion in fiscal year 2025.",
+      "value": {
+        "number": 7.0,
+        "as_reported": "over €7",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 13,
+      "quote": "The global \naddressable market for Advanced Therapies (angiography systems, mobile C-arms, and product-related services) was over \n€7 billion.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-111",
+      "status": "fail",
+      "statement": "Non-current liabilities from loans to the Siemens Group were €10,837 million as of September 30, 2025.",
+      "value": {
+        "number": 10837.0,
+        "as_reported": "10,837",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Total liabilities to the Siemens Group from loans Non-current liabilities Sept 30, 2025 10,837",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 160 (chars 2043-2120) and differs by 35 character(s): 'Total liabilities to the Siemens Group from loans 1,919 1,364 10,837'"
+        }
+      ]
+    },
+    {
+      "label": "D-117",
+      "status": "fail",
+      "statement": "Diagnostics comparable revenue declined 4.2% in Q4 fiscal year 2026.",
+      "value": {
+        "number": 4.2,
+        "as_reported": "4.2%",
+        "unit": "%",
+        "scale": "one",
+        "period": "Q4 FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Diagnostics comparable revenue decline of 4.2%; adjusted EBIT margin of 5.4%",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention Q4 FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-132",
+      "status": "fail",
+      "statement": "Liabilities to the Siemens Group due in fiscal year 2027 were €1,932 million as of September 30, 2025.",
+      "value": {
+        "number": 1932.0,
+        "as_reported": "1,932",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2027"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 177,
+      "quote": "Liabilities to the Siemens Group¹ \n3,457 \n1,932 \n4,918 \n6,029",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2027 (it names 2028 and 2030)"
+        }
+      ]
+    },
+    {
+      "label": "D-134",
+      "status": "fail",
+      "statement": "A loan of €300 million from the Siemens Group matures in fiscal year 2026 at a contractual interest rate of 3.70%.",
+      "value": {
+        "number": 300.0,
+        "as_reported": "300",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Loan (€300 million) \n2026 \n3.70% \n300",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2026 (it names 2024 and 2025)"
+        }
+      ]
+    },
+    {
+      "label": "D-138",
+      "status": "fail",
+      "statement": "Management expects comparable revenue growth between 4.0% and 5.0% in fiscal year 2027.",
+      "value": {
+        "number": 4.0,
+        "as_reported": "4.0% and 5.0%",
+        "unit": "%",
+        "scale": "one",
+        "period": "FY2027"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "For fiscal year 2027, we expect comparable revenue growth between 4.0% and 5.0% over fiscal year 2026.",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'4.0%' sits next to 2026 in the quote, not FY2027"
+        }
+      ]
+    },
+    {
+      "label": "D-155",
+      "status": "fail",
+      "statement": "A loan of US$1,689 million from the Siemens Group matures in fiscal year 2027 at a contractual interest rate of 2.51%, with carrying amount of €1,438 million as of September 30, 2025.",
+      "value": {
+        "number": 1438.0,
+        "as_reported": "1,438",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Loan (US$1,689 million) \n2027 \n2.51% \n‐ \n‐ \n1,438",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'1,438' sits in value column 2 of the row, which the header labels 2024, not FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-159",
+      "status": "fail",
+      "statement": "Free cash flow was around €2.4 billion in fiscal year 2026.",
+      "value": {
+        "number": 2.4,
+        "as_reported": "2.4",
+        "unit": "EUR",
+        "scale": "billion",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Free cash flow of around €2.4 billion",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-173",
+      "status": "fail",
+      "statement": "A loan of US$1,243 million from the Siemens Group matures in fiscal year 2028 at a contractual interest rate of 1.87%, with carrying amount of €1,059 million as of September 30, 2025.",
+      "value": {
+        "number": 1059.0,
+        "as_reported": "1,059",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Loan (US$1,243 million) \n2028 \n1.87% \n‐ \n‐ \n1,059",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'1,059' sits in value column 2 of the row, which the header labels 2024, not FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-177",
+      "status": "fail",
+      "statement": "Free cash flow was €703 million in Q4 fiscal year 2026.",
+      "value": {
+        "number": 703.0,
+        "as_reported": "703",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "Q4 FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Free cash flow of €703 million",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention Q4 FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-191",
+      "status": "fail",
+      "statement": "A loan of US$1,740 million from the Siemens Group matures in fiscal year 2031 at a contractual interest rate of 2.30%, with carrying amount of €1,482 million as of September 30, 2025.",
+      "value": {
+        "number": 1482.0,
+        "as_reported": "1,482",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Loan (US$1,740 million) \n2031 \n2.30% \n‐ \n‐ \n1,482",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'1,482' sits in value column 2 of the row, which the header labels 2024, not FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-195",
+      "status": "fail",
+      "statement": "The proposed dividend was €1.00 per share in fiscal year 2026.",
+      "value": {
+        "number": 1.0,
+        "as_reported": "1.00",
+        "unit": "EUR",
+        "scale": "one",
+        "period": "FY2026"
+      },
+      "doc_id": "DOC-002",
+      "cited_page": null,
+      "found_page": 1,
+      "quote": "Proposed dividend of €1.00 per share (prior year: €1.00)",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The evidence quote does not mention FY2026"
+        }
+      ]
+    },
+    {
+      "label": "D-205",
+      "status": "fail",
+      "statement": "Liabilities to the Siemens Group due in fiscal years 2031 and thereafter were €6,029 million as of September 30, 2025.",
+      "value": {
+        "number": 6029.0,
+        "as_reported": "6,029",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2031+"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 177,
+      "quote": "Liabilities to the Siemens Group¹ \n3,457 \n1,932 \n4,918 \n6,029",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "The period_context quote does not mention FY2031+ (it names 2028 and 2030)"
+        }
+      ]
+    },
+    {
+      "label": "D-207",
+      "status": "fail",
+      "statement": "A loan of US$1,486 million from the Siemens Group matures in fiscal year 2041 at a contractual interest rate of 3.03%, with carrying amount of €1,266 million as of September 30, 2025.",
+      "value": {
+        "number": 1266.0,
+        "as_reported": "1,266",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Loan (US$1,486 million) \n2041 \n3.03% \n‐ \n‐ \n1,266",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'1,266' sits in value column 2 of the row, which the header labels 2024, not FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-211",
+      "status": "fail",
+      "statement": "Total adjusted revenue was €23,738 million in fiscal year 2025.",
+      "value": {
+        "number": 23738.0,
+        "as_reported": "23,738",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Total adjusted revenue¹ 23,738 22,625",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 249-272) and differs by 14 character(s): 'Total adjusted revenue1'"
+        }
+      ]
+    },
+    {
+      "label": "D-219",
+      "status": "fail",
+      "statement": "A loan of US$990 million from the Siemens Group matures in fiscal year 2046 at a contractual interest rate of 3.44%, with carrying amount of €843 million as of September 30, 2025.",
+      "value": {
+        "number": 843.0,
+        "as_reported": "843",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 160,
+      "quote": "Loan (US$990 million) \n2046 \n3.44% \n‐ \n‐ \n843",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "period_match",
+          "result": "fail",
+          "detail": "'843' sits in value column 2 of the row, which the header labels 2024, not FY2025"
+        }
+      ]
+    },
+    {
+      "label": "D-223",
+      "status": "fail",
+      "statement": "Total adjusted revenue was €22,625 million in fiscal year 2024.",
+      "value": {
+        "number": 22625.0,
+        "as_reported": "22,625",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2024"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Total adjusted revenue¹ 23,738 22,625",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 249-272) and differs by 14 character(s): 'Total adjusted revenue1'"
+        }
+      ]
+    },
+    {
+      "label": "D-230",
+      "status": "fail",
+      "statement": "Imaging free cash flow was €2,491 million in fiscal year 2025.",
+      "value": {
+        "number": 2491.0,
+        "as_reported": "2,491",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Imaging 2,491 2,310",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 22 (chars 2440-2468) and differs by 13 character(s): 'Free cash flow 2,714 2,130'"
+        }
+      ]
+    },
+    {
+      "label": "D-236",
+      "status": "fail",
+      "statement": "Imaging free cash flow was €2,310 million in fiscal year 2024.",
+      "value": {
+        "number": 2310.0,
+        "as_reported": "2,310",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2024"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Imaging 2,491 2,310",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 22 (chars 2440-2468) and differs by 13 character(s): 'Free cash flow 2,714 2,130'"
+        }
+      ]
+    },
+    {
+      "label": "D-240",
+      "status": "fail",
+      "statement": "Diagnostics free cash flow was €79 million in fiscal year 2025.",
+      "value": {
+        "number": 79.0,
+        "as_reported": "79",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Diagnostics 79 81",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 299-328) and differs by 14 character(s): 'Free cash flow Additions to'"
+        }
+      ]
+    },
+    {
+      "label": "D-244",
+      "status": "fail",
+      "statement": "Diagnostics free cash flow was €81 million in fiscal year 2024.",
+      "value": {
+        "number": 81.0,
+        "as_reported": "81",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2024"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Diagnostics 79 81",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 182 (chars 299-328) and differs by 14 character(s): 'Free cash flow Additions to'"
+        }
+      ]
+    },
+    {
+      "label": "D-247",
+      "status": "fail",
+      "statement": "Varian free cash flow was €728 million in fiscal year 2025.",
+      "value": {
+        "number": 728.0,
+        "as_reported": "728",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Varian 728 530",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 22 (chars 2440-2468) and differs by 10 character(s): 'Free cash flow 2,714 2,130'"
+        }
+      ]
+    },
+    {
+      "label": "D-250",
+      "status": "fail",
+      "statement": "Varian free cash flow was €530 million in fiscal year 2024.",
+      "value": {
+        "number": 530.0,
+        "as_reported": "530",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2024"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Varian 728 530",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 22 (chars 2440-2468) and differs by 10 character(s): 'Free cash flow 2,714 2,130'"
+        }
+      ]
+    },
+    {
+      "label": "D-254",
+      "status": "fail",
+      "statement": "Advanced Therapies free cash flow was €270 million in fiscal year 2025.",
+      "value": {
+        "number": 270.0,
+        "as_reported": "270",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2025"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Advanced Therapies 270 252",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 13 (chars 1047-1091) and differs by 20 character(s): 'ressable market for Advanced Therapies (angi'"
+        }
+      ]
+    },
+    {
+      "label": "D-257",
+      "status": "fail",
+      "statement": "Advanced Therapies free cash flow was €252 million in fiscal year 2024.",
+      "value": {
+        "number": 252.0,
+        "as_reported": "252",
+        "unit": "EUR",
+        "scale": "million",
+        "period": "FY2024"
+      },
+      "doc_id": "DOC-001",
+      "cited_page": null,
+      "found_page": 182,
+      "quote": "Free cash flow Advanced Therapies 270 252",
+      "note": null,
+      "not_passing": [
+        {
+          "check": "quote_exact",
+          "result": "fail",
+          "detail": "Quote not found in DOC-001. The closest span is on page 13 (chars 1047-1091) and differs by 20 character(s): 'ressable market for Advanced Therapies (angi'"
+        }
+      ]
+    }
+  ],
+  "hand_check": [
+    {
+      "n": 1,
+      "metric": "Revenue",
+      "item_id": "D-028",
+      "statement": "Revenue was €23,630 million in fiscal year 2026.",
+      "as_reported": "23,630",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 6,
+      "quote": "Revenue 23,630 23,375",
+      "baseline": "same (claim 1)"
+    },
+    {
+      "n": 2,
+      "metric": "Comparable revenue growth",
+      "item_id": "D-225",
+      "statement": "Revenue increased by 5.9% on a comparable basis in fiscal year 2025.",
+      "as_reported": "5.9%",
+      "unit": "%",
+      "scale": "one",
+      "period": "FY2025",
+      "source_id": "S-001",
+      "page": 15,
+      "quote": "Revenue increased by 5.9% on a comparable basis from the prior year.",
+      "baseline": "not given"
+    },
+    {
+      "n": 3,
+      "metric": "Income before income taxes",
+      "item_id": "D-174",
+      "statement": "Income before income taxes was €2,890 million in fiscal year 2026.",
+      "as_reported": "2,890",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 13,
+      "quote": "Income before income taxes 765 770 2,890 2,853",
+      "baseline": "not given"
+    },
+    {
+      "n": 4,
+      "metric": "Income tax expenses",
+      "item_id": "D-208",
+      "statement": "Income tax expenses were €646 million in fiscal year 2026.",
+      "as_reported": "−646",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 13,
+      "quote": "Income tax expenses −166 −174 −646 −686",
+      "baseline": "not given"
+    },
+    {
+      "n": 5,
+      "metric": "Free cash flow",
+      "item_id": "D-007",
+      "statement": "Free cash flow was €2,714 million in fiscal year 2025.",
+      "as_reported": "2,714",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2025",
+      "source_id": "S-001",
+      "page": 22,
+      "quote": "Free cash flow 2,714 2,130",
+      "baseline": "same (claim 9)"
+    },
+    {
+      "n": 6,
+      "metric": "Cash flows from operating activities",
+      "item_id": "D-016",
+      "statement": "Cash flows from operating activities were €3,287 million in fiscal year 2026.",
+      "as_reported": "3,287",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 17,
+      "quote": "Cash flows from operating activities 3,287 3,532",
+      "baseline": "not given"
+    },
+    {
+      "n": 7,
+      "metric": "Research and development",
+      "item_id": "D-088",
+      "statement": "Research and development expenses were €1,969 million in fiscal year 2026.",
+      "as_reported": "−1,969",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 13,
+      "quote": "Research and development expenses −518 −499 −1,969 −1,958",
+      "baseline": "not given"
+    },
+    {
+      "n": 8,
+      "metric": "Amortization",
+      "item_id": "D-071",
+      "statement": "Amortization, depreciation and other effects from IFRS 3 purchase price allocation adjustments was €−357 million in fiscal year 2025.",
+      "as_reported": "−357",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2025",
+      "source_id": "S-001",
+      "page": 184,
+      "quote": "Amortization, depreciation and other effects from IFRS 3 purchase price allocation adjustments −357 −375",
+      "baseline": "not given"
+    },
+    {
+      "n": 9,
+      "metric": "Total assets",
+      "item_id": "D-021",
+      "statement": "Total assets were €46,707 million at September 30, 2026.",
+      "as_reported": "46,707",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Total assets 46,707 44,370",
+      "baseline": "same (claim 55)"
+    },
+    {
+      "n": 10,
+      "metric": "Cash and cash equivalents",
+      "item_id": "D-047",
+      "statement": "Cash and cash equivalents were €2,542 million at September 30, 2026.",
+      "as_reported": "2,542",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Cash and cash equivalents 2,542 2,175",
+      "baseline": "not given"
+    },
+    {
+      "n": 11,
+      "metric": "Goodwill",
+      "item_id": "D-073",
+      "statement": "Goodwill was €17,477 million at September 30, 2026.",
+      "as_reported": "17,477",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Goodwill 17,477 17,124",
+      "baseline": "not given"
+    },
+    {
+      "n": 12,
+      "metric": "Long-term financial debt",
+      "item_id": "D-122",
+      "statement": "Long-term financial debt was €589 million at September 30, 2026.",
+      "as_reported": "589",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Long-term financial debt 589 487",
+      "baseline": "not given"
+    },
+    {
+      "n": 13,
+      "metric": "Short-term financial debt",
+      "item_id": "D-098",
+      "statement": "Short-term financial debt and current maturities of long-term financial debt were €277 million at September 30, 2026.",
+      "as_reported": "277",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Short-term financial debt and current maturities of long-term financial debt 277 268",
+      "baseline": "not given"
+    },
+    {
+      "n": 14,
+      "metric": "Net debt",
+      "item_id": "D-151",
+      "statement": "Net debt was €11,985 million as of September 30, 2025.",
+      "as_reported": "11,985",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2025",
+      "source_id": "S-001",
+      "page": 162,
+      "quote": "Net debt 11,985 12,643",
+      "baseline": "not given"
+    },
+    {
+      "n": 15,
+      "metric": "Pensions",
+      "item_id": "D-143",
+      "statement": "Provisions for pensions and similar obligations were €333 million at September 30, 2026.",
+      "as_reported": "333",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Provisions for pensions and similar obligations 333 488",
+      "baseline": "not given"
+    },
+    {
+      "n": 16,
+      "metric": "Lease liabilities",
+      "item_id": "D-089",
+      "statement": "Current lease liabilities were €176 million as of September 30, 2025.",
+      "as_reported": "176",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2025",
+      "source_id": "S-001",
+      "page": 159,
+      "quote": "Lease liabilities 176 172",
+      "baseline": "not given"
+    },
+    {
+      "n": 17,
+      "metric": "Total equity",
+      "item_id": "D-246",
+      "statement": "Total equity was €9,782 million on September 30, 2019.",
+      "as_reported": "9,782",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2019",
+      "source_id": "S-005",
+      "page": 64,
+      "quote": "Total equity 9,782 8,675",
+      "baseline": "not given"
+    },
+    {
+      "n": 18,
+      "metric": "Dividend",
+      "item_id": "D-065",
+      "statement": "Dividends paid to shareholders of Siemens Healthineers AG were €1,118 million in fiscal year 2026.",
+      "as_reported": "−1,118",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 17,
+      "quote": "Dividends paid to shareholders of Siemens Healthineers AG −1,118 −1,066",
+      "baseline": "same (claim 24)"
+    },
+    {
+      "n": 19,
+      "metric": "Total current liabilities",
+      "item_id": "D-180",
+      "statement": "Current liabilities to the Siemens Group were €2,932 million at September 30, 2026.",
+      "as_reported": "2,932",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2026",
+      "source_id": "S-002",
+      "page": 15,
+      "quote": "Current liabilities to the Siemens Group 2,932 3,192",
+      "baseline": "not given"
+    },
+    {
+      "n": 20,
+      "metric": "Other",
+      "item_id": "D-189",
+      "statement": "Non-derivative financial liabilities due in fiscal years 2031 and thereafter were €6,233 million as of September 30, 2025.",
+      "as_reported": "6,233",
+      "unit": "EUR",
+      "scale": "million",
+      "period": "FY2031+",
+      "source_id": "S-001",
+      "page": 177,
+      "quote": "Maturity analysis as of Sept 30, 2025 (in millions of €) Fiscal year 2026 Fiscal year 2027 Fiscal years 2028 to 2030 Fiscal years 2031 and thereafter Non-derivative financial liabilities 6,243 2,098 5,158 6,233",
+      "baseline": "same (claim 18)"
+    }
+  ]
+}
