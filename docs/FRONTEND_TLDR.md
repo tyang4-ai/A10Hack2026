@@ -2,7 +2,7 @@
 
 You are building the dashboard for **Axelrod**, a hackathon project (SCU ACM AWS x A10 Hack, Devpost deadline Sun Nov 8, 9:00 AM PT). You work on the `frontend` branch, in `frontend/` only. Gordon builds the backend on the `backend` branch. The shared contract lives on `main` in `contract/` and `docs/CONTRACT.md`. Pick up changes with `git fetch origin && git merge origin/main`.
 
-Tong's scaffold (Vite + React + TS, with the API behind one `Api` interface in `src/api/`) was built from an earlier draft, `docs/API.md`, before the contract existed. So the first job is moving `src/api/` onto the contract (section below). Then build against the mock server, and later switch `VITE_API_URL` to the real API.
+Update Sat 11 PM: the dashboard is Next.js now, imports `../contract/types.ts` directly, and reads `NEXT_PUBLIC_API_BASE`. The scaffold migration below is done. Contract v0.2.0 adds Tong's requests (agent chat, stop one agent, resume, rerun from a step) and demo cache labels, so `src/lib/agentApi.ts` can go: see `docs/CONTRACT.md` section 13 and `contract/CHANGELOG.md`.
 
 ## What Axelrod is, in four sentences
 
@@ -14,7 +14,7 @@ An analyst picks a company (the demo uses Siemens Healthineers), Axelrod plans w
 pip install -r mock/requirements.txt
 uvicorn mock.mock_server:app --reload --port 8000     # from the repo root
 # Swagger UI: http://localhost:8000/docs
-# frontend/.env.local: VITE_API_URL=http://localhost:8000/api/v1   (unset = the scaffold's built-in mock)
+# frontend/.env.local: NEXT_PUBLIC_API_BASE=http://localhost:8000/api/v1   (this is also the default)
 ```
 
 - `run_20261108_fx0001` is a finished run with data in every panel. Start here for layout work.
@@ -109,7 +109,7 @@ The scaffold and `docs/DESIGN.md` may already settle the look, so keep what work
 ## Rules
 
 - Types come from `contract/types.ts`, copied in by `npm run contract`. It's generated, so never edit it. Never edit `contract/`, `mock/` or `backend/`, and never edit the shared docs on the `frontend` branch. If you need a shape change, ask Gordon. He changes `models.py` on `main` first, then you merge `main`.
-- Never call AWS from the browser. All calls go to `VITE_API_URL`.
+- Never call AWS from the browser. All calls go to `NEXT_PUBLIC_API_BASE`.
 - Label simulated things: fixture or replay mode, and the demo error-injection button (`POST /demo/inject-errors`).
 - Wording for certainty: "how well this is supported by checked evidence". Never "probability it's true".
 - Judges will ask you about your code, so keep it simple enough to explain.
