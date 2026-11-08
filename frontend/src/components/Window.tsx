@@ -33,6 +33,11 @@ export function snapFor(px: number, py: number, W: number, H: number): Geo | nul
   return null;
 }
 
+// The visible, unmaximized window (other than the one being dragged) under a point on the desk.
+function tileAt(self: string, fx: number, fy: number) {
+  return Object.values(useWindows.getState().wins).find((w) => w.id !== self && !w.min && !w.max && fx >= w.x && fx < w.x + w.w && fy >= w.y && fy < w.y + w.h) ?? null;
+}
+
 function resizeGeo(g: Geo, mode: Mode, dx: number, dy: number, minW: number, minH: number): Geo {
   let { x, y, w, h } = g;
   if (mode.includes("e")) w = Math.min(Math.max(g.w + dx, minW), 1 - g.x);
@@ -64,10 +69,10 @@ const tbBtn = "grid h-6 w-6 flex-none place-items-center rounded-[4px] text-desk
 export const Window = memo(function Window({ id }: { id: string }) {
   const win = useWindows((s) => s.wins[id]);
   const focused = useWindows((s) => s.focused === id);
-  const { focus, minimize, toggleMax, close, resize } = useWindows.getState();
+  const { focus, minimize, toggleMax, close, resize, swap } = useWindows.getState();
   const [live, setLive] = useState<Geo | null>(null);
   const liveRef = useRef<Geo | null>(null);
-  const drag = useRef<{ mode: Mode; sx: number; sy: number; g: Geo; orig: Geo; desk: DOMRect; moved: boolean } | null>(null);
+  const drag = useRef<{ mode: Mode; sx: number; sy: number; g: Geo; orig: Geo; desk: DOMRect; moved: boolean; target: string | null } | null>(null);
 
   // The body only re-renders when its own data changes, never while the window moves.
   const kind = win?.kind;
@@ -96,7 +101,7 @@ export const Window = memo(function Window({ id }: { id: string }) {
     let g: Geo = win.max ? FULL : orig;
     // Dragging a maximized window restores its size under the pointer.
     if (win.max && mode === "move") g = clampGeo({ ...orig, x: (e.clientX - desk.left) / desk.width - orig.w / 2, y: 0 });
-    drag.current = { mode, sx: e.clientX, sy: e.clientY, g, orig, desk, moved: false };
+    drag.current = { mode, sx: e.clientX, sy: e.clientY, g, orig, desk, moved: false, target: null };
     focus(id);
   };
 
@@ -109,7 +114,15 @@ export const Window = memo(function Window({ id }: { id: string }) {
     const dy = (e.clientY - d.sy) / d.desk.height;
     if (d.mode === "move") {
       setGeo(clampGeo({ ...d.g, x: d.g.x + dx, y: d.g.y + dy }));
-      const snap = snapFor(e.clientX - d.desk.left, e.clientY - d.desk.top, d.desk.width, d.desk.height);
+      const px = e.clientX - d.desk.left;
+      const py = e.clientY - d.desk.top;
+      let snap: Geo | null;
+      if (useWindows.getState().auto) {
+        // Auto tiling: preview the tile under the pointer; dropping there swaps the two windows.
+        const over = tileAt(id, px / d.desk.width, py / d.desk.height);
+        d.target = over?.id ?? null;
+        snap = over ? { x: over.x, y: over.y, w: over.w, h: over.h } : null;
+      } else snap = snapFor(px, py, d.desk.width, d.desk.height);
       const cur = useWindows.getState().snap;
       if (JSON.stringify(snap) !== JSON.stringify(cur)) useWindows.setState({ snap });
     } else {
@@ -126,6 +139,12 @@ export const Window = memo(function Window({ id }: { id: string }) {
     const g = liveRef.current;
     setGeo(null);
     if (!d.moved || !g) return;
+    if (useWindows.getState().auto && d.mode === "move") {
+      // Dropped on another tile: swap. Dropped anywhere else: snap back into place.
+      if (d.target) swap(id, d.target);
+      else useWindows.getState().tile();
+      return;
+    }
     if (snap && snap.w === 1 && snap.h === 1) resize(id, d.orig, true);
     else resize(id, snap ?? g);
   };

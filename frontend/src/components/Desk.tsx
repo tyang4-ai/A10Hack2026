@@ -170,7 +170,8 @@ export function LayoutControl() {
   const layout = useWindows((s) => s.layout);
   const suggest = useWindows((s) => s.suggest);
   const dirty = useWindows((s) => s.dirty);
-  const { applyLayout } = useWindows.getState();
+  const auto = useWindows((s) => s.auto);
+  const { applyLayout, toggleAuto } = useWindows.getState();
   const label = (id: string) => LAYOUTS.find((l) => l.id === id)?.label;
   return (
     <div className="flex items-center gap-2">
@@ -186,7 +187,15 @@ export function LayoutControl() {
           </button>
         ))}
       </div>
-      {dirty && (
+      <button
+        aria-pressed={auto}
+        onClick={toggleAuto}
+        title="Auto tiling: windows never overlap and re-arrange when one opens, closes or minimizes. Drag a window onto another to swap them. Resizing by hand turns it off."
+        className={`h-7 rounded-[4px] border px-2.5 text-[12px] ${auto ? "border-accent bg-accent font-semibold text-accent-ink" : "border-desk-line-strong text-desk-ink hover:bg-desk-raised"}`}
+      >
+        Auto tile
+      </button>
+      {dirty && !auto && (
         <button onClick={() => applyLayout(layout, { reset: true })} className="h-7 rounded-[4px] px-1.5 text-[12px] text-desk-muted hover:text-white" title={`Put the ${label(layout)} windows back where they started`}>
           Reset
         </button>
