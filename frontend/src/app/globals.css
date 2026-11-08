@@ -6,6 +6,8 @@
 @theme {
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  /* The wordmark. Cochin ships with macOS; elsewhere it falls back to Georgia. */
+  --font-logo: Cochin, "Cochin", Georgia, "Times New Roman", serif;
   --font-serif: "KaTeX_Main", "Latin Modern Roman", "CMU Serif", Georgia, serif;
 
   /* Reading surface */

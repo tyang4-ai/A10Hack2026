@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Run } from "@contract/types";
+import type { RerunInfo } from "@/lib/agentApi";
 import { api } from "@/lib/api";
 import { STAGE_LABEL, usd } from "@/lib/format";
 import { ago, STATUS_DOT, STATUS_WORD, ThemeSwitcher } from "./Switchers";
@@ -65,7 +66,7 @@ export function Home() {
     <div className="min-h-screen bg-paper">
       <header className="bg-desk text-[13px] text-desk-ink">
         <div className="mx-auto flex min-h-12 max-w-6xl flex-wrap items-center gap-3 px-4 py-2 sm:px-6">
-          <span className="font-mono text-sm font-semibold tracking-[0.18em] text-accent">AXELROD</span>
+          <span className="font-logo text-[18px] leading-none font-semibold tracking-[0.12em] text-accent">AXELROD</span>
           <span className="text-desk-muted">Self-verifying research harness</span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
@@ -147,6 +148,21 @@ export function Home() {
   );
 }
 
+// A rerun names the run it came from and the step it reran from (provisional fields, see agentApi.ts).
+function Lineage({ r }: { r: Run }) {
+  const x = r as Run & RerunInfo;
+  if (!x.parent_run_id) return null;
+  return (
+    <div className="text-[12px] text-muted" title={x.instructions ?? undefined}>
+      Rerun of{" "}
+      <Link href={`/runs/${encodeURIComponent(x.parent_run_id)}`} className="font-mono text-link hover:underline">
+        {x.parent_run_id.split("_").pop()}
+      </Link>
+      {x.rerun_from ? ` from ${STAGE_LABEL[x.rerun_from]}` : ""}
+    </div>
+  );
+}
+
 function RunRow({ r }: { r: Run }) {
   const c = r.counts;
   const checked = c.items_pass + c.items_fixed;
@@ -157,6 +173,7 @@ function RunRow({ r }: { r: Run }) {
         <Link href={href} className="flex items-center gap-2 font-mono text-link hover:underline" title={`Open ${r.run_id}`}>
           {r.run_id}
         </Link>
+        <Lineage r={r} />
         {r.mode !== "live" && (
           <span title="Simulated data, not a live run" className="mt-0.5 inline-block rounded-[3px] bg-warn-bg px-1 font-mono text-[10px] font-semibold text-warn">
             {r.mode.toUpperCase()}

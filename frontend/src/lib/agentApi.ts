@@ -1,7 +1,7 @@
-// PROVISIONAL: agent chat and per-agent stop are not in contract/ yet.
+// PROVISIONAL: agent chat, per-agent stop and rerun-from-a-step are not in contract/ yet.
 // These shapes are the frontend's proposal (see frontend/CONTRACT_REQUESTS.md).
 // Delete this file and import from @contract/types once Gordon adds them to models.py.
-import type { Agent } from "@contract/types";
+import type { Agent, Run, Stage } from "@contract/types";
 import { API_BASE, ApiError } from "./api";
 
 export interface AgentMessage {
@@ -37,6 +37,23 @@ export const agentApi = {
   messages: (run: string, agent: string) => call<{ messages: AgentMessage[] }>("GET", `${a(run, agent)}/messages`),
   send: (run: string, agent: string, text: string) => call<AgentMessage>("POST", `${a(run, agent)}/messages`, { text }),
   stop: (run: string, agent: string, reason: string) => call<Agent>("POST", `${a(run, agent)}/stop`, { reason }),
+};
+
+// Rerun from a step: forks the run into a new one that reuses everything before
+// from_stage and redoes the rest with the analyst's instructions. The original run is untouched.
+export interface RerunRequest {
+  from_stage: Stage;
+  instructions: string;
+}
+// Fields the proposed Run gains. Read defensively until they are in the contract.
+export interface RerunInfo {
+  parent_run_id?: string | null;
+  rerun_from?: Stage | null;
+  instructions?: string | null;
+}
+
+export const runApi = {
+  rerun: (run: string, req: RerunRequest) => call<Run & RerunInfo>("POST", `/runs/${encodeURIComponent(run)}/rerun`, req),
 };
 
 // The provisional "agent.message" event, read defensively because it is not in the Event union yet.

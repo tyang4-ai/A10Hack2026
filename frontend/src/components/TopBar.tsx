@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import type { Stage } from "@contract/types";
 import { api, ApiError } from "@/lib/api";
 import { STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { LayoutControl } from "./Desk";
+import { RerunDialog } from "./RerunDialog";
 import { RunSwitcher, ThemeSwitcher } from "./Switchers";
 
 const STATUS = {
@@ -127,6 +129,7 @@ export function NewRun({ startOpen = false }: { startOpen?: boolean }) {
 
 export function TopBar() {
   const run = useRunStore((s) => s.run);
+  const [rerun, setRerun] = useState<Stage | null>(null);
   const stageIdx = run ? STAGES.indexOf(run.stage) : -1;
   const c = run?.counts;
   const st = run ? STATUS[run.status] : null;
@@ -134,7 +137,7 @@ export function TopBar() {
   return (
     <header className="flex-none bg-desk text-[13px] text-desk-ink">
       <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1.5 px-4">
-        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-mono text-sm font-semibold tracking-[0.18em] text-accent hover:text-white">
+        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-logo text-[18px] leading-none font-semibold tracking-[0.12em] text-accent hover:text-white">
           AXELROD
         </Link>
         <RunSwitcher />
@@ -198,6 +201,8 @@ export function TopBar() {
             const now = i === stageIdx && run.stage !== "complete";
             const halted = now && (run.status === "stopped" || run.status === "failed");
             const waiting = now && run.status === "awaiting_approval";
+            // A finished step, or the step a stopped or failed run halted on, can be rerun with new instructions.
+            const canRerun = s !== "complete" && (done || halted);
             return (
               <li
                 key={s}
@@ -206,14 +211,29 @@ export function TopBar() {
                   halted ? "bg-desk-bad font-semibold text-desk" : waiting ? "bg-accent font-semibold text-accent-ink" : now ? "font-semibold text-white" : done ? "text-desk-ink" : "text-desk-muted/60"
                 }`}
               >
-                <span className={`mr-1.5 font-mono text-[10px] ${done ? "text-desk-good" : ""}`}>{done ? "✓" : String(i + 1).padStart(2, "0")}</span>
-                {STAGE_LABEL[s]}
+                {canRerun ? (
+                  <button
+                    onClick={() => setRerun(s)}
+                    title={`Rerun from ${STAGE_LABEL[s]} with new instructions`}
+                    aria-label={`${STAGE_LABEL[s]}, done. Rerun from here`}
+                    className="-mx-1 truncate rounded-[3px] px-1 text-left hover:bg-desk-raised hover:underline"
+                  >
+                    <span className={`mr-1.5 font-mono text-[10px] ${done ? "text-desk-good" : ""}`}>{done ? "✓" : String(i + 1).padStart(2, "0")}</span>
+                    {STAGE_LABEL[s]}
+                  </button>
+                ) : (
+                  <>
+                    <span className={`mr-1.5 font-mono text-[10px] ${done ? "text-desk-good" : ""}`}>{done ? "✓" : String(i + 1).padStart(2, "0")}</span>
+                    {STAGE_LABEL[s]}
+                  </>
+                )}
                 {now && !halted && !waiting && <span className="absolute inset-x-0 bottom-0 h-0.5 animate-pulse bg-desk-link" />}
               </li>
             );
           })}
         </ol>
       )}
+      {run && rerun && <RerunDialog runId={run.run_id} stage={rerun} onClose={() => setRerun(null)} />}
     </header>
   );
 }
