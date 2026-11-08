@@ -41,7 +41,7 @@ Two terminals side by side, plus the dashboard.
 2. **Traffic.** Nothing to type. The tail shows every fetch (HTTP status, bytes) and every model call (tokens, cost, running total). Cyan `NEXT` lines say which source comes next.
 3. **Block.**
    - S-009's off-site links go red on their own: default deny.
-   - When the tail shows `NEXT S-006 Reuters via Euronext` (about 16 s into collect at `DEMO_PACING=2`), revoke it. The next request to it turns red with `R-revoke-S-006`:
+   - Revoke S-006 as soon as the first fetch lines appear (the annual report, S-001). Have the command typed in advance. S-006 is fetched 8th, about 20 s into collect at `DEMO_PACING=2`, so there is plenty of time. Don't wait for `NEXT S-006`: that line comes only 2 s before the request. When the fetcher reaches it, the request turns red with `R-revoke-S-006`:
      ```
      python -m backend.axelrod.cli revoke <run_id> S-006 --reason "Analyst revoked mid-run"
      ```

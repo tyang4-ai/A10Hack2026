@@ -46,10 +46,10 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G0 Preflight | pass | Sat 7:15 PM | guard live, 80/80 guard cases, account ok, venv py3.12 (uv), main already merged |
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
 | G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
-| G3 Pipeline and pre-smoke | fail at 1c7118c, fixes running | Sat 10:22 PM | Verifier: the blocker (brief crash) is already fixed. Open majors: citation quote vs page span after relocation, and a brief full of hole bullets (printed about 4 pages). Minors: numbers_traced ignores sign, charts not checked against revoked sources, 2 displays without half_up. Fix builders B-fix-cite and B-fix-holes running. Earlier: | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
+| G3 Pipeline and pre-smoke | fail at 1c7118c, fixes running | Sat 10:17 PM | Verifier: the blocker (brief crash) is already fixed. Open majors: citation quote vs page span after relocation, and a brief full of hole bullets (printed about 4 pages). Minors: numbers_traced ignores sign, charts not checked against revoked sources, 2 displays without half_up. Fix builders B-fix-cite and B-fix-holes running. Earlier: | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
 | G4 Deploy | pass | Sat 10:10 PM | public healthz live, /api/v1/runs lists, test page 200 with simulated header, deploy.sh moved the instance to b223c2b (the pushed HEAD) |
 | G5 Full SHL run, demo-ok-1 | pass | Sat 10:15 PM | **run_20261108_pin2ve** on EC2 (STORE=aws, live). Report final, certainty mean 93. Items 374: 345 pass, 18 fixed, 11 fail (97.1% pass or fixed). Holes 13, every gap declared. Rollup -0.6 (3 of 6 scored). Brief 24 sentences, 2.8 pages, certainty 75. $1.96 of $5, about 4 min. Exported to backend/data/replay/run_20261108_pin2ve |
-| G6 Demo rehearsal | | | |
+| G6 Demo rehearsal | 1 of 2 | Sat 10:20 PM | Rehearsal 1 on EC2 (run_20261108_8ejtjd): every beat PASS (link blocked, S-006 revoke blocked, S-010 flagged and quarantined, STOP blocks 8 calls, pacing), $0.10. EC2 env: DEMO_PACING=2, MAX_CONCURRENCY_SMALL=8. DEMO.md: revoke S-006 when collect starts, not at NEXT S-006 (only 2 s warning). Rehearsal 2 after the G3 fixes deploy |
 
 ## AWS
 
@@ -110,7 +110,7 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
-- (10:22 PM, pass to Tong) The brief's UI prints the full hole register (`<Holes/>` in BriefModule.tsx) inside `#brief`, under a second "What we could not determine" heading. That pushes the printed brief past 3 pages (about 4.1 on R0b). The backend is changing the brief's own hole section into a short summary (at most 5 sentences, citing HOLE- ids). Ask Tong to render the full register outside the 3-page brief, for example as a separate "Holes register" panel or appendix, and link to it.
+- (10:17 PM, pass to Tong) The brief's UI prints the full hole register (`<Holes/>` in BriefModule.tsx) inside `#brief`, under a second "What we could not determine" heading. That pushes the printed brief past 3 pages (about 4.1 on R0b). The backend is changing the brief's own hole section into a short summary (at most 5 sentences, citing HOLE- ids). Ask Tong to render the full register outside the 3-page brief, for example as a separate "Holes register" panel or appendix, and link to it.
 
 - (10:15 PM, demo choice) **G5 finished SHL run: run_20261108_pin2ve** (EC2, live). Scores: rotic_level -1 (9.1%, low confidence), rotic_vs_peers 0 (low), liquidity -1 (medium), secular_growth and leverage **failed verification** (judges 1 of 3 supported) so they are declared holes, research_stage N/A by design. 3 of 6 scored, weighted average -0.6. The laptop rehearsal R0b (run_20261108_whhj0d, also live, also recorded as a replay) scored 4 of 6: rotic_level -1, rotic_vs_peers 0, secular_growth +1, leverage 0. Runs vary. Which run do we show from 1:40 to 3:00? My view: show pin2ve, the official EC2 run, and use its two failed scores as a beat ("the judges rejected two scores, so we show them as gaps instead of guessing"). Picking the best of several runs without saying so would be cherry-picking.
 
@@ -155,4 +155,5 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 10:05 PM: A-deploy done (Gordon approved port 8000). G4 curl checks pass.
 - Sat 10:10 PM: G4 pass. Starting G5 on EC2.
 - Sat 10:15 PM: G5 pass. run_20261108_pin2ve on EC2, 97.1% items pass or fixed, $1.96. Exported, tagging demo-ok-1.
-- Sat 10:22 PM: G3 verifier: fail at 1c7118c (blocker already fixed). Two majors and four minors going to B-fix-cite and B-fix-holes.
+- Sat 10:17 PM: G3 verifier: fail at 1c7118c (blocker already fixed). Two majors and four minors going to B-fix-cite and B-fix-holes.
+- Sat 10:20 PM: G6 rehearsal 1 on EC2: all beats PASS. Demo env set on EC2.
