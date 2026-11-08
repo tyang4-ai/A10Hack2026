@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V3-rework, V8-fork.
+- Running: V8-fork. Orchestrator: deploy and pre-R2 run on EC2 with the document cache on.
 - Next: V6-resume (after V3 and V8). Then R2 on EC2 and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
@@ -15,7 +15,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 |---|---|---|---|---|---|
 | V1-shapes | 1 | builder | done | 34 passed (suite 661) | every v0.2/v0.3 field and event, Bobby first then "Bobby's goon #n", routes and stubs, cache keys. contract_smoke 82/82 mock, 70/70 real |
 | V2-gateway | 2, 6 | builder | done | 113 passed, 3 live | stop one agent (R-stop rule after the kill switch, late results discarded, work becomes a hole), document cache (decide first, S3, hit/miss labeled, scan still runs). Live: archive object served from S3 |
-| V3-rework | 3, 4, 5 | builder | running | | rerun one agent, Bobby at the gates, comments to Bobby |
+| V3-rework | 3, 4, 5 | builder | done | 37 passed (suite 757), 1 live | rerun one agent (extractor, drafter, summarizer, repairer; rerun of a rerun), Bobby at 4 gates (code validates, $0.005 and 2.3 s per gate live), comments resolved by Bobby |
 | V4-archive | 7 | builder + aws-operator | done | 16 passed | uploaded: archive/shl/ 930 objects (988 MB), cache/docs/ 928 entries. Idempotent rerun skipped everything. EC2 role reads and writes the cache already. LSEG and TED CSVs excluded |
 | V5-plan2 | 8 | builder | done | 43 passed (suite 662) | S-011 to S-016: SHL annual reports FY2024, FY2022, FY2020, FY2018 (ten ROTIC years FY2017 to FY2026) and Philips 2025, 2023. 30 new pages, all checked against the PDFs. S-006 now fetches 14th, still before S-009 and S-010 |
 | V6-resume | 9 | builder | todo | | |
@@ -49,6 +49,9 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Live spend so far: about $25, all in the workshop account (runs about $2 each, plus tuning).
 
 ## Decisions
+
+- Sun 12:28 AM (Gordon may override): judges never see rerun instructions, so no instruction can steer a check, and Bobby can't use a judge rerun to pass a claim.
+- Sun 12:28 AM: pre-R2 on EC2 now with the committed code (steps 1 to 8 and 10, no fork or resume, which don't change a normal run), so problems show before the final R2.
 
 - Sat 11:48 PM: the archive upload excludes the licensed LSEG files and the provenance-less TED CSVs (conservative default, Gordon may override). The upload runs after V1 lands, because the cache keys come from V1's `cache.py`.
 
@@ -106,3 +109,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:01 AM: archive uploaded to S3 (929 files plus manifest, 928 cache entries).
 - Sun 12:13 AM: V7-chat done and committed.
 - Sun 12:20 AM: V2-gateway done and committed. V8-fork started.
+- Sun 12:28 AM: V3-rework done and committed. contract_smoke picks a goon with a model for the rerun check.

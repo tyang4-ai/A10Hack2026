@@ -309,7 +309,9 @@ class Smoke:
         self.expect_error("resume a run that isn't stopped", "POST", f"{r}/resume", 409, "invalid_state", body={})
         self.expect_error("rerun from a step while the run is going", "POST", f"{r}/rerun", 409, "invalid_state",
                           body={"from_stage": "approve", "instructions": "contract smoke"})
-        done = next((a for a in goons if a.status in ("done", "failed") and a.role not in ("fetcher",)), None)
+        # A goon with a model: fetchers and code-only JSON readers can't be rerun (409 by design).
+        done = next((a for a in goons if a.status in ("done", "failed") and a.role not in ("fetcher",)
+                     and a.model_id), None)
         if done is not None:
             new = self.check_or_stub(f"rerun {done.agent_id}", "POST", f"{r}/agents/{done.agent_id}/rerun", m.Agent,
                                      body={"instructions": "contract smoke: same task", "recheck": False},
