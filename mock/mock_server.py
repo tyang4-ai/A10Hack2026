@@ -484,13 +484,14 @@ def resume_run(run_id: str, req: m.ResumeRequest):
     r.stopped_mono, r.stop_reason = None, None
     r.policy_version += 1
     reason = req.reason or "Resumed by the analyst"
-    r.schedule(0, {"type": "run.resumed", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
-                   "message": f"Run resumed at {r.stage}: {reason}", "data": {"reason": reason, "stage": r.stage}}, base=now)
-    r.schedule(0.001, {"type": "run.status", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
+    # Same order as CONTRACT.md section 13: policy.updated (kill switch off), then run.resumed, then run.status.
+    r.schedule(0, {"type": "policy.updated", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
+                   "message": f"Gateway policy v{r.policy_version}: kill switch off",
+                   "data": {"version": r.policy_version, "change": "Kill switch off (resumed)", "rule_ids": []}}, base=now)
+    r.schedule(0.001, {"type": "run.resumed", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
+                       "message": f"Run resumed at {r.stage}: {reason}", "data": {"reason": reason, "stage": r.stage}}, base=now)
+    r.schedule(0.002, {"type": "run.status", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
                        "message": "Kill switch off", "data": {"status": "running", "stage": r.stage}}, base=now)
-    r.schedule(0.002, {"type": "policy.updated", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
-                       "message": f"Gateway policy v{r.policy_version}: kill switch off",
-                       "data": {"version": r.policy_version, "change": "Kill switch off (resumed)", "rule_ids": []}}, base=now)
     r.tick()
     return r.run()
 
