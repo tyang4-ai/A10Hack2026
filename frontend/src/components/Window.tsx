@@ -78,7 +78,8 @@ export function emptyAt(self: string, fx: number, fy: number, minW: number, minH
 
 // Resizing moves an edge line, not just one window's edge. Every window with an
 // edge on that line, touching the dragged window's span (or a window already in
-// the group), moves with it, so two windows that share an edge resize together.
+// the group), moves with it, so two windows side by side resize together.
+// A window that overlaps a group member (stacked in front or behind) never joins.
 // Hold Alt to resize only the one window.
 type Side = "n" | "s" | "e" | "w";
 interface EdgeGroup {
@@ -103,15 +104,21 @@ function edgeGroup(id: string, side: Side, wins: Record<string, Win>, alone: boo
   let lo = cpos(a);
   let hi = cpos(a) + csize(a);
   const others = Object.values(wins).filter((w) => w.id !== id && !w.min && !w.max);
+  // Only side-by-side neighbours: a window stacked over or under one already in the group
+  // (overlapping it, not just touching) is left alone.
+  const overlaps = (p: Win, q: Win) => p.x < q.x + q.w - eps && q.x < p.x + p.w - eps && p.y < q.y + q.h - eps && q.y < p.y + p.h - eps;
+  const group = [a];
   for (let grew = true; grew; ) {
     grew = false;
     for (const w of others) {
       if (g.ends.includes(w.id) || g.starts.includes(w.id)) continue;
+      if (group.some((m) => overlaps(m, w))) continue;
       if (cpos(w) >= hi - eps || cpos(w) + csize(w) <= lo + eps) continue;
       const end = Math.abs(pos(w) + size(w) - line) < eps;
       const start = Math.abs(pos(w) - line) < eps;
       if (!end && !start) continue;
       (end ? g.ends : g.starts).push(w.id);
+      group.push(w);
       lo = Math.min(lo, cpos(w));
       hi = Math.max(hi, cpos(w) + csize(w));
       grew = true;
