@@ -558,9 +558,24 @@ class Gateway:
 
     # -- fetch ----------------------------------------------------------------
 
+    async def _pace(self, seconds: float) -> None:
+        """FETCH_PACING and VERIFY_PACING: wait in short slices, ending early on STOP. The decision that follows
+        then blocks on the kill switch as usual, so this never raises and never lets a call through."""
+        seconds = float(seconds or 0)
+        if seconds <= 0:
+            return
+        end = time.monotonic() + seconds
+        while (left := end - time.monotonic()) > 0:
+            try:
+                self.ctx.check_stop()
+            except Exception:
+                return
+            await asyncio.sleep(min(0.05, left))
+
     async def fetch(self, agent: m.Agent, url: str, *, source_id: str | None = None,
                     why: str = "approved source") -> FetchResult:
         """GET url through the policy. Each redirect hop is decided again. Raises Blocked."""
+        await self._pace(self.ctx.settings.fetch_pacing)   # FETCH_PACING: before the decision, so a revoke still lands
         target = url
         for hop in range(MAX_REDIRECTS + 1):
             hop_why = why if hop == 0 else f"redirect {hop} from {url}"
@@ -707,6 +722,8 @@ class Gateway:
             raise Blocked(rid, None, reason)
         model_id = settings.model_large if size == "large" else settings.model_small
         async with self._semaphore(size):
+            if agent.role == "verifier" and not LIVE_ONLY.get():
+                await self._pace(settings.verify_pacing)  # VERIFY_PACING: inside the slot, before the request is timed
             rid, t0 = self.ctx.next_id("REQ"), time.perf_counter()
             try:
                 est = self._estimate(model_id, system, user, tool, max_tokens)

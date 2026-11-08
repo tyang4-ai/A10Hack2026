@@ -10,17 +10,19 @@ Server env on EC2 (`bash backend/infra/remote.sh --set-env KEY=VALUE ...` sets `
 
 ```
 CACHE_DOCUMENTS=on            # fetches are decided by the gateway, then served from the S3 cache
-CACHE_MODELS=record           # model calls stay live, and each answer is also recorded for the replay fallback
-STAGE_PACING=3                # seconds of pause at the start of each stage (never at approve). STOP ends it at once
+CACHE_MODELS=replay_only      # every agent model call is answered from two recorded runs, at $0. Agent chat stays live. Runs say documents_and_models: say the model answers are recorded
+STAGE_PACING=1                # seconds of pause at the start of each stage (never at approve). STOP ends it at once
+FETCH_PACING=1.2              # seconds before each fetch decision (a revoke in that time still blocks it)
+VERIFY_PACING=3               # seconds per judge call, so verification visibly takes time
 DEMO_FAULTS=fetch,judge       # planted faults, labeled simulated: S-017 broken download, one malformed judge verdict
 PROTECTED_RUNS=run_20261108_rzpoj7,run_20261108_pin2ve    # DELETE refuses the demo run and its backup
-MAX_CONCURRENCY_SMALL=8       # fewer in-flight calls to discard at STOP (32 is for full runs)
+MAX_CONCURRENCY_SMALL=48      # model slots (48 small, MAX_CONCURRENCY_LARGE=8)
 BUDGET_USD=50                 # cap per run (a full run costs about $3)
 GUARDRAIL_ID=...              # already set: the tripwire must be live
 TEST_PAGE_URL=<invoke-url>/test-pages/injection.html
 ```
 
-`STAGE_PACING` is the knob: raise it if the clicks need more time.
+Since 5:10 AM a full run finishes in about 2:00 from launch: 103 s on the stage click path (S-002 dragged up, S-016 rejected, S-006 revoked at the start of collect), 129 s with every source approved. Both paths are recorded, so every agent call replays. A different set of clicks, or stopping a goon, makes some later calls miss: they show as blocked and become holes, never live calls. `FETCH_PACING` and `VERIFY_PACING` are the knobs. The click-by-click timings below were measured at STAGE_PACING=3 with live models, so expect fetching to be a little slower and everything after it faster.
 
 ## On stage
 
