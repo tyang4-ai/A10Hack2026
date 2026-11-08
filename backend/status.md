@@ -6,7 +6,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 - Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
 - Running: A-deploy (W2, waiting on the port approval), verifier (G3). Verifier (G3). W1 is 5/5 done.
-- Next: finish G3 when the verifier reports. G4 when A-deploy lands. Then R1, the full SHL run on EC2.
+- Next: G5 now, the full SHL run on EC2 through the CLI. Finish G3 when the verifier reports.
 - **Rehearsal R0b done (9:46 PM): run_20261108_whhj0d, full SHL run, laptop, live models.** Report final: 403 items (341 pass, 40 fixed, 22 fail = 94.5% pass or fixed), 25 holes, report certainty 92. Scores: rotic_level -1 (9.4%, low), rotic_vs_peers 0 (low), secular_growth +1, leverage 0, liquidity N/A (its coverage computation failed), research_stage N/A (by design). 4 of 6 scored, weighted average 0.0. Brief final: 33 sentences (31 pass, 2 fixed, 1 removed), 2.8 pages, certainty 85. $2.06, about 5 min. contract_smoke 21/21. Exported as the replay fallback (`backend/data/replay/run_20261108_whhj0d`, 31 MB, text only).
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -45,7 +45,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G1 Scaffold and AWS | pass | Sat 7:29 PM | requirements install, imports ok, 26 event types, pytest 8 passed, .env has every .env.example key, AWS_RESOURCES.md has delete commands, concurrency 32/8 |
 | G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
 | G3 Pipeline and pre-smoke | partial | Sat 8:32 PM | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
-| G4 Deploy | | | |
+| G4 Deploy | pass | Sat 10:10 PM | public healthz live, /api/v1/runs lists, test page 200 with simulated header, deploy.sh moved the instance to b223c2b (the pushed HEAD) |
 | G5 Full SHL run, demo-ok-1 | | | |
 | G6 Demo rehearsal | | | |
 
@@ -64,6 +64,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Invoke URL: not yet (A-deploy, W2).
 
 ## Decisions
+
+- Sat 10:10 PM: the orchestrator runs `infra/deploy.sh` for redeploys (S3 upload plus SSM restart, no new resources). Creating or changing AWS resources stays with the aws-operator.
 
 - Sat 9:17 PM: keep the extractor's skip of % change table columns. With the current `_period_text`, a % cell in a row of amounts passes for either year, so year claims there would go unchecked.
 
@@ -145,3 +147,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 9:42 PM: all R0 fixes in (brief, extract, draft, repair, checks). Started rehearsal R0b.
 - Sat 9:46 PM: R0b full rehearsal done (94.5% items pass or fixed, brief 2.8 pages, $2.06). Exported and committed as the replay fallback.
 - Sat 10:05 PM: A-deploy done (Gordon approved port 8000). G4 curl checks pass.
+- Sat 10:10 PM: G4 pass. Starting G5 on EC2.
