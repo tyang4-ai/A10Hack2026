@@ -243,7 +243,7 @@ def _repair(inj_bad: m.DataItem, original: m.DataItem, k: int, failed_checks: li
     for candidate, how in tries:
         results = _code_checks(candidate, items, sources, pages) + _judge_checks(original, stale=False)
         if checks.status_from(results) == "pass":
-            return checks.with_fixed_locators(candidate, results), results, how
+            return checks.with_fixed_locators(candidate, results, pages_by_doc=pages), results, how
     return None
 
 
@@ -449,7 +449,7 @@ async def patch_item(ctx: RunContext, item_id: str, patch: m.ItemPatch) -> m.Ite
                         note="Analyst edit. Code checks re-run on the new text.", at=now_iso())
     done = _with_verification(pending, status, results, attempt)
     if item.kind == "data":
-        done = checks.with_fixed_locators(done, results)
+        done = checks.with_fixed_locators(done, results, pages_by_doc=pages)   # quotes become the exact span text
     done = _verified(ctx, done, level="info" if status in _PASSING else "warn",
                      message=f"{item_id} re-verified after the analyst edit: {status}")
     _recheck_dependents(ctx, item_id)

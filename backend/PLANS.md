@@ -797,3 +797,5 @@ Added 2026-11-07 10:55 PM.
 3. `verify_summary.render_markdown`: the full `## Holes` register at the end of human-report.md gets the heading "## Holes register (full list, not part of the three-page brief)".
 4. `demo.py` lines about 246 and 452: pass `pages_by_doc=` to `checks.with_fixed_locators`, so the analyst-edit and inject paths also store the exact span text.
 **Acceptance.** `.venv/Scripts/python -m pytest -q backend/tests -m "not live"` green, planted line all caught.
+
+**2026-11-07 11:16 PM, B-fix-polish REPORT.** The gap summary is always in the brief when the run has holes. `numbers_traced` traces amounts written as words (scale, percent, basis points, currency words, fractions like "one third"). Counts and ordinals stay exempt. A range value (as_reported "4.0% and 5.0%", "4% to 5%", "4-5%") vouches for both bounds. Rubric thresholds compare by number. The full register in human-report.md is headed `verify_summary.HOLES_REGISTER_HEADING`. demo.py passes `pages_by_doc` to `with_fixed_locators`.

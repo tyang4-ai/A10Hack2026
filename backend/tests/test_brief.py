@@ -453,10 +453,13 @@ async def test_code_drops_uncheckable_blocks_and_adds_the_scorecard(ctx: RunCont
     bedrock.register_fake(BRIEF, messy)
     await summarize.run(ctx)
     brief = ctx.state.summary
-    assert [s.text for s in sents(brief)] == [C007]
-    assert [sec.heading for sec in brief.sections] == ["Bottom line", "Scorecard"]
+    gaps = summarize.gap_sentences(ctx.state)
+    assert gaps                                     # the fixture has holes, so code's gap summary goes in (B-fix-polish)
+    assert [s.text for s in sents(brief)] == [C007] + [g.text for g in gaps]
+    assert [sec.heading for sec in brief.sections] == ["Bottom line", "Scorecard", summarize.HOLE_HEADING]
     notes = " | ".join(e.data.text for e in evs(ctx, "agent.log"))
     assert "citing nothing" in notes and "G-404 dropped" in notes and "G-001 dropped: no caption" in notes
+    assert f"so code added its {len(gaps)}-sentence gap summary" in notes
 
 
 # ---------------------------------------------------------------------------

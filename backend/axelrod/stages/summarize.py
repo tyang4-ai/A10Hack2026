@@ -12,7 +12,8 @@ criteria by name, analyst-only criteria, items that failed verification counted 
 or agents that gave nothing. Counts are words ("five data items"), so numbers_traced has no digit to trace,
 and each sentence cites the HOLE- ids it covers. The model is asked to copy these sentences as the last
 section. Whatever gap sentences it writes are replaced by code's, and model sentences that cite only HOLE-
-ids are dropped elsewhere. A draft with no gap section at all gets none added (a warning says so).
+ids are dropped elsewhere. A draft with no gap section at all still gets code's (a warning says so), so a
+run with holes never shows a brief that reads as complete.
 
 Trimming is content first: charts beyond two, then extra content sentences (never the last sentence of a
 section, never the last one about a category), then the gap summary down to two sentences, then charts,
@@ -476,13 +477,14 @@ def build_sections(draft: summarizer.BriefDraft, state: RunState) -> tuple[list[
 
 def place_gaps(sections: list[m.SummarySection], draft: summarizer.BriefDraft,
                gaps: list[m.SummarySentence]) -> list[str]:
-    """Put code's gap summary last when the draft has gap sentences. Returns notes."""
+    """Put code's gap summary last whenever the run has holes, whatever the draft wrote about them: a brief
+    that is silent about its gaps would read as complete. Returns notes."""
     if not gaps:
         return []
     drafted = drafted_gaps(draft)
-    if not drafted:
-        return ["the draft has no gap section, so none was added: the hole register is shown beside the brief"]
     sections.append(gap_section(gaps))
+    if not drafted:
+        return [f"the draft has no gap section, so code added its {len(gaps)}-sentence gap summary"]
     if drafted == [s.text for s in gaps]:
         return []
     return [f"the draft's {len(drafted)} gap sentence(s) were replaced by code's {len(gaps)}-sentence gap summary"]

@@ -229,7 +229,8 @@ async def test_r0b_style_draft_with_one_bullet_per_hole_is_replaced(settings):
     assert "content and 5 gap sentence(s), 13 hole(s) in the register" in text
 
 
-async def test_draft_without_a_gap_section_gets_none_added(settings):
+async def test_draft_without_a_gap_section_still_gets_code_gap_summary(settings):
+    """Holes are always declared: code adds its gap summary even when the draft wrote none (B-fix-polish)."""
     ctx = stored_ctx(settings, "pin2ve")
 
     def no_gaps(system: str, user: str, schema: dict) -> dict:
@@ -239,8 +240,8 @@ async def test_draft_without_a_gap_section_gets_none_added(settings):
 
     bedrock.register_fake(BRIEF, no_gaps)
     await summarize.run(ctx)
-    assert not gap_sents(ctx.state.summary)
-    assert "the draft has no gap section, so none was added" in logs(ctx)
+    assert [s.text for s in gap_sents(ctx.state.summary)] == [s.text for s in summarize.gap_sentences(ctx.state)]
+    assert "the draft has no gap section, so code added its" in logs(ctx)
 
 
 async def test_summarizer_is_told_the_gap_summary_and_the_categories(settings):

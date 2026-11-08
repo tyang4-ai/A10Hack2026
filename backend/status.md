@@ -5,7 +5,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: G5 done (10:15 PM). Next G6 demo rehearsal, then W3 polish.
-- Running: B-fix-polish, B-fix-yield. Then deploy and a final EC2 run (G5c) to tag demo-ok-2 if it beats demo-ok-1. G6 rehearsal on EC2 by the orchestrator. Verifier (G3). W1 is 5/5 done.
+- Running: B-fix-yield. Then deploy and a final EC2 run (G5c) to tag demo-ok-2 if it beats demo-ok-1. G6 rehearsal on EC2 by the orchestrator. Verifier (G3). W1 is 5/5 done.
 - Next: G6 (demo rehearsal on EC2). Finish G3 when the verifier reports. W3 polish (B-p1) while time allows.
 - **Rehearsal R0b done (9:46 PM): run_20261108_whhj0d, full SHL run, laptop, live models.** Report final: 403 items (341 pass, 40 fixed, 22 fail = 94.5% pass or fixed), 25 holes, report certainty 92. Scores: rotic_level -1 (9.4%, low), rotic_vs_peers 0 (low), secular_growth +1, leverage 0, liquidity N/A (its coverage computation failed), research_stage N/A (by design). 4 of 6 scored, weighted average 0.0. Brief final: 33 sentences (31 pass, 2 fixed, 1 removed), 2.8 pages, certainty 85. $2.06, about 5 min. contract_smoke 21/21. Exported as the replay fallback (`backend/data/replay/run_20261108_whhj0d`, 31 MB, text only).
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
@@ -36,7 +36,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | B-fix-checks | builder | R0 fix | done | 75 passed (suite 465) | planted 13/13 caught, clean 13/13. Own clause beats headers, comparison bases, nil cells, exact threshold, adjacent-year averages. Old vs new on stored runs: 9 fail-to-pass (all right), 0 pass-to-fail |
 | B-fix-cite | builder | G3 fix | done | 126 passed (suite 498) | planted 14/14. Passing quotes equal their page span, headers on the evidence's page, signed numbers_traced, charts blocked by revoked sources. Replays of 3 stored runs: 0 breaks |
 | B-fix-holes | builder | G3 fix | done | 41 passed (suite 483), 1 live | live on a G5 copy: 20 content + 5 gap sentences, 2.8 pages, all 4 categories. Code writes the gap summary, counts in words |
-| B-fix-polish | builder | G3 fix | running | | gap summary always, numbers written as words, register label in human-report.md, demo edit path keeps exact quotes |
+| B-fix-polish | builder | G3 fix | done | suite 564 | gap summary always on, amounts written as words traced ("twenty percent"), ranges vouch for both bounds (fixed G5b C-002 and C-004), register labeled, demo paths keep exact quotes. Planted 14/14 + words 4/4 |
 | B-fix-yield | builder | G5b fix | running | | one claim per conclusion, repair removes the bad sentence, score from what passed |
 | B-baseline | builder | W3 | done | 13 passed, 1 live | harness caught 24/25 planted errors. Plain Claude: 59 claims, quotes all exact, but its scores went unchecked (invented coverage history, FCF < maturities called "exceeds"). $0.56 |
 | B-p1 | builder | W3 | todo | | |

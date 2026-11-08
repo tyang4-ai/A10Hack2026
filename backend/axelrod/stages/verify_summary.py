@@ -43,6 +43,9 @@ REWRITE_MAX_TOKENS = 600
 FALLBACK_MAX_WORDS = 60        # an item's own text replaces a failing sentence only when it is this short
 CHECKS_RELPATH = "12-Verification/brief-checks.json"
 METHOD = "Word-weighted mean over sentence certainties. high_pct is the share of words in high-band sentences."
+# The full register follows the brief in human-report.md. Its heading says it is outside the three pages, since
+# the brief's own gap section is only a five-sentence summary of it.
+HOLES_REGISTER_HEADING = "Holes register (full list, not part of the three-page brief)"
 
 
 @dataclass
@@ -501,7 +504,7 @@ def render_markdown(brief: m.HumanReport, *, rollup: m.Rollup | None = None,
             else:
                 lines += _md_scorecard(rollup, items)
     if brief.holes:
-        lines += ["## Holes", ""] + [f"- {h.hole_id}: {h.reason}" for h in brief.holes] + [""]
+        lines += [f"## {HOLES_REGISTER_HEADING}", ""] + [f"- {h.hole_id}: {h.reason}" for h in brief.holes] + [""]
     st, c = brief.stats, brief.certainty
     lines.append(f"{st.sentences} sentences, {st.words} words, about {st.est_pages:g} pages. "
                  f"{st.passed} passed, {st.fixed} fixed, {st.failed} removed.")

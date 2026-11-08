@@ -22,7 +22,10 @@ What numbers_traced accepts: a cited data item's value (after scale, rounded hal
 decimals), a cited computation's display, the criterion's rubric numbers, the BOFFIN scale (-1, 0, +1)
 for scores, rollup numbers for "rollup", chart points for charts, and the numbers in the verified
 quote of a cited data item that has no value. A data item's own statement may also use any number in
-its evidence quote. Years, fiscal-year labels, dates and ids are never counted as numbers. A negative
+its evidence quote. A range value ("4.0% and 5.0%") vouches for both bounds. Numbers in words are traced
+like digits when they state an amount ("twenty percent", "three billion", "one third"). A count in words
+("three years", "five data items") is exempt. Years, fiscal-year labels, dates and ids are never counted
+as numbers. A negative
 value traces only when the text shows it as negative: a minus, brackets, or a word next to it that
 carries the sign ("a loss of", "fell by", "outflow"). A cost or outflow line ("Income tax expenses",
 printed −646) may be stated as its size, since the line's name carries the sign.
@@ -298,17 +301,172 @@ def _cost_line(statement: str) -> bool:
     return bool(_COST_LINE.search(_PRE_TAX.sub(" ", statement or "")))
 
 
+# Numbers written as words. A count ("three years", "five data items", "two of three judges") is exempt, like a
+# year, so code's gap summary ("thirteen gaps") has nothing to trace. An amount is traced like digits: a number
+# next to a scale word ("three billion"), a percent ("twenty percent", "two percentage points"), a currency
+# ("five euros", "€ twenty") or a fraction ("one third", "two-thirds", "a quarter of", "half of").
+_W_NUMS = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen "
+                                      "fourteen fifteen sixteen seventeen eighteen nineteen".split())}
+_W_TENS = {w: 10 * i for i, w in enumerate("twenty thirty forty fifty sixty seventy eighty ninety".split(), start=2)}
+_W_FRACS = {"half": 2, "halves": 2, "third": 3, "thirds": 3, "quarter": 4, "quarters": 4, "fifth": 5, "fifths": 5,
+            "sixth": 6, "sixths": 6, "seventh": 7, "sevenths": 7, "eighth": 8, "eighths": 8, "ninth": 9,
+            "ninths": 9, "tenth": 10, "tenths": 10}
+
+
+def _w_alt(words) -> str:
+    return "(?:" + "|".join(sorted(words, key=len, reverse=True)) + r")\b"
+
+
+_W_HY = r"(?:[-‐‑]|\s+)"
+_W_99 = rf"(?:{_w_alt(_W_TENS)}(?:{_W_HY}{_w_alt([w for w, n in _W_NUMS.items() if 1 <= n <= 9])})?|{_w_alt(_W_NUMS)})"
+_W_999 = rf"(?:{_W_99}\s+hundred\b(?:\s+(?:and\s+)?{_W_99})?|{_W_99})"
+_W_CARD = (rf"(?:{_W_999}(?:\s+point(?:\s+{_w_alt([w for w, n in _W_NUMS.items() if n <= 9])})+)?"
+           r"|(?:half\s+)?a(?=\s+(?:thousand|million|billion|trillion)\b))")
+_W_AMOUNT = re.compile(
+    r"(?<![\w.,‐‑-])"
+    r"(?:(?P<cur1>[€$£¥]|(?:EUR|USD|GBP|CHF|JPY)\b)\s?)?"
+    rf"(?P<card>{_W_CARD})"
+    r"(?:\s+(?P<word>thousand|million|billion|trillion)s?\b)?"
+    r"(?:(?P<pct>\s?%|\s+(?:percent|per\s+cent)\b)|\s+(?P<pts>(?:percentage|basis)\s+points?)\b)?"
+    r"(?:\s+(?P<cur3>euros?|dollars?|pounds?|francs?|yen|cents?)\b)?",
+    re.IGNORECASE)
+_W_FRACTION = re.compile(
+    rf"(?<![\w.,‐‑-])(?:(?P<n>{_w_alt(['a', 'an', *[w for w, n in _W_NUMS.items() if 1 <= n <= 10]])})"
+    rf"(?:\s+|[-‐‑]))?(?P<d>{_w_alt(_W_FRACS)})(?P<of>\s+of\b)?",
+    re.IGNORECASE)
+_W_ORDINAL_BEFORE = re.compile(r"\b(?:first|second|last|next|1st|2nd)\s*$", re.IGNORECASE)
+_W_PERIOD_AFTER = re.compile(r"\s+(?:the\s+)?(?:fiscal|financial|FY|year|(?:19|20)\d{2})", re.IGNORECASE)
+_W_CUR = {"€": "EUR", "$": "USD", "£": "GBP", "¥": "JPY", "euro": "EUR", "dollar": "USD", "pound": "GBP",
+          "franc": "CHF", "yen": "JPY", "cent": None}
+
+
+@dataclass(frozen=True)
+class _Said:
+    """A number as a text says it. Digits and word amounts have one reading. A fraction in words has two, a
+    percent and a ratio ("one third" shows as 33% or 0.33), rounded in reads and exact in exact."""
+    tok: NumToken                    # what a failure names (raw text, span)
+    reads: tuple[NumToken, ...]      # what a candidate must show at the text's precision
+    exact: tuple[NumToken, ...]      # the same, unrounded, for when the text vouches for numbers (a quote)
+
+
+def _card_value(s: str) -> tuple[Decimal, int]:
+    """'twenty-five' (25, 0), 'one point two' (1.2, 1), 'three hundred and five' (305, 0), 'a' (1, 0),
+    'half a' (0.5, 1)."""
+    words = [w for w in re.split(r"[\s‐‑-]+", s.lower()) if w and w != "and"]
+    if words == ["a"]:
+        return Decimal(1), 0
+    if words == ["half", "a"]:
+        return Decimal("0.5"), 1
+    if "point" in words:
+        i = words.index("point")
+        whole, _ = _card_value(" ".join(words[:i]))
+        digits = "".join(str(_W_NUMS[w]) for w in words[i + 1:])
+        return Decimal(f"{whole}.{digits}"), len(digits)
+    n = 0
+    for w in words:
+        n = n * 100 if w == "hundred" else n + _W_TENS.get(w, _W_NUMS.get(w, 0))
+    return Decimal(n), 0
+
+
+def _word_tok(s: str, start: int, end: int, core: tuple[int, int], number: Decimal, places: int, *, pct: bool,
+              word: str | None = None, currency: str | None = None) -> NumToken:
+    return NumToken(raw=s[start:end], start=start, end=end, core=s[core[0]:core[1]], core_start=core[0],
+                    core_end=core[1], number=number, places=places, pct=pct, word=word, currency=currency)
+
+
+def _word_amounts(s: str) -> list[_Said]:
+    """Cardinals in words that state an amount. A bare cardinal is a count and is left out."""
+    out: list[_Said] = []
+    for mm in _W_AMOUNT.finditer(s):
+        if not (mm.group("word") or mm.group("pct") or mm.group("pts") or mm.group("cur1") or mm.group("cur3")):
+            continue
+        number, places = _card_value(mm.group("card"))
+        cur = (mm.group("cur1") or "").strip().upper() or _W_CUR.get((mm.group("cur3") or "").lower().rstrip("s"))
+        t = _word_tok(s, mm.start(), mm.end(), mm.span("card"), number, places, pct=bool(mm.group("pct")),
+                      word=mm.group("word").lower() if mm.group("word") else None,
+                      currency=_W_CUR.get(cur, cur) if cur else None)
+        out.append(_Said(t, (t,), (t,)))
+    return out
+
+
+def _fraction_ok(s: str, mm: re.Match) -> bool:
+    """A fraction, not an ordinal or a period: "one third", "two thirds", "a third of", "half of", "three quarters
+    of revenue". Not "a third year", "the third quarter", "the first half of fiscal 2025", "three quarters"."""
+    n, d, of = (mm.group("n") or "").lower(), mm.group("d").lower(), bool(mm.group("of"))
+    num = 1 if n in ("", "a", "an") else _W_NUMS[n]
+    if not n and (d != "half" or not of or _W_ORDINAL_BEFORE.search(s[:mm.start()])):
+        return False
+    if n in ("a", "an") and not of:
+        return False
+    if d.startswith("quarter") and (not of or _W_PERIOD_AFTER.match(s, mm.end())):
+        return False
+    return num < _W_FRACS[d] and (num == 1) == (not d.endswith("s"))
+
+
+def _fractions(s: str) -> list[_Said]:
+    out: list[_Said] = []
+    for mm in _W_FRACTION.finditer(s):
+        if not _fraction_ok(s, mm):
+            continue
+        num = 1 if (mm.group("n") or "").lower() in ("", "a", "an") else _W_NUMS[mm.group("n").lower()]
+        f = Decimal(num) / Decimal(_W_FRACS[mm.group("d").lower()])
+        end = mm.start("of") if mm.group("of") else mm.end()
+        span = (mm.start(), end)
+
+        def tok(x: Decimal, places: int, pct: bool) -> NumToken:
+            return _word_tok(s, span[0], span[1], span, x, places, pct=pct)
+
+        reads = (tok(Decimal(half_up(f * 100, 0)), 0, True), tok(Decimal(half_up(f, 2)), 2, False))
+        out.append(_Said(reads[0], reads, (tok(f * 100, 0, True), tok(f, 2, False))))
+    return out
+
+
+def _said_in(norm: str) -> list[_Said]:
+    """Every number a normalized text states, digits and words, in reading order. Years, labels and counts
+    are left out."""
+    said = [_Said(t, (t,), (t,)) for t in scan_numbers(norm)]
+    for w in _word_amounts(norm) + _fractions(norm):
+        if not any(w.tok.start < x.tok.end and x.tok.start < w.tok.end for x in said):
+            said.append(w)
+    return sorted(said, key=lambda x: x.tok.start)
+
+
 def _text_cands(label: str, s: str | None, *, cost: bool = False) -> list[_Cand]:
     if not s:
         return []
     return [_Cand(t.number, t.value if t.word else None, t.pct, label, t.sign_ambiguous or cost)
-            for t in scan_numbers(text.normalize(s))]
+            for x in _said_in(text.normalize(s)) for t in x.exact]
+
+
+# A range as printed ("4.0% and 5.0%", "4% to 5%", "4–5%"). value.number is its first bound, and value_in_quote has
+# found the whole range in the quote, so the other bound is the source's number too.
+_RANGE_JOIN = re.compile(r"\s*(?:and|to|[-−‒–—])\s*", re.IGNORECASE)
+_DASHES = "-−‒–—"
+
+
+def _range_cands(iid: str, v: m.Value, *, cost: bool = False) -> list[_Cand]:
+    """The other bound of a range value, or nothing when as_reported is not exactly two numbers joined."""
+    a = text.normalize(v.as_reported or "").strip()
+    a = re.sub(r"^(?:between|from)\s+", "", a, flags=re.IGNORECASE)
+    toks = scan_numbers(a, include_labels=True)
+    if len(toks) != 2 or a[toks[1].end:].strip():
+        return []
+    lo, hi = toks
+    join = a[lo.end:hi.start]
+    if not join.strip() and a[hi.start] in _DASHES:
+        n = abs(hi.number)          # "4–5%": the scanner read the joining dash as hi's minus
+    elif _RANGE_JOIN.fullmatch(join):
+        n = hi.number               # "4.0% and 5.0%", "−4% to −2%": hi's sign as printed
+    else:
+        return []
+    pct = v.unit == "%"
+    return [_Cand(n, None if pct else to_base(n, v.scale), pct, iid, cost)]
 
 
 def _value_cands(iid: str, v: m.Value, *, cost: bool = False) -> list[_Cand]:
     n, pct = _dec(v.number), v.unit == "%"
     spaced = bool(_SPACED_DASH.match(text.normalize(v.as_reported or "")))
-    return [_Cand(n, None if pct else to_base(n, v.scale), pct, iid, spaced or cost)]
+    return [_Cand(n, None if pct else to_base(n, v.scale), pct, iid, spaced or cost)] + _range_cands(iid, v, cost=cost)
 
 
 def _data_cands(it: m.DataItem, *, quotes: bool) -> list[_Cand]:
@@ -464,24 +622,26 @@ def _sign_detail(t: NumToken, cands: list[_Cand]) -> str | None:
 
 
 def _numbers_traced(s: str, cands: list[_Cand], *, what: str, blocked_reason: str | None = None) -> m.CheckResult:
+    """Every number the text states (digits, or an amount in words) must show a candidate at its precision."""
     norm = text.normalize(s)
-    toks = scan_numbers(norm)
-    if not toks:
+    said = _said_in(norm)
+    if not said:
         return _cr("numbers_traced", "pass", "No numbers to trace")
     untraced: list[NumToken] = []
     signs: list[str] = []
     other: list[str] = []
     prev = 0
-    for t in toks:
+    for x in said:
+        t = x.tok
         neg = _shows_negative(norm, t, prev)
         prev = t.end
-        if _traced(t, cands, neg) is None:
+        if all(_traced(r, cands, neg) is None for r in x.reads):
             untraced.append(t)
-            why = None if neg else _sign_detail(t, cands)
+            why = None if neg else next((d for r in x.reads if (d := _sign_detail(r, cands))), None)
             (signs if why else other).append(why or f"'{t.raw}'")
     if not untraced:
         return _cr("numbers_traced", "pass",
-                   f"Every number in the {what} traces to a cited value or computation ({len(toks)} checked)")
+                   f"Every number in the {what} traces to a cited value or computation ({len(said)} checked)")
     if blocked_reason:
         return _cr("numbers_traced", "blocked", blocked_reason)
     parts = []
