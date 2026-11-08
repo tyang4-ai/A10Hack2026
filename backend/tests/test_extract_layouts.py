@@ -4,8 +4,8 @@
   and its unit header ends a title line without brackets ("Consolidated balance sheets in millions of EUR").
   In the pre-R2 run (run_20261108_5zqdvb) 25 of 47 failed data items came from that layout (S-015).
 - A maturity's due year ("US$0.9 billion maturing until fiscal year 2021") is never a period anchor. The
-  period context is the balance date ("As of September 30, 2018"). The checker still reads the due year
-  in the value's own clause as its period, so such an item keeps failing: nothing passes falsely.
+  period context is the balance date ("As of September 30, 2018"). Since B-fix-due the checker sets a due
+  year in the value's own clause aside, so the balance date decides and such an item passes.
 
 Page texts are short excerpts of real annual reports, copied from the r2a run export (labeled per
 fixture). The extractor answers are the recorded live answers of that run, replayed by a fake extractor.
@@ -257,11 +257,11 @@ def test_due_years_are_never_period_anchors():
                                          heading=False)] == [2018]
 
 
-async def test_maturity_cites_the_balance_date_and_still_fails_on_the_due_year(settings):
+async def test_maturity_cites_the_balance_date_and_passes_on_it(settings):
     """The live extractor claimed FY2018 for term loans "maturing until fiscal year 2021" (recorded answers,
     real SHL text). Code cites the balance date "September 30, 2018", not the table's "2018 2017", a due year
-    or a "(September 30, 2017: ...)" comparative. The checker reads the due year in the value's own clause as
-    its period, so the item stays failing (it becomes a hole) until period_match knows due years."""
+    or a "(September 30, 2017: ...)" comparative. period_match sets the due year in the value's own clause
+    aside (B-fix-due), so the balance date decides and the item passes."""
     loans = ("existing term loans were mainly denominated in U. S. dollars with approximately US$ 0.9 billion "
              "maturing until fiscal year 2021")
     items = await extracted(
@@ -276,9 +276,9 @@ async def test_maturity_cites_the_balance_date_and_still_fails_on_the_due_year(s
     for it in items:
         assert cit(it, "period_context").quote == balance, it.statement
         assert exact(it, SHL_DEBT_P80)
-        assert it.verification.status == "fail"
+        assert it.verification.status == "pass", bad(it)
         pm = next(c for c in it.verification.checks if c.check == "period_match")
-        assert pm.result == "fail" and "not FY2018" in pm.detail, bad(it)
+        assert pm.result == "pass", bad(it)
 
 
 def test_a_table_row_with_a_due_year_keeps_its_table_header():
@@ -307,8 +307,7 @@ async def test_due_year_tables_keep_their_column_check(settings):
         row(q, "2,098", "FY2025", "Non-derivative financial liabilities were €2,098 million as of September 30, "
             "2025.", period_quote=head, unit_quote="(in millions of €)"),
     )
-    # Not covered here: checks._columns counts the range "2028 to 2030" as two columns, so on this header it
-    # cannot align a row and a wrong-column claim is not caught (sent to the checks.py owner).
+    # Range cells such as "2028 to 2030" count as one column (B-fix-due), so this header aligns its rows.
     due, balance_claim = items
     assert due.verification.status == "pass", bad(due)
     assert cit(due, "period_context").quote.startswith("Fiscal year \n2026")

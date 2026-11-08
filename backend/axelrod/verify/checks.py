@@ -948,12 +948,30 @@ def _has_quarter(q: str, n: int) -> bool:
     return bool(re.search(rf"\bQ{n}\b|\b{n}Q\b|\b{_ORD[n]}[\s-]quarter\b", q, re.IGNORECASE))
 
 
-def _ordered_years(mentions: list[tuple[int, int, int]]) -> list[int]:
-    out: list[int] = []
-    for y, _, _ in mentions:
-        if not out or out[-1] != y:
-            out.append(y)
+# What joins the two ends of a range cell ("Fiscal years 2028 to 2030", "2028-2030", "FY2028–FY2030").
+_RANGE_GAP = re.compile(r"\s*(?:to|through|until|[-‐‑‒–—−])\s*", re.IGNORECASE)
+
+
+def _ordered_years(texts: list[str]) -> list[tuple[int, ...]]:
+    """A header's columns in order, each as the years it spans. A range cell is one column, so the rows of a
+    maturity table line up with its header (S-001 p177: "2026, 2027, 2028 to 2030, 2031 and thereafter").
+    A year printed twice in a row is one column."""
+    out: list[tuple[int, ...]] = []
+    for t in texts:
+        prev_end = None
+        for y, s, e in period_mentions(t):
+            last = out[-1] if out else None
+            if (last is not None and prev_end is not None and len(last) == 1 and y > last[0]
+                    and _RANGE_GAP.fullmatch(t[prev_end:s])):
+                out[-1] = (last[0], y)
+            elif last != (y,):
+                out.append((y,))
+            prev_end = e
     return out
+
+
+def _col_label(col: tuple[int, ...]) -> str:
+    return str(col[0]) if len(col) == 1 else f"{col[0]} to {col[-1]}"
 
 
 def _row_cells(q: str, h: NumToken, pct: bool, floor: int = 0) -> tuple[list[int] | None, list[int]] | None:
@@ -994,9 +1012,11 @@ def _row_cells(q: str, h: NumToken, pct: bool, floor: int = 0) -> tuple[list[int
     return full, bare
 
 
-def _columns(header: list[int], q: str, hits: list[NumToken], pct: bool, year: int, label: str, *, floor: int = 0):
-    """True if a hit sits in the column the header labels with year, a failure detail if it sits in
-    another year's column, None when the row cannot be aligned.
+def _columns(header: list[tuple[int, ...]], q: str, hits: list[NumToken], pct: bool, years: set[int], label: str, *,
+             floor: int = 0):
+    """True if a hit sits in the column the header labels with exactly the period's years (one year, or the
+    two ends of a range cell), a failure detail if it sits in another column, None when the row cannot
+    be aligned.
 
     Nil cells count as columns when that lines the row up with the header, or with the header repeated
     (a "current" and a "non-current" pair of year columns under one cited header). Otherwise the cells
@@ -1017,10 +1037,10 @@ def _columns(header: list[int], q: str, hits: list[NumToken], pct: bool, year: i
             continue
         if h.start in starts:
             j = starts.index(h.start)
-            if cols[j] == year:
+            if set(cols[j]) == years:
                 return True
             bad.append(f"'{h.raw}' sits in value column {j + 1} of the row, which the header labels "
-                       f"{cols[j]}, not {label}")
+                       f"{_col_label(cols[j])}, not {label}")
     return bad[0] if bad else None
 
 
@@ -1046,9 +1066,39 @@ def _borrowed(q: str, s: int, e: int) -> str | None:
     return None
 
 
+# A due year says when an amount falls due ("US$0.9 billion maturing until fiscal year 2021", "due in 2027",
+# "2031 and thereafter"), not which period the amount belongs to: the balance date sets that.
+_DUE_LEFT = re.compile(r"\b(?:matur(?:e|es|ed|ing|ity|ities)|due|repayable|expir(?:e|es|ed|ing|y)|redeemable)\s+"
+                       r"(?:(?:in|until|till|by|through|within|after|from|on|between)\s+)?(?:the\s+)?(?:end\s+of\s+)?"
+                       r"(?:(?:fiscal|financial)\s+years?\s+|FY\s?)?$", re.IGNORECASE)
+# "until fiscal year 2021" with no due word before it still names a due year. A bare "until 2030" may be anything.
+_UNTIL_LEFT = re.compile(r"\buntil\s+(?:the\s+end\s+of\s+)?(?P<fy>(?:fiscal|financial)\s+years?\s+)?$", re.IGNORECASE)
+_FISCAL_HEAD = re.compile(r"FY|fiscal|financial", re.IGNORECASE)
+_DUE_RIGHT = re.compile(r"\s*(?:and|or)\s+(?:thereafter|later|beyond)\b", re.IGNORECASE)
+
+
+def _due_phrase(q: str, s: int, e: int) -> str | None:
+    """The words that make the period mention q[s:e] a due year, or None."""
+    pre = q[max(0, s - 40):s]
+    left = _DUE_LEFT.search(pre)
+    if left is None:
+        until = _UNTIL_LEFT.search(pre)
+        if until and (until.group("fy") or _FISCAL_HEAD.match(q[s:e])):
+            left = until
+    if left is not None:
+        return (pre[left.start():] + q[s:e]).strip()
+    right = _DUE_RIGHT.match(q, e)
+    return q[s:right.end()].strip() if right else None
+
+
 def _free_mentions(q: str) -> list[tuple[int, int, int]]:
-    """Period mentions that may set the period of a value elsewhere in the quote (not borrowed)."""
-    return [(y, s, e) for y, s, e in period_mentions(q) if _borrowed(q, s, e) is None]
+    """Period mentions that may set the period of a value elsewhere in the quote: not borrowed, not a due year."""
+    return [(y, s, e) for y, s, e in period_mentions(q) if _borrowed(q, s, e) is None and _due_phrase(q, s, e) is None]
+
+
+def _due_detail(raw: str, year: int, phrase: str, label: str) -> str:
+    return (f"'{raw}' sits next to {year} in the quote only as a due year ('{phrase}'): it says when the amount "
+            f"falls due, not the period it belongs to. The balance date sets the period, so it is not {label}")
 
 
 def _clause_cuts(q: str) -> list[tuple[int, int]]:
@@ -1062,16 +1112,29 @@ def _own_clause(q: str, hits: list[NumToken], year: int, label: str, latest: int
     clause that names exactly year. A failure detail when every appearance sits in a clause that names one
     other period: a comparative ("(2024: 9%)", "(prior year: €1.00)") or "in fiscal year 2024". None when some
     appearance sits in a clause that names no period (or several), so the headers decide. latest is the latest
-    year of the context, which a "prior year:" label counts back from."""
+    year of the context, which a "prior year:" label counts back from.
+
+    A due year in the clause ("US$0.9 billion maturing until fiscal year 2021") is set aside, so the balance
+    date in the headers decides. A claim whose period is that due year fails here."""
     cuts = _clause_cuts(q)
     ments = period_mentions(q)
     verdicts: list[bool | str | None] = []
     for h in hits:
         left = max([ce for cs, ce in cuts if ce <= h.start], default=0)
         right = min([cs for cs, ce in cuts if cs >= h.end], default=len(q))
-        inside = [(y, s, e) for y, s, e in ments if s >= left and e <= right]
+        inside, due = [], {}
+        for y, s, e in ments:
+            if s >= left and e <= right:
+                phrase = _due_phrase(q, s, e)
+                if phrase is None:
+                    inside.append((y, s, e))
+                else:
+                    due.setdefault(y, phrase)
         if len({y for y, _, _ in inside}) >= 2:  # a header and its row ("Fiscal year 2025 2024 Revenue ...")
             verdicts.append(None)
+            continue
+        if year in due and all(y != year for y, _, _ in inside):
+            verdicts.append(_due_detail(h.raw, year, due[year], label))
             continue
         ys = {y for y, s, e in inside if _period_style(q, s, e)}
         prior = _PRIOR_LABEL.search(q[left:right]) if not ys else None
@@ -1122,7 +1185,9 @@ def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | No
     """period_match for a text value. The value's own clause in the evidence decides first: a comparative
     ("8% (2024: 9%)") or "in fiscal year 2024" next to the value wins over any header, so an agent-supplied
     header cannot mask it. Headers apply only when the clause names no period: then the period_context quote
-    (or the evidence itself) must name the period, and a table value must sit in that year's column."""
+    (or the evidence itself) must name the period, and a table value must sit in that year's column.
+    A due year in the clause ("maturing until fiscal year 2021") is never the period: the balance date in the
+    headers decides. A due-year column header ("Fiscal years 2028 to 2030") is a column like any other."""
     if not v.period:
         return None
     years, quarter = period_key(v.period)
@@ -1145,25 +1210,39 @@ def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | No
     free = year is not None and not pc
     found = {y for q in ctx for y, _, _ in (_free_mentions(q) if free else period_mentions(q))}
     if not years <= found:
+        named = f" (it names {_and([str(y) for y in sorted(found)])})" if found else ""
+        due = next((_due_phrase(q, s, e) for q in ev for y, s, e in period_mentions(q)
+                    if y in years - found and _due_phrase(q, s, e)), None)
+        if due:
+            return _cr("period_match", "fail",
+                       f"The {where} does not mention {label}{named}. The evidence names it only in '{due}', a due "
+                       f"year: it says when '{v.as_reported}' falls due, not its period, which the balance date sets")
         lent = next((_borrowed(q, s, e) for q in ctx for y, s, e in period_mentions(q)
                      if free and y == year and _borrowed(q, s, e)), None)
         if lent:
             return _cr("period_match", "fail",
                        f"The {where} does not mention {label} except in '{lent}', a comparison base or another "
                        f"value's comparative, so it is not the period of '{v.as_reported}'")
-        named = f" (it names {_and([str(y) for y in sorted(found)])})" if found else ""
         return _cr("period_match", "fail", f"The {where} does not mention {label}{named}")
     if quarter and not any(_has_quarter(q, quarter) for q in ctx):
         return _cr("period_match", "fail", f"The {where} does not mention Q{quarter}")
-    if year is None:
-        return _cr("period_match", "pass", f"The {where} names every year of {label}")
     pct = v.unit == "%"
+    if year is None:
+        # A range period ("FY2028-FY2030") is column-checked only on a header with that range cell.
+        header = _ordered_years(pc)
+        verdict = None
+        if tuple(sorted(years)) in header:
+            for q in ev:
+                verdict = _merge(verdict, _columns(header, q, _value_hits(q, v), pct, years, label))
+        if isinstance(verdict, str):
+            return _cr("period_match", "fail", verdict)
+        tail = " and the value sits in that range's column" if verdict is True else ""
+        return _cr("period_match", "pass", f"The {where} names every year of {label}{tail}")
     verdict = None
     for q in ev:
         hits = _value_hits(q, v)
         if pc:
-            header = _ordered_years([mm for p in pc for mm in period_mentions(p)])
-            verdict = _merge(verdict, _columns(header, q, hits, pct, year, label))
+            verdict = _merge(verdict, _columns(_ordered_years(pc), q, hits, pct, years, label))
             continue
         ments = period_mentions(q)
         if len({y for y, _, _ in ments}) < 2:
@@ -1171,7 +1250,7 @@ def _period_text(v: m.Value, ev: list[str], pc: list[str]) -> m.CheckResult | No
         head_end = max(e for _, _, e in ments)
         row = [t for t in scan_numbers(q) if t.pct == pct]
         if row and head_end <= row[0].start:  # a header line, then a row
-            verdict = _merge(verdict, _columns(_ordered_years(ments), q, hits, pct, year, label, floor=head_end))
+            verdict = _merge(verdict, _columns(_ordered_years([q]), q, hits, pct, years, label, floor=head_end))
     if isinstance(verdict, str):
         return _cr("period_match", "fail", verdict)
     tail = " and the value sits in that year's column" if verdict is True else ""
