@@ -4,9 +4,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 
 ## Now
 
-- Stage: W2 Pipeline (started 8:00 PM, early). W1 is 4/5 done and committed (af7946f).
+- Stage: G5 done (10:15 PM). Next G6 demo rehearsal, then W3 polish.
 - Running: A-deploy (W2, waiting on the port approval), verifier (G3). Verifier (G3). W1 is 5/5 done.
-- Next: G5 now, the full SHL run on EC2 through the CLI. Finish G3 when the verifier reports.
+- Next: G6 (demo rehearsal on EC2). Finish G3 when the verifier reports. W3 polish (B-p1) while time allows.
 - **Rehearsal R0b done (9:46 PM): run_20261108_whhj0d, full SHL run, laptop, live models.** Report final: 403 items (341 pass, 40 fixed, 22 fail = 94.5% pass or fixed), 25 holes, report certainty 92. Scores: rotic_level -1 (9.4%, low), rotic_vs_peers 0 (low), secular_growth +1, leverage 0, liquidity N/A (its coverage computation failed), research_stage N/A (by design). 4 of 6 scored, weighted average 0.0. Brief final: 33 sentences (31 pass, 2 fixed, 1 removed), 2.8 pages, certainty 85. $2.06, about 5 min. contract_smoke 21/21. Exported as the replay fallback (`backend/data/replay/run_20261108_whhj0d`, 31 MB, text only).
 - Rehearsal R0 (laptop, live models): run_20261108_0bsu0o reached the report in about 5 min for $1.20, then failed at summarize (the model returned a list as a string). All the live gateway beats worked. 353 data items, 86% pass or fixed, only 2 of 6 criteria scored. Three fix builders running.
 
@@ -46,7 +46,7 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | G2 Core | pass | Sat 8:15 PM | healthz live, contract_smoke 51/51 vs real API, check_plan PASS (S-010 warn), ingest_one S-001 ok, pytest 160 pass. planted 12/12 caught, clean 12/12, pytest 227 pass. Verifier pass: e2e probe shows revoke, link block and quarantine as in the demo. 1 major (skipped scan fails open) going to B-g2fix |
 | G3 Pipeline and pre-smoke | partial | Sat 8:32 PM | pytest 366. Live presmoke (S-001, 5 pages): every stage ok, 74 items, 48/53 data pass (5 fail = % column known issue, became holes), 10 holes, brief final 32 sentences 2.9 pages, $0.80, 110 s. contract_smoke --run 21/21. CLI run/approve/revoke/stop/tail ok. Verifier running |
 | G4 Deploy | pass | Sat 10:10 PM | public healthz live, /api/v1/runs lists, test page 200 with simulated header, deploy.sh moved the instance to b223c2b (the pushed HEAD) |
-| G5 Full SHL run, demo-ok-1 | | | |
+| G5 Full SHL run, demo-ok-1 | pass | Sat 10:15 PM | **run_20261108_pin2ve** on EC2 (STORE=aws, live). Report final, certainty mean 93. Items 374: 345 pass, 18 fixed, 11 fail (97.1% pass or fixed). Holes 13, every gap declared. Rollup -0.6 (3 of 6 scored). Brief 24 sentences, 2.8 pages, certainty 75. $1.96 of $5, about 4 min. Exported to backend/data/replay/run_20261108_pin2ve |
 | G6 Demo rehearsal | | | |
 
 ## AWS
@@ -108,6 +108,8 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 
 ## Needs Gordon
 
+- (10:15 PM, demo choice) **G5 finished SHL run: run_20261108_pin2ve** (EC2, live). Scores: rotic_level -1 (9.1%, low confidence), rotic_vs_peers 0 (low), liquidity -1 (medium), secular_growth and leverage **failed verification** (judges 1 of 3 supported) so they are declared holes, research_stage N/A by design. 3 of 6 scored, weighted average -0.6. The laptop rehearsal R0b (run_20261108_whhj0d, also live, also recorded as a replay) scored 4 of 6: rotic_level -1, rotic_vs_peers 0, secular_growth +1, leverage 0. Runs vary. Which run do we show from 1:40 to 3:00? My view: show pin2ve, the official EC2 run, and use its two failed scores as a beat ("the judges rejected two scores, so we show them as gaps instead of guessing"). Picking the best of several runs without saying so would be cherry-picking.
+
 - (10:05 PM, pass to Tong now) **VITE_API_URL=https://ppgcikvoi0.execute-api.us-east-1.amazonaws.com/api/v1**. It serves the recorded R0b run (mode replay) right now, and the real SHL run (G5) shortly.
 - (10:05 PM, decision) The deployed API has no key, so anyone with the URL can start runs that spend Bedrock money (capped at $5 per run, not in total). Setting `AXELROD_API_KEY` would make Tong's UI send an `X-Axelrod-Key` header on every call. My default: no key for now, since the URL is only shared with the team. Say "set a key" and I'll set it and tell you the value to pass to Tong.
 - (10:05 PM, not blocking) The API Gateway integration points at the instance's public DNS, which changes if the instance is ever stopped and started. Option: add an Elastic IP (not in the plan). Without one, the fix is one `apigatewayv2 update-integration` command, written in AWS_RESOURCES.md. My default: leave it, and don't stop the instance.
@@ -148,3 +150,4 @@ See backend/AWS_RESOURCES.md. Model ids, concurrency and the invoke URL go here 
 - Sat 9:46 PM: R0b full rehearsal done (94.5% items pass or fixed, brief 2.8 pages, $2.06). Exported and committed as the replay fallback.
 - Sat 10:05 PM: A-deploy done (Gordon approved port 8000). G4 curl checks pass.
 - Sat 10:10 PM: G4 pass. Starting G5 on EC2.
+- Sat 10:15 PM: G5 pass. run_20261108_pin2ve on EC2, 97.1% items pass or fixed, $1.96. Exported, tagging demo-ok-1.

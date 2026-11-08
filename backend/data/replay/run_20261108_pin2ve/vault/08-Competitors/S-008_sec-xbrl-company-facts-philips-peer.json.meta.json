@@ -1,0 +1,29 @@
+{
+  "doc_id": "DOC-004",
+  "source_id": "S-008",
+  "title": "SEC XBRL company facts: Philips (peer)",
+  "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000313216.json",
+  "content_type": "json",
+  "paginated": false,
+  "pages": 1,
+  "sha256": "01d14ac15a560af07997d76a3f398ceca4f364c29aaf002793dbe5cecf42da9d",
+  "bytes": 1042146,
+  "fetched_at": "2026-11-08T06:10:10.279Z",
+  "vault_paths": {
+    "raw": "runs/run_20261108_pin2ve/siemens-healthineers/08-Competitors/S-008_sec-xbrl-company-facts-philips-peer.json",
+    "text": "runs/run_20261108_pin2ve/siemens-healthineers/08-Competitors/S-008_sec-xbrl-company-facts-philips-peer.md"
+  },
+  "quarantined": false,
+  "scan": {
+    "scanner": "none",
+    "verdict": "skipped",
+    "detail": "Trusted source kind (xbrl_facts), not scanned"
+  },
+  "fetch": {
+    "request_id": "REQ-0004",
+    "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000313216.json",
+    "final_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000313216.json",
+    "http_status": 200,
+    "content_type": "application/json"
+  }
+}
