@@ -1,10 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Run } from "@contract/types";
-import { MODE_HELP, MODE_LABEL, STAGE_LABEL } from "@/lib/format";
-import { useRunStore } from "@/lib/store";
 import { applyTheme, readTheme, THEMES, type ThemeId } from "@/lib/theme";
 
 // Close a popover on outside click or Escape, and return focus to its trigger.
@@ -52,133 +49,6 @@ export function ago(iso: string) {
   if (s < 3600) return `${Math.floor(s / 60)} min ago`;
   if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
-// Replaces the native <select>: shows what each run is, not just its id.
-export function RunSwitcher() {
-  const runs = useRunStore((s) => s.runs);
-  const runId = useRunStore((s) => s.runId);
-  const current = useRunStore((s) => s.run);
-  const router = useRouter();
-  const loadRuns = useRunStore((s) => s.loadRuns);
-  const { open, setOpen, root, trigger } = usePopover();
-  const [q, setQ] = useState("");
-  const [active, setActive] = useState(0);
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return needle ? runs.filter((r) => `${r.company} ${r.run_id} ${r.ticker ?? ""}`.toLowerCase().includes(needle)) : runs;
-  }, [runs, q]);
-
-  useEffect(() => {
-    if (open) {
-      void loadRuns();
-      setQ("");
-      setActive(Math.max(0, runs.findIndex((r) => r.run_id === runId)));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const choose = (r: Run) => {
-    setOpen(false);
-    if (r.run_id !== runId) router.push(`/runs/${encodeURIComponent(r.run_id)}`);
-    trigger.current?.focus();
-  };
-
-  return (
-    <div ref={root} className="relative">
-      <button
-        ref={trigger}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className={`flex h-8 max-w-80 items-center gap-2 rounded-[4px] px-2.5 text-left transition-colors hover:bg-desk-raised ${open ? "bg-desk-raised" : ""}`}
-      >
-        {current ? (
-          <>
-            <span className="truncate font-semibold text-white">{current.company}</span>
-            <span className="flex-none font-mono text-[11px] text-desk-muted" title={current.run_id}>{current.run_id.split("_").pop()}</span>
-          </>
-        ) : (
-          <span className="text-desk-muted">Choose a run</span>
-        )}
-        <svg aria-hidden width="10" height="10" viewBox="0 0 10 10" className="ml-0.5 flex-none text-desk-muted">
-          <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-[420px] overflow-hidden rounded-[6px] border border-desk-line-strong bg-desk text-desk-ink">
-          <div className="border-b border-desk-line p-2">
-            <label className="sr-only" htmlFor="run-search">
-              Find a run
-            </label>
-            <input
-              id="run-search"
-              autoFocus
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setActive(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setActive((a) => Math.min(list.length - 1, a + 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setActive((a) => Math.max(0, a - 1));
-                } else if (e.key === "Enter" && list[active]) {
-                  e.preventDefault();
-                  choose(list[active]);
-                }
-              }}
-              placeholder="Find a run"
-              aria-controls="run-list"
-              aria-activedescendant={list[active] ? `run-opt-${list[active].run_id}` : undefined}
-              className="h-8 w-full rounded-[4px] border border-desk-line bg-desk-raised px-2.5 text-[13px] outline-none placeholder:text-desk-muted focus:border-desk-muted"
-            />
-          </div>
-          <ul id="run-list" role="listbox" aria-label="Runs" className="max-h-80 overflow-y-auto py-1">
-            {list.map((r, i) => {
-              const sel = r.run_id === runId;
-              return (
-                <li
-                  key={r.run_id}
-                  id={`run-opt-${r.run_id}`}
-                  role="option"
-                  aria-selected={sel}
-                  onMouseEnter={() => setActive(i)}
-                  onClick={() => choose(r)}
-                  className={`mx-1 flex cursor-pointer items-start gap-2.5 rounded-[4px] px-2.5 py-2 ${i === active ? "bg-desk-raised" : ""}`}
-                >
-                  <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${STATUS_DOT[r.status]}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline gap-2">
-                      <span className="truncate font-semibold text-white">{r.company}</span>
-                      {r.ticker && <span className="font-mono text-[11px] text-desk-muted">{r.ticker}</span>}
-                      {r.mode !== "live" && <span title={MODE_HELP[r.mode]} className="rounded-[3px] bg-desk-warn px-1 font-mono text-[10px] font-semibold text-desk">{MODE_LABEL}</span>}
-                    </span>
-                    <span className="mt-0.5 flex gap-2 text-[12px] text-desk-muted">
-                      <span>{STATUS_WORD[r.status]}</span>
-                      {r.status !== "done" && <span>at {STAGE_LABEL[r.stage].toLowerCase()}</span>}
-                      <span className="ml-auto font-mono text-[11px]">{r.run_id}</span>
-                    </span>
-                  </span>
-                  <span className="mt-0.5 flex-none text-[11px] text-desk-muted">{ago(r.created_at)}</span>
-                  {sel && (
-                    <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" className="mt-1 flex-none text-accent">
-                      <path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
-                    </svg>
-                  )}
-                </li>
-              );
-            })}
-            {list.length === 0 && <li className="px-3 py-3 text-desk-muted">No runs match “{q}”.</li>}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function ThemeSwitcher() {

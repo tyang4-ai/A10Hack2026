@@ -9,7 +9,7 @@ import { MODE_HELP, MODE_LABEL, STAGES, STAGE_LABEL, usd } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
 import { LayoutControl } from "./Desk";
 import { RerunDialog } from "./RerunDialog";
-import { RunSwitcher, ThemeSwitcher } from "./Switchers";
+import { ThemeSwitcher } from "./Switchers";
 
 const STATUS = {
   running: { label: "Running", dot: "bg-desk-link" },
@@ -137,10 +137,17 @@ export function TopBar() {
   return (
     <header className="flex-none bg-desk text-[13px] text-desk-ink">
       <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1.5 px-4">
-        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-logo text-[20px] leading-none font-semibold tracking-[0.02em] text-accent hover:text-white">
+        <Link href="/" title="All runs" aria-label="Axelrod, all runs" className="mr-1 rounded-[4px] font-logo text-[20px] leading-none font-semibold tracking-[0.02em] text-white hover:opacity-80">
           Axelrod
         </Link>
-        <RunSwitcher />
+        {run && (
+          <span className="flex min-w-0 items-baseline gap-2">
+            <span className="truncate font-semibold text-white">{run.company}</span>
+            <span className="flex-none font-mono text-[11px] text-desk-muted" title={run.run_id}>
+              {run.run_id.split("_").pop()}
+            </span>
+          </span>
+        )}
         {run && st && (
           <div className="flex items-center gap-3">
             {run.mode !== "live" && (
