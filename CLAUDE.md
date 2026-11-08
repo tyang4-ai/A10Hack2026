@@ -3,7 +3,8 @@
 Read this first, then the doc for your side:
 - **Frontend:** `docs/FRONTEND_TLDR.md`, then `docs/CONTRACT.md`
 - **Backend:** `docs/BACKEND.md`, then `docs/CONTRACT.md`
-- **Both:** `docs/PLAN.md` (timeline and demo script)
+- **Both:** `docs/PLAN.md` (timeline and the 3-minute demo script)
+- **v0.2 work (Sat 11 PM on):** backend in `docs/BACKEND_V2.md`, integration and AWS deploy in `docs/INTEGRATE.md`
 
 ## What we're building
 
@@ -18,7 +19,7 @@ Axelrod is a self-verifying research harness for screening public companies. The
 | Path | Owner | Branch | Notes |
 |---|---|---|---|
 | `backend/` | Gordon | `backend` | FastAPI, pipeline, gateway, AWS |
-| `frontend/` | Tong | `frontend` | React dashboard (Vite + React + TS) |
+| `frontend/` | Tong | `frontend` | Next.js dashboard (React + TS) |
 | `contract/` | Gordon proposes, both agree | `main` | `models.py` is the source of truth |
 | `mock/` | Gordon | `main` | Must always match the contract |
 | `docs/`, `CLAUDE.md`, `README.md` | Both | `main` | `docs/API.md` and `docs/DESIGN.md` are Tong's first drafts, superseded where they differ |
@@ -50,7 +51,7 @@ python mock/build_fixtures.py                        # rebuild and re-validate t
 python contract/gen_types.py                         # regenerate contract/types.ts
 ```
 
-Frontend env: `VITE_API_URL=http://localhost:8000/api/v1` for the mock server, then the API Gateway invoke URL plus `/api/v1`. With `VITE_API_URL` unset, Tong's dashboard falls back to its built-in mock.
+Frontend env: `NEXT_PUBLIC_API_BASE` (Next.js inlines it at build time, so restart `next dev` or rebuild after changing it). Unset means `http://localhost:8000/api/v1`, the mock. Real backend: the API Gateway invoke URL plus `/api/v1`.
 
 ## Hackathon rules that bind the code
 

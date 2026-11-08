@@ -13,6 +13,8 @@ What it does
   30 s of collection, extraction, verification, repair and the brief.
 - Stop, revoke, comments, user edits and demo error injection all work and
   emit the same events the real backend will.
+- v0.2: agent chat (canned replies), stopping one agent, resume after STOP,
+  and rerun from a step (a fork that replays the same story) work too.
 - Every response is validated against contract/models.py, so if the mock
   answers, the shape is right.
 
@@ -33,7 +35,7 @@ import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Optional, get_args
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, Query, Request
@@ -51,6 +53,7 @@ CONTRACT_VERSION = (HERE.parent / "contract" / "VERSION").read_text().strip() if
 SPEED = float(os.environ.get("MOCK_SPEED", "1.0"))
 PREFIX = "/api/v1"
 FX = bf.build()
+STAGES = list(get_args(m.Stage))
 
 app = FastAPI(title="Axelrod mock API", version=CONTRACT_VERSION,
               description="Mock of the Axelrod contract. Fixture data, fictional company.")
@@ -129,6 +132,13 @@ class RunState:
         self.gw = {"allowed": 0, "blocked": 0, "flagged": 0}
         self.comments: dict[str, dict] = {}
         self.updated_at = created_at
+        # v0.2
+        self.parent_run_id: Optional[str] = None
+        self.rerun_from: Optional[str] = None
+        self.instructions: Optional[str] = None
+        self.stopped_agents: dict[str, str] = {}  # agent_id -> reason
+        self.messages: dict[str, dict[str, dict]] = {}  # agent_id -> message_id -> message
+        self.msg_count = 0
 
     # -- scheduling ----------------------------------------------------------
     def schedule(self, delay_s: float, event: dict, base: Optional[float] = None):
@@ -157,6 +167,18 @@ class RunState:
 
     # -- rejected/revoked sources show up as blocked traffic ---------------------
     def transform(self, e: dict) -> Optional[dict]:
+        aid = e.get("agent_id")
+        if aid in self.stopped_agents and not e.get("_user"):
+            if e["type"] == "gateway.request":
+                e = copy.deepcopy(e)
+                e["data"].update({"decision": "blocked", "rule_id": f"R-stop-{aid}",
+                                  "reason": f"Agent stopped by the analyst: {self.stopped_agents[aid]}", "http_status": None,
+                                  "bytes": None, "latency_ms": 2, "tokens_in": None, "tokens_out": None, "cost_usd": None})
+                e["message"] = f"{aid} {e['data']['action']} {e['data']['target']} blocked (R-stop-{aid})"
+                e["level"] = "warn"
+                return e
+            if e["type"] in ("agent.status", "agent.log", "item.created", "item.updated", "item.verified"):
+                return None
         sid = (e.get("data") or {}).get("source_id")
         if not sid:
             if e["type"] in ("item.created", "item.updated"):
@@ -249,6 +271,9 @@ class RunState:
             self.usage = {**d["usage"], "budget_usd": self.budget_usd}
         elif t in ("comment.created", "comment.resolved"):
             self.comments[d["comment"]["comment_id"]] = copy.deepcopy(d["comment"])
+        elif t == "agent.message":
+            msg = d["message"]
+            self.messages.setdefault(msg["agent_id"], {})[msg["message_id"]] = copy.deepcopy(msg)
 
     # -- snapshots ------------------------------------------------------------------
     @property
@@ -273,7 +298,8 @@ class RunState:
                 "gateway_allowed": self.gw["allowed"], "gateway_blocked": self.gw["blocked"], "gateway_flagged": self.gw["flagged"],
             },
             "usage": self.usage, "last_seq": self.last_seq, "error": self.error, "stop_reason": self.stop_reason,
-            "mode": self.mode,
+            "mode": self.mode, "parent_run_id": self.parent_run_id, "rerun_from": self.rerun_from,
+            "instructions": self.instructions, "cache_mode": "off",
         }
 
     def sorted_sources(self) -> list[dict]:
@@ -281,9 +307,16 @@ class RunState:
         return sorted(self.sources.values(), key=lambda s: (tier_order[s["tier"]], s["rank"], s["source_id"]))
 
     def policy(self) -> dict:
-        return bf.build_policy(self.run_id, self.sorted_sources() if self.decisions is not None else [], self.policy_version,
-                               revoked=self.revoked, kill_switch=self.status == "stopped", budget_usd=self.budget_usd,
-                               as_of_seq=self.last_seq, at=self.updated_at)
+        p = bf.build_policy(self.run_id, self.sorted_sources() if self.decisions is not None else [], self.policy_version,
+                            revoked=self.revoked, kill_switch=self.status == "stopped", budget_usd=self.budget_usd,
+                            as_of_seq=self.last_seq, at=self.updated_at)
+        for aid, reason in self.stopped_agents.items():
+            role = (self.agents.get(aid) or {}).get("role", "extractor")
+            p["rules"].insert(0, {"rule_id": f"R-stop-{aid}", "effect": "deny",
+                                  "action": "fetch" if role == "fetcher" else "model.invoke", "domain": None,
+                                  "path_prefix": None, "model_id": None, "roles": [], "source_id": None, "agent_id": aid,
+                                  "origin": "user_agent_stop", "note": reason, "created_at": self.updated_at})
+        return p
 
 
 RUNS: dict[str, RunState] = {}
@@ -434,6 +467,56 @@ def stop_run(run_id: str, req: m.StopRequest):
                                       "cost_usd": None}}, base=now)
     r.tick()
     return r.run()
+
+
+@app.post(f"{PREFIX}/runs/{{run_id}}/resume", response_model=m.Run)
+def resume_run(run_id: str, req: m.ResumeRequest):
+    r = get_run(run_id)
+    if r.status != "stopped":
+        raise ApiError(409, "invalid_state", f"Only a stopped run can resume. This one is {r.status}.")
+    now = time.monotonic()
+    paused = now - (r.stopped_mono or now)
+    # The mock picks the story up where STOP cut it. Events that fell due while stopped are skipped.
+    r.scheduled = [(rel + paused, o, e) for rel, o, e in r.scheduled]
+    r.stopped_mono, r.stop_reason = None, None
+    r.policy_version += 1
+    reason = req.reason or "Resumed by the analyst"
+    r.schedule(0, {"type": "run.resumed", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
+                   "message": f"Run resumed at {r.stage}: {reason}", "data": {"reason": reason, "stage": r.stage}}, base=now)
+    r.schedule(0.001, {"type": "run.status", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
+                       "message": "Kill switch off", "data": {"status": "running", "stage": r.stage}}, base=now)
+    r.schedule(0.002, {"type": "policy.updated", "stage": r.stage, "agent_id": None, "level": "info", "_user": True,
+                       "message": f"Gateway policy v{r.policy_version}: kill switch off",
+                       "data": {"version": r.policy_version, "change": "Kill switch off (resumed)", "rule_ids": []}}, base=now)
+    r.tick()
+    return r.run()
+
+
+@app.post(f"{PREFIX}/runs/{{run_id}}/rerun", response_model=m.Run, status_code=201)
+def rerun(run_id: str, req: m.RerunRequest):
+    p = get_run(run_id)
+    if p.status not in ("done", "stopped", "failed"):
+        raise ApiError(409, "invalid_state", f"Rerun forks a finished, stopped or failed run. This one is {p.status}.")
+    if req.from_stage == "complete":
+        raise ApiError(409, "invalid_state", "Nothing to rerun after complete. Pick an earlier step.")
+    if STAGES.index(req.from_stage) > STAGES.index(p.stage):
+        raise ApiError(409, "invalid_state", f"{p.run_id} never reached {req.from_stage}")
+    c = RunState(new_run_id(), p.company, p.ticker, p.depth, "ui", p.notes, p.budget_usd, now_iso(), "fixture")
+    c.parent_run_id, c.rerun_from, c.instructions = p.run_id, req.from_stage, req.instructions
+    RUNS[c.run_id] = c
+    now = time.monotonic()
+    # Mock: the same fixture story. Steps before from_stage are copied at once, the rest replays at normal pace.
+    if req.from_stage == "plan":
+        start_replay(c, now)
+    else:
+        start_replay(c, now - 10_000)
+        c.tick()
+        if req.from_stage != "approve":
+            post = FX["timeline_post"]
+            first = next((e["t"] for e in post if STAGES.index(e["stage"]) >= STAGES.index(req.from_stage)), 0)
+            commit_approval(c, copy.deepcopy(p.decisions or FX["fixture_decisions"]), base=now - first / 1000 / SPEED - 0.1)
+    c.tick()
+    return c.run()
 
 
 # ---------------------------------------------------------------------------
@@ -620,6 +703,83 @@ def patch_item(run_id: str, item_id: str, req: m.ItemPatch):
 def read_agents(run_id: str):
     r = get_run(run_id)
     return {"agents": list(r.agents.values()), "as_of_seq": r.last_seq}
+
+
+def _agent(r: RunState, agent_id: str) -> dict:
+    a = r.agents.get(agent_id)
+    if not a:
+        raise ApiError(404, "not_found", f"No agent {agent_id} in {r.run_id}")
+    return a
+
+
+def _message_event(r: RunState, msg: dict) -> dict:
+    who = "Analyst" if msg["author"] == "analyst" else msg["agent_id"]
+    return {"type": "agent.message", "stage": r.stage, "agent_id": msg["agent_id"], "level": "info", "_user": True,
+            "_after_stop": True, "message": f"{who} -> {msg['agent_id'] if msg['author'] == 'analyst' else 'analyst'}: {msg['text'][:80]}",
+            "data": {"message": msg}}
+
+
+@app.get(f"{PREFIX}/runs/{{run_id}}/agents/{{agent_id}}/messages", response_model=m.AgentMessageList)
+def list_agent_messages(run_id: str, agent_id: str):
+    r = get_run(run_id)
+    _agent(r, agent_id)
+    msgs = sorted(r.messages.get(agent_id, {}).values(), key=lambda x: x["message_id"])
+    return {"messages": msgs}
+
+
+@app.post(f"{PREFIX}/runs/{{run_id}}/agents/{{agent_id}}/messages", response_model=m.AgentMessage, status_code=201)
+def send_agent_message(run_id: str, agent_id: str, req: m.AgentMessageRequest):
+    r = get_run(run_id)
+    a = _agent(r, agent_id)
+    if r.status == "stopped":
+        raise ApiError(409, "invalid_state", "Run is stopped. Resume it to talk to its agents.")
+    r.msg_count += 1
+    asked = {"message_id": f"AM-{r.msg_count:03d}", "agent_id": agent_id, "author": "analyst", "text": req.text,
+             "status": "sent", "created_at": now_iso(), "reply_to": None}
+    r.msg_count += 1
+    reply = {"message_id": f"AM-{r.msg_count:03d}", "agent_id": agent_id, "author": "agent",
+             "text": (f"(mock) {agent_id} here. My task: {a['task']}. The real backend answers from this agent's own "
+                      "inputs and transcript. Chat answers are not checked and never enter the report."),
+             "status": "answered", "created_at": now_iso(1.2 / SPEED), "reply_to": asked["message_id"]}
+    now = time.monotonic()
+    r.schedule(0, _message_event(r, asked), base=now)
+    r.schedule(1.2 / SPEED, _message_event(r, reply), base=now)
+    r.schedule(1.2 / SPEED + 0.001, _message_event(r, {**asked, "status": "answered"}), base=now)
+    r.tick()
+    return asked
+
+
+@app.post(f"{PREFIX}/runs/{{run_id}}/agents/{{agent_id}}/stop", response_model=m.Agent)
+def stop_agent(run_id: str, agent_id: str, req: m.StopRequest):
+    r = get_run(run_id)
+    a = _agent(r, agent_id)
+    if r.status in ("done", "stopped", "failed"):
+        raise ApiError(409, "invalid_state", f"Run is already {r.status}")
+    if a["status"] in ("done", "failed", "stopped"):
+        raise ApiError(409, "invalid_state", f"{agent_id} is already {a['status']}")
+    reason = req.reason or "Stopped by the analyst"
+    r.stopped_agents[agent_id] = reason
+    r.policy_version += 1
+    now = time.monotonic()
+    action = "fetch" if a["role"] == "fetcher" else "model.invoke"
+    r.schedule(0, {"type": "agent.status", "stage": r.stage, "agent_id": agent_id, "level": "warn", "_user": True,
+                   "message": f"{agent_id} stopped: {reason}",
+                   "data": {"agent_id": agent_id, "status": "stopped", "task": a["task"], "usage": a["usage"],
+                            "reason": reason}}, base=now)
+    r.schedule(0.001, {"type": "policy.updated", "stage": r.stage, "agent_id": None, "level": "warn", "_user": True,
+                       "message": f"Gateway policy v{r.policy_version}: {agent_id} stopped, its requests are denied",
+                       "data": {"version": r.policy_version, "change": f"Stopped agent {agent_id}",
+                                "rule_ids": [f"R-stop-{agent_id}"]}}, base=now)
+    r.schedule(1.0 / SPEED, {"type": "gateway.request", "stage": r.stage, "agent_id": agent_id, "level": "warn", "_user": True,
+                             "message": f"{agent_id} {action} blocked (R-stop-{agent_id})",
+                             "data": {"request_id": f"REQ-A{len(r.released):04d}", "role": a["role"], "action": action,
+                                      "target": bf.HAIKU if action == "model.invoke" else "https://example.org/next-page",
+                                      "decision": "blocked", "rule_id": f"R-stop-{agent_id}",
+                                      "reason": f"Agent stopped by the analyst: {reason}", "source_id": None, "latency_ms": 2,
+                                      "http_status": None, "bytes": None, "tokens_in": None, "tokens_out": None,
+                                      "cost_usd": None}}, base=now)
+    r.tick()
+    return r.agents[agent_id]
 
 
 def _doc(doc_id: str) -> dict:

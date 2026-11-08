@@ -11,7 +11,7 @@ A harness for AI-written financial market reports: every number traces to an exa
 ## Layout
 | Folder | What |
 |---|---|
-| `frontend/` | Web dashboard (Vite + React + TypeScript), on the `frontend` branch |
+| `frontend/` | Web dashboard (Next.js, React, TypeScript), on the `frontend` branch |
 | `backend/` | Gateway, pipeline and checks (AWS), on the `backend` branch |
 | `contract/` | Shared API contract: Pydantic models, generated TypeScript types, certainty score, BOFFIN rubric |
 | `mock/` | Mock API server that serves the whole contract from fixture data |
@@ -31,8 +31,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Without `VITE_API_URL` set, the dashboard runs against a built-in mock backend that plays through a full run. To use the real backend:
+The dashboard reads the API base from `NEXT_PUBLIC_API_BASE` (default `http://localhost:8000/api/v1`, the mock API server). To use the real backend, put it in `frontend/.env.local` and restart:
 ```bash
-VITE_API_URL=http://localhost:8000/api/v1 npm run dev                                   # mock API server
-VITE_API_URL=https://<api-id>.execute-api.us-east-1.amazonaws.com/api/v1 npm run dev     # real backend
+NEXT_PUBLIC_API_BASE=https://<api-id>.execute-api.us-east-1.amazonaws.com/api/v1
 ```

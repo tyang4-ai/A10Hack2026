@@ -221,6 +221,13 @@ AgentStatus = Literal["queued", "working", "done", "failed", "stopped"]
 
 GatewayAction = Literal["fetch", "model.invoke"]
 GatewayDecision = Literal["allowed", "blocked", "flagged"]
+# v0.2: where a stored document's bytes came from. fetched = fetched live by this run,
+# cache = fetched by an earlier Axelrod run and served from the S3 cache,
+# archive = collected before the event (Gordon's summer 2026 archive) and served from S3.
+DocOrigin = Literal["fetched", "cache", "archive"]
+# v0.2: demo cache. documents = fetch bodies served from the S3 cache.
+# documents_and_models = model answers replayed from recorded calls too. Label anything but "off".
+CacheMode = Literal["off", "documents", "documents_and_models"]
 
 RepairAction = Literal[
     "recite",            # replace the quote with the real source span
@@ -288,6 +295,14 @@ class Run(Model):
     # live = running now; replay = a recorded real run played back (label it in
     # the UI); fixture = mock data from mock/build_fixtures.py
     mode: Literal["live", "replay", "fixture"] = "live"
+    # v0.2: rerun from a step. A rerun is a fork: a new run that reuses the
+    # parent's work before rerun_from and redoes the rest with the instructions.
+    # The parent run is never changed. All three are null for normal runs.
+    parent_run_id: Optional[str] = None
+    rerun_from: Optional[Stage] = None
+    instructions: Optional[str] = None
+    # v0.2: demo cache in use for this run (see CacheMode). Label it in the UI.
+    cache_mode: CacheMode = "off"
 
 
 class CreateRunRequest(Model):
@@ -305,6 +320,15 @@ class RunList(Model):
 
 class StopRequest(Model):
     reason: Optional[str] = None
+
+
+class ResumeRequest(Model):  # v0.2
+    reason: Optional[str] = None
+
+
+class RerunRequest(Model):  # v0.2
+    from_stage: Stage
+    instructions: str = Field(min_length=1, max_length=4000)
 
 
 # ---------------------------------------------------------------------------
@@ -412,7 +436,8 @@ class PolicyRule(Model):
     model_id: Optional[str] = None
     roles: list[AgentRole] = []  # empty = every role
     source_id: Optional[str] = None
-    origin: Literal["user_approval", "user_rejection", "user_revoke", "auto_tier", "system"]
+    agent_id: Optional[str] = None  # v0.2: the rule applies to this one agent only (R-stop-<agent_id>)
+    origin: Literal["user_approval", "user_rejection", "user_revoke", "user_agent_stop", "auto_tier", "system"]
     note: Optional[str] = None
     created_at: str
 
@@ -476,6 +501,8 @@ class Document(Model):
     vault_paths: DocVaultPaths
     quarantined: bool = False
     scan: ScanResult
+    origin: DocOrigin = "fetched"  # v0.2: see DocOrigin. archive = collected before the event
+    collected_at: Optional[str] = None  # v0.2: when the bytes were first collected (differs from fetched_at for cache and archive)
 
 
 class DocumentList(Model):
@@ -861,6 +888,26 @@ class AgentList(Model):
     as_of_seq: int
 
 
+# v0.2: talk to one agent. Replies come from the agent's own task and context.
+# They are not checked and never enter the report or the brief: label them.
+class AgentMessage(Model):
+    message_id: str  # "AM-001"
+    agent_id: str
+    author: Literal["analyst", "agent"]
+    text: str
+    status: Literal["sent", "answered", "failed"]  # analyst messages go sent -> answered (or failed)
+    created_at: str
+    reply_to: Optional[str] = None  # an agent reply names the analyst message it answers
+
+
+class AgentMessageRequest(Model):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class AgentMessageList(Model):
+    messages: list[AgentMessage]  # oldest first
+
+
 # ---------------------------------------------------------------------------
 # Comments ("butt in")
 # ---------------------------------------------------------------------------
@@ -1009,6 +1056,7 @@ class AgentStatusData(Model):
     status: AgentStatus
     task: str
     usage: Usage
+    reason: Optional[str] = None  # v0.2: why, when the analyst stopped this agent
 
 
 class AgentLogData(Model):
@@ -1030,7 +1078,11 @@ class GatewayRequestData(Model):
     bytes: Optional[int] = None
     tokens_in: Optional[int] = None
     tokens_out: Optional[int] = None
-    cost_usd: Optional[float] = None
+    cost_usd: Optional[float] = None  # what this call cost. 0 on a cache hit
+    # v0.2: demo cache. hit = served from the cache, no network or model call made.
+    # miss = done live and stored in the cache. null = cache off.
+    cache: Optional[Literal["hit", "miss"]] = None
+    cached_at: Optional[str] = None  # when the cached copy was made (the archive date for pre-event documents)
 
 
 class ItemCreatedData(Model):
@@ -1045,7 +1097,7 @@ class ItemVerifiedData(Model):
 
 class ItemUpdatedData(Model):
     item: Item
-    reason: Literal["repair", "comment", "user_edit", "demo_injection"]
+    reason: Literal["repair", "comment", "user_edit", "demo_injection", "source_revoked"]
 
 
 class ReportReadyData(Model):
@@ -1076,6 +1128,15 @@ class CommentEventData(Model):
     comment: Comment
 
 
+class AgentMessageData(Model):  # v0.2
+    message: AgentMessage
+
+
+class RunResumedData(Model):  # v0.2
+    reason: Optional[str] = None
+    stage: Stage  # where the run picks up
+
+
 class UsageUpdatedData(Model):
     usage: Usage
 
@@ -1083,6 +1144,16 @@ class UsageUpdatedData(Model):
 class RunCreatedEvent(_EventBase):
     type: Literal["run.created"]
     data: RunCreatedData
+
+
+class RunResumedEvent(_EventBase):  # v0.2
+    type: Literal["run.resumed"]
+    data: RunResumedData
+
+
+class AgentMessageEvent(_EventBase):  # v0.2
+    type: Literal["agent.message"]
+    data: AgentMessageData
 
 
 class RunStatusEvent(_EventBase):
@@ -1217,6 +1288,7 @@ Event = Annotated[
         RunStoppedEvent,
         RunFailedEvent,
         RunCompletedEvent,
+        RunResumedEvent,
         PlanNeedEvent,
         PlanSourceEvent,
         PlanReadyEvent,
@@ -1227,6 +1299,7 @@ Event = Annotated[
         AgentSpawnedEvent,
         AgentStatusEvent,
         AgentLogEvent,
+        AgentMessageEvent,
         GatewayRequestEvent,
         ItemCreatedEvent,
         ItemVerifiedEvent,
@@ -1243,11 +1316,11 @@ Event = Annotated[
 ]
 
 EVENT_TYPES = [
-    "run.created", "run.status", "run.stopped", "run.failed", "run.completed",
+    "run.created", "run.status", "run.stopped", "run.failed", "run.completed", "run.resumed",
     "plan.need", "plan.source", "plan.ready",
     "approval.committed", "policy.updated",
     "source.status", "doc.stored",
-    "agent.spawned", "agent.status", "agent.log",
+    "agent.spawned", "agent.status", "agent.log", "agent.message",
     "gateway.request",
     "item.created", "item.verified", "item.updated", "report.ready",
     "summary.sentence", "summary.verified", "summary.ready",
@@ -1292,7 +1365,7 @@ VaultNode.model_rebuild()
 
 # Everything the generator should export to JSON Schema / TypeScript.
 EXPORTED = [
-    Run, CreateRunRequest, RunList, StopRequest,
+    Run, CreateRunRequest, RunList, StopRequest, ResumeRequest, RerunRequest,
     DataNeed, Source, Plan, AddSourceRequest, SourceDecision, ApprovalRequest,
     ApprovalResponse, RevokeRequest, RevokeResponse,
     PolicyRule, RoleScope, Policy,
@@ -1301,7 +1374,7 @@ EXPORTED = [
     DataItem, Conclusion, Extrapolation, Chart, AgentReport, ItemPatch,
     Rollup, CategoryScore, Hole, Certainty, ReportCertainty,
     SummarySentence, HumanReport,
-    Agent, AgentList,
+    Agent, AgentList, AgentMessage, AgentMessageRequest, AgentMessageList,
     CommentRequest, Comment, CommentList,
     VaultNode, VaultFile,
     InjectErrorsRequest, InjectErrorsResponse,

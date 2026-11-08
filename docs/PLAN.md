@@ -1,56 +1,66 @@
 # Plan: Saturday evening to the 9:00 AM deadline
 
+**Update Sat 11 PM.** The backend passed G5 at 10:15 PM, five hours early. Gordon approved Tong's four feature requests and a demo built on cached documents. Rest of the night: the orchestrator works through `docs/BACKEND_V2.md` and writes READY FOR INTEGRATION in `backend/status.md` (target 4:00 AM). Then a second Claude Code session follows `docs/INTEGRATE.md`: one integration branch, the webapp wired to the backend and deployed on the same EC2 behind API Gateway, two timed rehearsals, and the laptop kit (target 5:15 AM). Freeze and merge into `main` at 5:30 as before. The timeline below is the original plan.
+
 Tracks: A10 Agent Harness (Prompt 2) and AWS. The whole team is undergrad, so the AWS track is open to us. **Still unconfirmed:** whether one project can be entered in both tracks. Gordon asks in #hack-questions (tag `hack-rules`) right away.
 
 ## Timeline
 
 | Time (PT) | Gordon: backend | Teammate: frontend |
 |---|---|---|
-| now to 6:30 | AWS setup and smoke tests (`BACKEND.md` section 8). Ask about both tracks | Repo, Vite + React + TS, app shell and polling store against the mock |
+| now to 6:30 | AWS setup and smoke tests (`BACKEND.md` section 8). Ask about both tracks | Repo, Next.js + React + TS, app shell and polling store against the mock |
 | 6:30 to 7:00 | Dinner, Heafey Atrium | Dinner |
 | 7:00 to 10:00 | Store, events and routes, gateway, SHL fetch and PDF text, extractor and data checker, pre-smoke | Sources module and approval, Traffic drawer, STOP, Revoke |
 | 10:00 to 1:00 | Draft, judges, repair, certainty, rollup, brief, verify_summary | Agent report module, inspector, document viewer with highlights, diffs |
-| 1:00 to 3:00 | Deploy to EC2 behind API Gateway. Full SHL run. Tag `demo-ok-1` | Brief with certainty highlighting. Switch `VITE_API_URL` to the real API and fix integration bugs |
+| 1:00 to 3:00 | Deploy to EC2 behind API Gateway. Full SHL run. Tag `demo-ok-1` | Brief with certainty highlighting. Switch `NEXT_PUBLIC_API_BASE` to the real API and fix integration bugs |
 | 3:00 to 5:30 | CLI, planted injection test page, live demo segment, baseline comparison against plain Claude (`BACKEND.md` section 11), prep for judge questions | Agent swarm, vault drawer, charts, scorecard, print layout |
 | 5:30 to 6:00 | Feature freeze. Merge `backend` and `frontend` into `main`, check the demo from `main`, tag `demo-ok-final`, make `main` the default branch | Same |
 | 6:00 to 7:30 | Record the video while the AWS account still works. Slides. Devpost text in Gordon's voice. Submit early, since it stays editable | Same |
-| 7:30 to 8:30 | Two dry runs of the 4-minute pitch. Each person answers code questions about the other's half | Same |
+| 7:30 to 8:30 | Two dry runs of the 3-minute pitch. Each person answers code questions about the other's half | Same |
 | 8:30 | Devpost Q&A (Bergin 116 per the website, the Atrium per the guide) | |
 | 9:00 | Deadline. Whole team in the Heafey Atrium | |
 | 9:15 | Judging. Find your assigned judges and time slots. Missing one means missing that round | |
 
 The doors lock around 8 PM. Stay in, or know who can let you back in.
 
-## Demo script: 4 minutes, then 1 minute of questions
+## Demo script: 3 minutes, webapp first
 
-**0:00 to 0:20, the problem.** AI can write an investment memo in a minute, but nobody can trust it. Numbers get made up, and research agents read untrusted pages from the open web.
+The live part runs on the deployed webapp with `cache_mode: documents`: every fetch is decided by the gateway, then served from the S3 document cache (Gordon's pre-event archive plus copies from earlier runs), so collection takes seconds and doesn't depend on outside sites. Model calls stay live. If Bedrock is slow, switch to `documents_and_models` (recorded model answers) and say so. The CLI is on screen for about 10 seconds. Rehearse with a stopwatch. Exact clicks and pacing live in `backend/DEMO.md`.
 
-**0:20 to 1:40, live: A10's four steps, in their order.**
-1. Launch: `axelrod run "Siemens Healthineers"` in the terminal. The run shows up in the UI and the plan streams in. Approve the priority sources, drag one up, reject one.
-2. Traffic: every fetch and every model call, with tokens and cost.
-3. Block: a link to an unapproved domain gets blocked by default deny. Revoke a source mid-run, and the next request to it turns red. Our planted test page with a prompt injection gets flagged and quarantined (label it as our test page).
-4. Stop: hit STOP. The kill switch blocks the next model call.
+**0:00 to 0:15, the problem.** AI can write an investment memo in a minute, but nobody can trust it. Numbers get made up, and research agents read untrusted pages from the open web. Axelrod checks every number with code and puts every agent behind one gateway.
 
-**1:40 to 3:00, the finished SHL run** (run earlier in the night). If the baseline comparison is done, open with its number: what our checker caught versus a plain Claude report.
-- The brief, highlighted by certainty, with the report gauge next to coverage.
-- Click a sentence, and follow it through the conclusion and the data item to the highlighted line on the annual report page.
-- A fixed item: an extractor's digit slip caught by code, shown as a diff.
-- A low-certainty score: ROTIC scores +1, but with low certainty because SHL has fewer than ten years of reports since listing. "We tell you how much to trust each line, and why."
-- The register of what we could not determine.
+**0:15 to 0:25, launch from the CLI** (A10 step 1). `axelrod run "Siemens Healthineers" --ticker SHL` prints the run id and a link. Switch to the webapp, where the run is already there.
 
-**3:00 to 3:30, architecture.** Bedrock (Sonnet plans and drafts, a swarm of Haiku agents extracts and judges), the Guardrails tripwire, S3 as the vault, DynamoDB for the event log, EC2 with an IAM role, API Gateway in front. In production the stages become a Step Functions workflow.
+**0:25 to 1:20, the live run in the webapp** (A10 steps 2 to 4).
+1. The plan streams in (frozen for the demo, say so). Approve the priority sources, drag one up, reject one. Never touch S-006, S-009 or S-010.
+2. Traffic: every fetch and every model call, with tokens and cost. Fetches say "cache" and when the copy was collected.
+3. Block: S-009's off-site links go red on their own (default deny). Click Revoke on S-006, and its next request turns red. S-010, our planted test page (simulated), comes back flagged by Bedrock Guardrails and is quarantined.
+4. Stop one extractor in the Agents window. Its next model call is blocked while the rest keeps going.
+5. STOP. The kill switch discards in-flight results and blocks everything after.
 
-**3:30 to 4:00, business.** Who buys: PE, hedge fund and corp dev analysts screening public companies. Cost per screen comes from the gateway's meter, set against analyst hours. Price per seat. Limits: public companies only, BOFFIN screen depth, and certainty measures support, not truth.
+**1:20 to 2:35, the finished SHL run** (run earlier tonight, on the same sources).
+- The brief, shaded by certainty, with the report certainty next to coverage.
+- Click a sentence and follow it through the conclusion and the data item to the highlighted line on the annual report page.
+- A repaired item: an extractor's slip caught by code, shown as a diff.
+- ROTIC scores -1 and we flag the certainty, because some years lack the inputs. "We tell you how much to trust each line, and why."
+- The judges rejected two scores, so they show as gaps, not guesses.
+- The baseline: a plain Claude report on the same pages got its quotes right, but its scores went unchecked. Our checks caught 24 of 25 planted errors.
+
+**2:35 to 2:50, architecture.** Bedrock (Claude Sonnet 5 plans and drafts, a swarm of Claude Haiku 4.5 agents extracts and judges), the Guardrails tripwire, S3 for the vault and the document cache, DynamoDB for the event log, EC2 with an IAM role, API Gateway in front. About $2 of model calls per full report.
+
+**2:50 to 3:00, close.** Who buys: PE, hedge fund and corp dev analysts screening public companies, priced per seat. Labeled on screen and on Devpost: the frozen plan, the cached documents (collected before the event), the planted test page.
 
 ## Fallbacks
 
-- The live run breaks: open the finished run and walk the same four steps through its recorded traffic, and say it's recorded.
-- Laptop or Wi-Fi dies: play the video from a phone.
-- Bedrock throttles during the live part: the live segment only needs collect and the start of extract.
+- The live run breaks: open the finished run and walk the four steps through its recorded traffic, and say it's recorded.
+- Venue Wi-Fi dies: on the laptop, run the backend locally (`STORE=local`, it serves the recorded runs in `backend/data/replay/`, labeled) and the frontend locally (`docs/LAPTOP.md`). Last resort: the video, from a phone.
+- Bedrock throttles during the live part: switch the instance to `documents_and_models` and say the model answers are recorded.
 
 ## Devpost checklist
 
 - Public repo link, every teammate added, video, screenshots, a logo
 - Both tracks selected, if the organizers allow it
 - Sections: Inspiration, What it does, How we built it (list the AWS services and why), Challenges, What's next, plus who buys it, what a report costs and what we'd charge
-- Label the simulated parts: fixture data, the planted injection page, the demo error-injection button
+- Label the simulated parts: fixture data, the planted injection page, the demo error-injection button, the frozen plan, the cached documents (collected before the event) and any recorded model answers
+- Name the models we really use: Claude Sonnet 5 and Claude Haiku 4.5 on Bedrock (the workshop blocks the 5.5 models)
+- Before submitting: make the repo public, remove the workshop account id from the docs, make `main` the default branch

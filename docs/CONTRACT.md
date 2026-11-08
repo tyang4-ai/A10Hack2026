@@ -1,4 +1,4 @@
-# Axelrod API contract (v0.1.0)
+# Axelrod API contract (v0.2.0)
 
 The source of truth is `contract/models.py`. This file explains it. `contract/types.ts` is generated from the models, and the mock server validates every response against them. If this doc and `models.py` ever disagree, `models.py` wins. Fix the doc.
 
@@ -8,7 +8,7 @@ Priorities: **P0** = the demo needs it, **P1** = should have, **P2** = stretch.
 
 | Thing | Rule |
 |---|---|
-| Base URL | `VITE_API_URL` in the frontend = `http://localhost:8000/api/v1` (mock), later the API Gateway invoke URL + `/api/v1`. Paths below are relative to it |
+| Base URL | `NEXT_PUBLIC_API_BASE` in the frontend (Next.js) = `http://localhost:8000/api/v1` (mock), later the API Gateway invoke URL + `/api/v1`. Paths below are relative to it |
 | Health | `GET /healthz` (outside `/api/v1`) returns `Health` |
 | Auth | None for the hackathon. If `AXELROD_API_KEY` is set on the backend, send it as header `X-Axelrod-Key` |
 | CORS | Backend allows any origin |
@@ -63,7 +63,7 @@ any time: POST /stop → status stopped (kill switch). failed = backend error, s
 
 ## 3. Endpoints
 
-All paths below are relative to `VITE_API_URL`.
+All paths below are relative to `NEXT_PUBLIC_API_BASE`.
 
 | P | Method and path | Body | Returns | Notes |
 |---|---|---|---|---|
@@ -89,8 +89,13 @@ All paths below are relative to `VITE_API_URL`.
 | P1 | `GET /runs/{run_id}/comments` | | `CommentList` | |
 | P2 | `PATCH /runs/{run_id}/items/{item_id}` | `ItemPatch` | `Item` | Analyst edit. The backend re-verifies it. Charts cannot be edited |
 | P2 | `POST /runs/{run_id}/demo/inject-errors` | `InjectErrorsRequest` | `InjectErrorsResponse` | Demo control. Corrupts one digit in N quotes so the checker can catch them. Label it in the UI |
+| P1 | `POST /runs/{run_id}/agents/{agent_id}/stop` | `StopRequest` | `Agent` | v0.2. Stops one agent, the run keeps going. See section 13 |
+| P1 | `GET /runs/{run_id}/agents/{agent_id}/messages` | | `AgentMessageList` | v0.2. Chat with one agent, oldest first |
+| P1 | `POST /runs/{run_id}/agents/{agent_id}/messages` | `AgentMessageRequest` | `AgentMessage` (201) | v0.2. The analyst's message. The reply arrives as an `agent.message` event |
+| P1 | `POST /runs/{run_id}/resume` | `ResumeRequest` | `Run` | v0.2. Turns the kill switch off and picks up where STOP cut in |
+| P1 | `POST /runs/{run_id}/rerun` | `RerunRequest` | `Run` (201) | v0.2. Forks a new run from a step, with instructions. The parent never changes |
 
-A stopped run rejects comments, edits and injections (409, or a `rejected` comment).
+A stopped run rejects comments, edits, injections and agent chat (409, or a `rejected` comment) until it resumes.
 
 ## 4. Live updates: snapshot plus events
 
@@ -109,6 +114,7 @@ Every event has `seq`, `ts`, `run_id`, `type`, `stage`, `agent_id`, `level` and 
 | `run.stopped` | `{reason}` | Kill switch banner |
 | `run.failed` | `{error}` | Error banner |
 | `run.completed` | `{}` | Done state |
+| `run.resumed` | `{reason, stage}` | v0.2. Kill switch off, the run picks up at `stage` |
 | `plan.need` | `{need}` | Needs list, streams in |
 | `plan.source` | `{source}` | Source cards, streams in (also fires when the analyst adds one) |
 | `plan.ready` | `{needs, sources}` | Enable the approval controls |
@@ -117,12 +123,13 @@ Every event has `seq`, `ts`, `run_id`, `type`, `stage`, `agent_id`, `level` and 
 | `source.status` | `{source_id, status, stats, error}` | Source chips |
 | `doc.stored` | `{doc_id, source_id, pages, vault_path, scan}` | Vault, quarantine badge |
 | `agent.spawned` | `{agent}` | Agent swarm |
-| `agent.status` | `{agent_id, status, task, usage}` | Agent swarm |
+| `agent.status` | `{agent_id, status, task, usage, reason}` | Agent swarm. `reason` is set when the analyst stopped the agent |
 | `agent.log` | `{text, transcript_path}` | Thought log |
-| `gateway.request` | `GatewayRequestData` | Traffic table. `decision` is `allowed`, `blocked` or `flagged` |
+| `agent.message` | `{message}` | v0.2. Agent chat. The same `message_id` can arrive again with a new `status`: replace it |
+| `gateway.request` | `GatewayRequestData` | Traffic table. `decision` is `allowed`, `blocked` or `flagged`. v0.2: `cache` is `hit`, `miss` or null |
 | `item.created` | `{item}` | New report row (status `pending`) |
 | `item.verified` | `{item_id, verification, certainty}` | Row color and certainty pill |
-| `item.updated` | `{item, reason}` | Replace the row. `reason`: `repair`, `comment`, `user_edit`, `demo_injection` |
+| `item.updated` | `{item, reason}` | Replace the row. `reason`: `repair`, `comment`, `user_edit`, `demo_injection`, `source_revoked` (v0.2) |
 | `report.ready` | `{items, passed, fixed, failed, holes}` | Refetch `/report` for rollup and certainty |
 | `summary.sentence` | `{sentence, section_heading}` | Brief draft streaming in |
 | `summary.verified` | `{sentence_id, verification, certainty}` | Sentence highlight |
@@ -151,6 +158,8 @@ The gateway is the only path from an agent to the outside world. Agents never ho
 4. Explicit deny rules (revoked or rejected sources): deny.
 5. Allow rules (domain + path prefix): allow.
 6. Default: deny.
+
+v0.2 adds one check right after the kill switch: a stopped agent (`R-stop-<agent_id>`, a deny rule with `agent_id` set) gets every request denied, while the rest of the run continues.
 
 Any error inside the gateway also denies (fail closed). Every decision emits `gateway.request` with latency, and with tokens and cost for model calls. `flagged` means the fetch was allowed but the Bedrock Guardrails scan found a prompt attack in the content: the page is stored in the vault and quarantined, and no agent ever reads it.
 
@@ -227,3 +236,31 @@ runs/<run_id>/<company-slug>/
 ## 12. Changing this contract
 
 Edit `contract/models.py`, run `python contract/gen_types.py`, update the mock and the fixtures in the same commit (`python mock/build_fixtures.py` must still pass), add a line to `contract/CHANGELOG.md`, bump `contract/VERSION`, and tell the other person.
+
+## 13. v0.2 additions: agent control, rerun, resume, demo cache
+
+**Stop one agent.** `POST /runs/{run_id}/agents/{agent_id}/stop` with `{"reason"}` returns the `Agent` with `status: "stopped"`. Effects, in order: `agent.status` (stopped, with `reason`), a deny rule `R-stop-<agent_id>` (`agent_id` set, `origin: "user_agent_stop"`, action = the agent's action) with `policy.updated`, and the agent's next request shows as `blocked` in traffic. A result that lands after the stop is discarded. The work that agent owned becomes a declared hole ("agent stopped by the analyst"), never silently missing. 409 if the agent already finished or the run is done, stopped or failed. 404 for an unknown agent.
+
+**Agent chat.** `POST .../agents/{agent_id}/messages` with `{"text"}` returns the analyst's `AgentMessage` (`status: "sent"`). The agent answers from its own task, inputs and transcript, with its own model and through the gateway, so the kill switch, a stop rule and the budget all apply. Two `agent.message` events follow: the reply (`author: "agent"`, `reply_to` set) and the analyst's message again with `status: "answered"` (or `failed`). Chat is read-only: it never changes the run, the report or the brief, and replies are not checked. Label them in the UI. 409 while the run is stopped. Talking to a finished agent is fine.
+
+**Resume.** `POST /runs/{run_id}/resume` works only on a `stopped` run. It turns the kill switch off (policy version bump, `policy.updated`), emits `run.resumed` and `run.status` (`running`), and restarts the stage STOP cut into, skipping work that already finished. Agents the analyst stopped one by one stay stopped. 409 for any other status.
+
+**Rerun from a step.** `POST /runs/{run_id}/rerun` with `{"from_stage", "instructions"}` creates a new run (201) and never changes the parent. Allowed when the parent is `done`, `stopped` or `failed` and reached `from_stage`. 409 for `complete`, for a step the parent never reached, or while the parent is running. The new run has `parent_run_id`, `rerun_from` and `instructions`, its own policy (the parent's rules at that point) and its own event log from seq 1 (its `run.created` carries the parent fields). Copied items keep their ids, so citations still resolve. The instructions go to every agent from `from_stage` on, and every check still applies to what they produce.
+
+| `from_stage` | Kept from the parent | Redone |
+|---|---|---|
+| `plan` | nothing | everything, instructions to the planner |
+| `approve` | needs and proposed sources | the approval gate (`awaiting_approval`) |
+| `collect` | plan and approvals | fetching |
+| `extract` | stored documents | extraction onward |
+| `draft` | verified data items | conclusions and scores onward |
+| `verify` | the draft | checks onward |
+| `repair` | checked items | repair onward |
+| `summarize` | the verified agent report | the brief |
+| `verify_summary` | the brief | brief checks |
+
+**Demo cache.** For a fast, repeatable demo the backend can serve fetch bodies from an S3 document cache, and replay recorded model answers. Everything stays labeled:
+- `Run.cache_mode`: `off`, `documents` (fetch bodies from the cache, model calls live) or `documents_and_models` (model answers replayed from recorded calls too). Show a badge for anything but `off`.
+- `gateway.request.cache`: `hit` (served from the cache, no network or model call made, `cost_usd` 0), `miss` (done live and stored) or null (cache off). `cached_at` says when the cached copy was made. The policy decision always comes first: a blocked request never reads the cache.
+- `Document.origin`: `fetched` (this run), `cache` (an earlier Axelrod run) or `archive` (collected before the event, Gordon's summer 2026 archive). `collected_at` is when the bytes were first collected.
+
