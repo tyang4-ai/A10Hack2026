@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { create } from "zustand";
 import type { Block, SummarySentence } from "@contract/types";
 import { BAND_BG, CERTAINTY_HELP } from "@/lib/format";
 import { useRunStore } from "@/lib/store";
@@ -9,12 +10,19 @@ import { pageRefFor } from "./SourcePage";
 import { ChartView, Gauge, Holes, Scorecard } from "./report";
 import { btn, Skeleton } from "./ui";
 
+// Only one sentence popover is open at a time, across the whole report.
+const useTip = create<{ id: string | null }>(() => ({ id: null }));
+
 // Like an AI-detector page: every sentence is shaded by how well checked
 // evidence supports it. Hover or focus a sentence for its certainty; click the panel to show the source.
 function Sentence({ s }: { s: SummarySentence }) {
   const select = useRunStore((x) => x.select);
   const selected = useRunStore((x) => x.selected);
-  const [open, setOpen] = useState(false);
+  const open = useTip((t) => t.id === s.id);
+  const setOpen = (v: boolean) => {
+    if (v) useTip.setState({ id: s.id });
+    else if (useTip.getState().id === s.id) useTip.setState({ id: null });
+  };
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const c = s.certainty;
   const band = c?.band ?? "none";
