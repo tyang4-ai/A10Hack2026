@@ -220,11 +220,13 @@ def held_scan(scan: m.ScanResult) -> m.ScanResult:
 
 
 def meta_json(doc: m.Document, result: FetchResult) -> str:
-    """The <file>.meta.json sidecar: the Document plus what the fetch saw."""
+    """The <file>.meta.json sidecar: the Document plus what the fetch saw, including whether the body came
+    from the document cache (cache "hit", with origin and collected_at on the Document) or the network."""
     meta = doc.model_dump(mode="json")
     meta["vault_paths"].pop("meta", None)
     meta["fetch"] = {"request_id": result.request_id, "url": result.url, "final_url": result.final_url,
-                     "http_status": result.http_status, "content_type": result.content_type}
+                     "http_status": result.http_status, "content_type": result.content_type,
+                     "cache": getattr(result, "cache", None)}
     return json.dumps(meta, indent=2, ensure_ascii=False)
 
 

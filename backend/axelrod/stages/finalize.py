@@ -221,9 +221,14 @@ def _agent_reason(state: RunState, a: m.Agent) -> str:
 
 def build_holes(ctx: RunContext, scope: list[str]) -> list[m.Hole]:
     """Every gap: unscored in-scope criteria, items left failed, blocked or pending, approved sources that
-    failed, were blocked, revoked, quarantined or skipped, and extractor agents that failed (their pages
-    gave no data). Ids stay stable across calls."""
+    failed, were blocked, revoked, quarantined or skipped, extractor agents that failed (their pages
+    gave no data), and agents the analyst stopped one by one (v0.2: their work is declared, never silently
+    missing). Ids stay stable across calls."""
     state = ctx.state
+    policy_rules = state.policy.rules if state.policy is not None else []
+    stop_notes = {r.agent_id: r.note for r in policy_rules if r.origin == "user_agent_stop" and r.agent_id}
+    rerun = {a.parent_agent_id for a in state.agents.values() if a.parent_agent_id}   # its rerun redid the work
+    stop_notes = {aid: note for aid, note in stop_notes.items() if aid not in rerun}
     existing = {_hole_key(h): h.hole_id for h in state.holes}
     wanted: list[tuple[tuple[str, str], str | None, str | None, str]] = []   # key, criterion, item_id, reason
     by_crit: dict[str, m.Extrapolation] = {}
@@ -245,7 +250,14 @@ def build_holes(ctx: RunContext, scope: list[str]) -> list[m.Hole]:
         if s.approval in ("approved", "auto_approved") and s.status in BAD_SOURCE:
             wanted.append((("src", s.source_id), None, None, _source_reason(s)))
     for a in state.agents.values():
-        if a.role == "extractor" and a.status == "failed":
+        if a.agent_id in stop_notes:
+            # The reason is the key (_hole_key falls back to it), so it holds only stable fields.
+            targets = f" Its targets: {', '.join(a.target_ids)}." if a.target_ids else ""
+            why = (stop_notes[a.agent_id] or "no reason given").rstrip(".")
+            reason = _short(f"Agent stopped by the analyst: {a.agent_id} ({a.name or a.role}) did not finish its "
+                            f"work ({a.task}), so that work is missing from the report.{targets} Reason: {why}.", 400)
+            wanted.append((("src", reason), None, None, reason))
+        elif a.role == "extractor" and a.status == "failed":
             wanted.append((("agent", a.agent_id), None, None, _agent_reason(state, a)))
     out = []
     for key, crit, item_id, reason in wanted:

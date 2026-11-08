@@ -1,10 +1,16 @@
 """The gateway: the only path to the network and to Bedrock. It enforces the policy, the kill switch
 and the budget, meters every call, emits one gateway.request per decision, and fails closed.
 
-Decision order (CONTRACT.md section 6, first match wins): kill switch, budget, role scope, explicit
-deny, allow, default deny. Any exception while deciding or carrying out a request is a deny. Link-local
-fetch targets (instance metadata lives there) are denied with the explicit denies, so no allow rule,
-not even an analyst-approved source, can reach them.
+Decision order (CONTRACT.md section 6, first match wins): kill switch, a stopped agent (R-stop-<agent_id>,
+v0.2), budget, role scope, explicit deny, allow, default deny. Any exception while deciding or carrying out
+a request is a deny. Link-local fetch targets (instance metadata lives there) are denied with the explicit
+denies, so no allow rule, not even an analyst-approved source, can reach them.
+
+Document cache (v0.2, CACHE_DOCUMENTS=on): the decision always comes first, so a blocked request never
+touches the cache. An allowed fetch is served from the cache on a hit (no network call, cache "hit") and
+fetched live and stored on a miss (cache "miss"). Each redirect hop is its own entry and is decided again.
+An s3:// URL is an archive copy with no known original URL: it is decided like any URL (the domain is the
+bucket) and only ever served from the cache, so a miss fails clearly instead of going live.
 """
 from __future__ import annotations
 
@@ -18,7 +24,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 from urllib.parse import urljoin
 
-from . import bedrock, pricing
+from . import bedrock, cache, pricing
 from .contract import m
 from .fetch import http
 from .ids import now_iso
@@ -35,6 +41,8 @@ SYS_RULE_ID = "R-sys-models"
 MAX_REDIRECTS = 5
 REDIRECT_CODES = frozenset({301, 302, 303, 307, 308})
 KILL_REASON = "Kill switch: run stopped. Every request is denied."
+STOP_ORIGIN = "user_agent_stop"
+STOP_REASON = "Agent stopped by the analyst"
 
 # EC2 instance metadata: the IPv6 endpoint (not link-local by prefix) and its DNS names.
 IMDS_V6 = ipaddress.IPv6Address("fd00:ec2::254")
@@ -148,6 +156,24 @@ def is_link_local(host: str) -> bool:
     return ip is not None and ip.is_link_local
 
 
+def target_parts(url: str) -> tuple[str, str, str] | None:
+    """(scheme, host, path) the policy decides on: an http(s) URL, or an s3:// archive copy whose host is
+    the bucket. None for anything else (default deny)."""
+    return http.split_url(url) or cache.split_s3_url(url)
+
+
+def stop_rule_id(agent_id: str) -> str:
+    return f"R-stop-{agent_id}"
+
+
+def stop_rule(policy: m.Policy | None, agent_id: str) -> m.PolicyRule | None:
+    """The analyst's stop rule for this one agent, if it has one (v0.2)."""
+    if policy is None:
+        return None
+    return next((r for r in policy.rules if r.origin == STOP_ORIGIN and r.effect == "deny"
+                 and r.agent_id == agent_id), None)
+
+
 def _norm_host(host: str) -> str:
     host = host.lower().rstrip(".")
     return host[4:] if host.startswith("www.") else host
@@ -194,8 +220,9 @@ def base_policy(run_id: str, settings: Settings, *, budget_usd: float | None, at
 
 
 def source_rule(src: m.Source, revoked: dict[str, str | None], at: str) -> m.PolicyRule | None:
-    """R-revoke-, R-allow- or R-reject- for one source, or None while it is still pending."""
-    parts = http.split_url(src.url)
+    """R-revoke-, R-allow- or R-reject- for one source, or None while it is still pending.
+    An s3:// archive source gets the bucket as its domain and the object key as its path prefix."""
+    parts = target_parts(src.url)
     domain, prefix = (parts[1], parts[2]) if parts else (src.domain.lower(), None)
     sid = src.source_id
     common = {"action": "fetch", "domain": domain, "path_prefix": prefix, "source_id": sid, "created_at": at}
@@ -203,7 +230,7 @@ def source_rule(src: m.Source, revoked: dict[str, str | None], at: str) -> m.Pol
         return m.PolicyRule(rule_id=f"R-revoke-{sid}", effect="deny", roles=[], origin="user_revoke",
                             note=revoked[sid] or "Revoked by user", **common)
     if src.approval in ("approved", "auto_approved"):
-        if parts is None:       # not an http(s) URL: never allow it
+        if parts is None:       # not an http(s) or s3:// URL: never allow it
             return None
         origin = "user_approval" if src.approval == "approved" else "auto_tier"
         return m.PolicyRule(rule_id=f"R-allow-{sid}", effect="allow", roles=["fetcher"], origin=origin, **common)
@@ -243,6 +270,7 @@ class Gateway:
         self.ctx = ctx
         self._sems: dict[str, asyncio.Semaphore] = {}
         self._reserved = 0.0          # estimated cost of model calls in flight
+        self.doc_cache: cache.DocCache | None = None    # built on first use (tests may set their own)
 
     # -- state ----------------------------------------------------------------
 
@@ -277,10 +305,12 @@ class Gateway:
         return max(st.policy.version if st.policy else 0, st.run.policy_version) + 1
 
     def _rules_from_sources(self, revoked: dict[str, str | None]) -> list[m.PolicyRule]:
+        """The analyst's agent stop rules (kept as they are, first), R-sys-models, then one rule per source."""
         st = self.ctx.state
         at = now_iso()
         old = {r.rule_id: r for r in st.policy.rules} if st.policy else {}
-        rules = [_sys_rule(at)]
+        rules = [r for r in old.values() if r.origin == STOP_ORIGIN]
+        rules.append(_sys_rule(at))
         for src in st.sources:
             rule = source_rule(src, revoked, at)
             if rule is not None:
@@ -369,6 +399,48 @@ class Gateway:
         self._store_policy(policy, change=f"Kill switch on: {why}", rule_ids=[], level="warn",
                            message=f"Gateway policy v{policy.version}: kill switch, every request denied")
 
+    def stop_agent(self, agent: m.Agent, reason: str | None) -> m.Policy:
+        """Add R-stop-<agent_id> (agent_id set, origin user_agent_stop, the agent's own action): from now on
+        decide() denies every request from this one agent right after the kill switch check, and a result
+        that lands later is discarded. The run keeps going. Bumps the version and emits policy.updated.
+        Idempotent: an agent that already has its rule keeps it. Works before approval too."""
+        st = self.ctx.state
+        if st.policy is not None and stop_rule(st.policy, agent.agent_id) is not None:
+            return st.policy
+        base = self._policy()
+        rule = m.PolicyRule(rule_id=stop_rule_id(agent.agent_id), effect="deny",
+                            action="fetch" if agent.role == "fetcher" else "model.invoke", roles=[],
+                            agent_id=agent.agent_id, origin=STOP_ORIGIN, note=reason or STOP_REASON,
+                            created_at=now_iso())
+        policy = self._make_policy(version=self._next_version(), rules=[rule, *base.rules],
+                                   kill_switch=base.kill_switch)
+        return self._store_policy(policy, change=f"Stopped agent {agent.agent_id}", rule_ids=[rule.rule_id],
+                                  level="warn",
+                                  message=f"Gateway policy v{policy.version}: {agent.agent_id} stopped, "
+                                          "its requests are denied")
+
+    def agent_stopped(self, agent_id: str) -> m.PolicyRule | None:
+        """The stop rule in force for this agent, or None."""
+        return stop_rule(self.ctx.state.policy, agent_id)
+
+    def _hold_stopped(self, agent: m.Agent, rule_id: str | None) -> None:
+        """A request denied by the agent's own stop rule keeps the agent stopped. AgentRunner.ask marks an
+        agent working before it calls, which would otherwise flip a queued agent the analyst stopped back to
+        working, then failed. Emits agent.status stopped again when it had to put it back."""
+        if rule_id != stop_rule_id(agent.agent_id):
+            return
+        held = self.ctx.state.agents.get(agent.agent_id) or agent
+        rule = self.agent_stopped(agent.agent_id)
+        changed = False
+        for a in {id(held): held, id(agent): agent}.values():
+            if a.status != "stopped":
+                a.status, a.finished_at, changed = "stopped", a.finished_at or now_iso(), True
+        if changed:
+            why = (rule.note if rule else None) or STOP_REASON
+            self.ctx.emit("agent.status", m.AgentStatusData(agent_id=held.agent_id, status="stopped", task=held.task,
+                                                            usage=held.usage.model_copy(), reason=why),
+                          message=f"{held.agent_id} stopped: {why}", agent_id=held.agent_id, level="warn")
+
     # -- decisions ------------------------------------------------------------
 
     def decide(self, agent: m.Agent, action: str, target: str, *, est_cost: float = 0.0) -> Decision:
@@ -386,6 +458,10 @@ class Gateway:
         # 1. kill switch
         if self.kill_switch_on:
             return "blocked", None, KILL_REASON
+        # 1b. a stopped agent (v0.2): every request from it is denied, the rest of the run continues
+        stopped = stop_rule(policy, agent.agent_id)
+        if stopped is not None:
+            return "blocked", stopped.rule_id, f"{STOP_REASON}: {stopped.note or 'no reason given'}"
         # 2. budget
         over = self._budget_block(action, target, est_cost)
         if over:
@@ -396,7 +472,7 @@ class Gateway:
             return "blocked", None, f"Role '{role}' may not {'fetch' if action == 'fetch' else 'call models'}."
         if action == "model.invoke" and target not in scope.models:
             return "blocked", None, f"Role '{role}' may not call {target}."
-        parts = http.split_url(target) if action == "fetch" else None
+        parts = target_parts(target) if action == "fetch" else None
         # 4. explicit deny: link-local hosts first (no rule can allow them), then the policy's deny rules
         if parts is not None and is_link_local(parts[1]):
             return "blocked", None, f"{parts[1]}: link-local address, never fetched."
@@ -412,7 +488,7 @@ class Gateway:
                 return "allowed", rule.rule_id, f"{rule.rule_id} allows {rule.domain}{rule.path_prefix or ''}."
         # 6. default deny
         if action == "fetch" and parts is None:
-            return "blocked", None, "Not a plain http(s) URL. Default deny."
+            return "blocked", None, "Not a plain http(s) or s3:// archive URL. Default deny."
         what = parts[1] + parts[2] if parts else target
         return "blocked", None, f"No rule allows {what}. Default deny."
 
@@ -446,7 +522,8 @@ class Gateway:
             detail = f" ({tokens_in} in / {tokens_out} out)" if tokens_in is not None else f": {reason}"
             message = f"{agent.agent_id} -> {target} {decision}{detail}"
         else:
-            detail = f" (HTTP {http_status}, {nbytes} bytes)" if decision == "allowed" else f": {reason}"
+            note = {"hit": ", cache hit", "miss": ", cache miss, stored"}.get(cache or "", "")
+            detail = f" (HTTP {http_status}, {nbytes} bytes{note})" if decision == "allowed" else f": {reason}"
             message = f"{agent.agent_id} fetch {target} {decision}{detail}"
         self.ctx.emit("gateway.request", data, message=message, agent_id=agent.agent_id,
                       level="info" if decision == "allowed" else "warn")
@@ -471,35 +548,89 @@ class Gateway:
         self._emit_request(agent, rid, "fetch", target, "blocked", None, reason, t0, source_id=source_id)
         raise Blocked(rid, None, reason)
 
-    async def _fetch_hop(self, agent: m.Agent, url: str, target: str, source_id: str | None,
-                         why: str) -> FetchResult | str:
-        """One decided GET. Returns the FetchResult, or the next URL when the answer is a redirect."""
-        rid, t0 = self.ctx.next_id("REQ"), time.perf_counter()
-        decision, rule_id, reason = self.decide(agent, "fetch", target)
-        if decision != "allowed":
-            self._emit_request(agent, rid, "fetch", target, "blocked", rule_id, f"{why}: {reason}", t0,
-                               source_id=source_id)
-            raise Blocked(rid, rule_id, reason)
-        try:
-            status, headers, body = await http.get_once(target, user_agent=self.ctx.settings.http_user_agent)
-        except Exception as e:  # fail closed: timeouts, size cap, network errors
-            reason = f"gateway error: {type(e).__name__}: {e}"
-            self._emit_request(agent, rid, "fetch", target, "blocked", None, reason, t0, source_id=source_id)
-            raise Blocked(rid, None, reason) from e
-        # STOP or a revoke may have landed while the request was in flight: decide again, discard if denied.
+    def _cache(self) -> cache.DocCache:
+        if self.doc_cache is None:
+            self.doc_cache = cache.DocCache(self.ctx.settings)
+        return self.doc_cache
+
+    def _deny(self, agent: m.Agent, rid: str, target: str, rule_id: str | None, reason: str, t0: float, *,
+              source_id: str | None, shown: str | None = None, http_status: int | None = None,
+              nbytes: int | None = None) -> Blocked:
+        """Emit the blocked gateway.request (reason `shown`, default `reason`) and return the Blocked to raise."""
+        self._hold_stopped(agent, rule_id)
+        self._emit_request(agent, rid, "fetch", target, "blocked", rule_id, shown or reason, t0, source_id=source_id,
+                           http_status=http_status, nbytes=nbytes)
+        return Blocked(rid, rule_id, reason)
+
+    def _late_fetch(self, agent: m.Agent, rid: str, target: str, t0: float, source_id: str | None,
+                    http_status: int, nbytes: int) -> None:
+        """STOP, a revoke or the agent's stop may have landed while the body was on its way (network or cache):
+        decide again and discard the result if it is now denied."""
         late, late_rule, late_reason = self.decide(agent, "fetch", target)
         if late != "allowed":
             reason = f"{late_reason} Result discarded: it landed after the policy changed."
-            self._emit_request(agent, rid, "fetch", target, "blocked", late_rule, reason, t0, source_id=source_id,
-                               http_status=status, nbytes=len(body))
-            raise Blocked(rid, late_rule, reason)
+            raise self._deny(agent, rid, target, late_rule, reason, t0, source_id=source_id, http_status=http_status,
+                             nbytes=nbytes)
+
+    async def _fetch_hop(self, agent: m.Agent, url: str, target: str, source_id: str | None,
+                         why: str) -> FetchResult | str:
+        """One decided GET. Returns the FetchResult, or the next URL when the answer is a redirect.
+
+        The policy decides first. Only then, with CACHE_DOCUMENTS on (or for an s3:// archive URL), the cache
+        is read: a hit is served with no network call, a miss is fetched live and stored."""
+        rid, t0 = self.ctx.next_id("REQ"), time.perf_counter()
+        decision, rule_id, reason = self.decide(agent, "fetch", target)
+        if decision != "allowed":
+            raise self._deny(agent, rid, target, rule_id, reason, t0, source_id=source_id, shown=f"{why}: {reason}")
+        archive = cache.is_s3_url(target)
+        use_cache = self.ctx.settings.cache_documents
+        if archive and not use_cache:
+            reason = ("gateway error: an s3:// archive copy is served only from the document cache, and "
+                      "CACHE_DOCUMENTS is off. Never fetched live.")
+            raise self._deny(agent, rid, target, None, reason, t0, source_id=source_id)
+        if use_cache:
+            hit = await self._cache().aget(target, max_bytes=http.MAX_BYTES)
+            if hit is not None:
+                return self._serve_hit(agent, rid, url, target, source_id, rule_id, f"{why}: {reason}", t0, hit)
+            if archive:
+                reason = (f"gateway error: archive copy not in the document cache ({self._cache().describe()}). "
+                          "s3:// sources are served only from the cache, never fetched live.")
+                raise self._deny(agent, rid, target, None, reason, t0, source_id=source_id)
+        try:
+            status, headers, body = await http.get_once(target, user_agent=self.ctx.settings.http_user_agent)
+        except Exception as e:  # fail closed: timeouts, size cap, network errors
+            raise self._deny(agent, rid, target, None, f"gateway error: {type(e).__name__}: {e}", t0,
+                             source_id=source_id) from e
+        self._late_fetch(agent, rid, target, t0, source_id, status, len(body))
         location = headers.get("location") if status in REDIRECT_CODES else None
+        content_type = headers.get("content-type", "")
+        stored = use_cache and cache.storable(status, location)
         self._emit_request(agent, rid, "fetch", target, "allowed", rule_id, f"{why}: {reason}", t0,
-                           source_id=source_id, http_status=status, nbytes=len(body))
+                           source_id=source_id, http_status=status, nbytes=len(body),
+                           cache="miss" if use_cache else None)
+        if stored:   # a copy for the next run. A failed write is logged by the cache, never fatal
+            await self._cache().aput(target, body, content_type, http_status=status, location=location)
         if location:
             return urljoin(target, location)
-        return FetchResult(url=url, final_url=target, http_status=status,
-                           content_type=headers.get("content-type", ""), body=body, request_id=rid)
+        return FetchResult(url=url, final_url=target, http_status=status, content_type=content_type, body=body,
+                           request_id=rid, cache="miss" if use_cache else None)
+
+    def _serve_hit(self, agent: m.Agent, rid: str, url: str, target: str, source_id: str | None,
+                   rule_id: str | None, reason: str, t0: float, hit: cache.CachedDoc) -> FetchResult | str:
+        """A cache hit: no network call, cost 0, the stored bytes. A stored redirect sends the next hop back
+        through decide(), like a live one."""
+        meta = hit.meta
+        self._late_fetch(agent, rid, target, t0, source_id, meta.http_status, len(hit.body))
+        kind = "archive copy collected before the event" if meta.origin == "archive" else "copy stored by an earlier run"
+        self._emit_request(agent, rid, "fetch", target, "allowed", rule_id,
+                           f"{reason} Served from the document cache ({kind}, {meta.collected_at}).", t0,
+                           source_id=source_id, http_status=meta.http_status, nbytes=len(hit.body), cost_usd=0.0,
+                           cache="hit", cached_at=meta.collected_at)
+        if meta.http_status in REDIRECT_CODES and meta.location:
+            return urljoin(target, meta.location)
+        return FetchResult(url=url, final_url=target, http_status=meta.http_status, content_type=meta.content_type,
+                           body=hit.body, request_id=rid, origin=meta.origin, collected_at=meta.collected_at,
+                           cache="hit")
 
     # -- invoke ---------------------------------------------------------------
 
@@ -525,14 +656,19 @@ class Gateway:
         for a in targets.values():
             a.usage = _add_usage(a.usage, tokens_in, tokens_out, cost)
 
-    def _late_block(self) -> str | None:
-        """Why a finished model call must be discarded, if it must."""
+    def _late_block(self, agent: m.Agent) -> tuple[str | None, str] | None:
+        """(rule_id, reason) when a finished model call must be discarded: STOP, the analyst stopped this
+        agent, or the budget ran out while it was in flight."""
         if self.kill_switch_on:
-            return "Kill switch: run stopped while the call was in flight. Result discarded."
+            return None, "Kill switch: run stopped while the call was in flight. Result discarded."
+        stopped = self.agent_stopped(agent.agent_id)
+        if stopped is not None:
+            return stopped.rule_id, (f"{STOP_REASON} while the call was in flight "
+                                     f"({stopped.note or 'no reason given'}). Result discarded.")
         budget = self.budget_usd()
         spent = self.ctx.state.run.usage.cost_usd
         if budget is not None and spent > budget:
-            return f"Budget exceeded after the call: ${spent:.4f} of ${budget:.2f}. Result discarded."
+            return None, f"Budget exceeded after the call: ${spent:.4f} of ${budget:.2f}. Result discarded."
         return None
 
     async def invoke(self, agent: m.Agent, size: Literal["large", "small"], *, system: str, user: str,
@@ -554,6 +690,7 @@ class Gateway:
             else:
                 decision, rule_id, reason = self.decide(agent, "model.invoke", model_id, est_cost=est)
             if decision != "allowed":
+                self._hold_stopped(agent, rule_id)
                 self._emit_request(agent, rid, "model.invoke", model_id, "blocked", rule_id, reason, t0)
                 raise Blocked(rid, rule_id, reason)
             self._reserved += est
@@ -568,23 +705,25 @@ class Gateway:
                 self._reserved -= est
             cost = pricing.cost(model_id, reply.tokens_in, reply.tokens_out, prices=settings.prices)
             self._meter(agent, reply.tokens_in, reply.tokens_out, cost)
-            late = self._late_block()
+            late = self._late_block(agent)
             decision = "blocked" if late else "allowed"
-            self._emit_request(agent, rid, "model.invoke", model_id, decision, None if late else rule_id,
-                               late or reason, t0, http_status=None if late else 200,
+            if late:
+                self._hold_stopped(agent, late[0])
+            self._emit_request(agent, rid, "model.invoke", model_id, decision, late[0] if late else rule_id,
+                               late[1] if late else reason, t0, http_status=None if late else 200,
                                tokens_in=reply.tokens_in, tokens_out=reply.tokens_out, cost_usd=cost)
             usage = self.ctx.state.run.usage
             self.ctx.emit("usage.updated", m.UsageUpdatedData(usage=usage.model_copy()),
                           message=f"Spent ${usage.cost_usd:.4f} so far", agent_id=agent.agent_id)
             if late:
-                raise Blocked(rid, None, late)
+                raise Blocked(rid, late[0], late[1])
             return InvokeResult(tool_input=reply.tool_input, tokens_in=reply.tokens_in, tokens_out=reply.tokens_out,
                                 cost_usd=cost, request_id=rid, model_id=model_id, stop_reason=reply.stop_reason)
 
     # -- scan -----------------------------------------------------------------
 
     def _allow_rule_for(self, url: str) -> str | None:
-        parts = http.split_url(url)
+        parts = target_parts(url)
         for rule in self._policy().rules:
             if rule.effect == "allow" and rule_matches(rule, "fetcher", "fetch", url, parts):
                 return rule.rule_id
@@ -598,6 +737,9 @@ class Gateway:
         if self.kill_switch_on:
             return m.ScanResult(scanner="none", verdict="error",
                                 detail="Kill switch on: scan not run. Treat the page as quarantined.")
+        if self.agent_stopped(agent.agent_id) is not None:
+            return m.ScanResult(scanner="none", verdict="error",
+                                detail=f"{STOP_REASON}: scan not run. Treat the page as quarantined.")
         t0 = time.perf_counter()
         try:
             out = await bedrock.apply_guardrail(self.ctx.settings, text)

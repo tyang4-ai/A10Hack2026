@@ -11,6 +11,13 @@ the policy happens to allow is fetched and dropped, never ingested, because link
 Live demo: before every request (source or link) the fetcher logs "next: S-006 ...", and the gateway waits
 DEMO_PACING seconds before deciding it. So the presenter sees what is coming and has time to revoke it, and a
 revoke that lands during the wait blocks that very request. The plan puts S-006 (the revoke target) 8th.
+
+Stop one agent (v0.2): when the analyst stops the fetcher, its next request is blocked by R-stop-<id> (that
+one shows in traffic), and the sources after it are marked skipped instead of being requested one by one.
+The run carries on with what was stored, and finalize declares the stopped fetcher's work as a hole.
+
+Document cache (v0.2): the gateway decides every request first and then may serve it from the cache. The
+fetcher logs when a body came from the cache, and the Document carries origin and collected_at.
 """
 from __future__ import annotations
 
@@ -18,10 +25,11 @@ import asyncio
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag, urlsplit
 
+from ..agentstop import is_stopped
 from ..contract import m
 from ..fetch.html import html_links
 from ..fetch.ingest import INDEX_RELPATH, document_index, ingest, state_source
-from ..gateway import Blocked
+from ..gateway import Blocked, stop_rule_id
 from ..ids import now_iso
 from ..runtime import StopRequested
 
@@ -37,6 +45,7 @@ ALREADY_STORED = ("fetched", "quarantined", "extracting", "extracted")
 MAX_LINKS = 3
 LINK_WHY = "link found in page"
 NEXT_TITLE_CHARS = 60
+TERMINAL = ("done", "failed", "stopped")
 
 
 async def run(ctx: RunContext) -> None:
@@ -44,9 +53,12 @@ async def run(ctx: RunContext) -> None:
     agent = spawn_fetcher(ctx, [s.source_id for s in sources])
     status = "failed"
     try:
-        for source in sources:
+        for i, source in enumerate(sources):
             ctx.check_stop()
             await collect_source(ctx, agent, source)
+            if is_stopped(ctx.state, agent.agent_id) and stop_shown(ctx, agent):
+                skip_rest(ctx, agent, sources[i + 1:])
+                break
         status = "done"
     except StopRequested:
         status = "stopped"
@@ -93,6 +105,8 @@ async def collect_source(ctx: RunContext, agent: m.Agent, source: m.Source) -> m
                    level="warn")
         return None
     await _write_index(ctx, agent)
+    if result.cache == "hit":
+        log(ctx, agent, cache_note(source, doc))
     emit_stored(ctx, agent, doc)
     if source.status != "revoked":  # a revoke that landed while it was being stored stays on screen
         if doc.quarantined:
@@ -116,6 +130,8 @@ async def follow_links(ctx: RunContext, agent: m.Agent, source: m.Source, result
         except Blocked:
             blocked.append(url)  # the gateway already emitted its gateway.request
             ctx.check_stop()
+            if is_stopped(ctx.state, agent.agent_id):
+                break            # the stop showed in traffic once; the other links are not requested
             continue
         except StopRequested:
             raise
@@ -138,6 +154,38 @@ def next_source_text(source: m.Source) -> str:
     host = urlsplit(source.url).hostname or source.domain
     revoked = ", revoked: the gateway will block it" if source.status == "revoked" else ""
     return f"next: {source.source_id} {title} ({host}{revoked})"
+
+
+def stop_shown(ctx: RunContext, agent: m.Agent) -> bool:
+    """Has the stop rule already blocked one of this fetcher's requests? Until it has, the next source is
+    still requested, so the analyst sees the stop take effect in traffic (CONTRACT.md 13)."""
+    rule_id = stop_rule_id(agent.agent_id)
+    return any(e.type == "gateway.request" and e.agent_id == agent.agent_id and e.data.rule_id == rule_id
+               for e in reversed(ctx.state.events))
+
+
+def skip_rest(ctx: RunContext, agent: m.Agent, rest: list[m.Source]) -> list[str]:
+    """The analyst stopped the fetcher: every source it had not reached yet is skipped, not requested.
+    Already stored and revoked sources keep their status. Returns the skipped source ids."""
+    skipped = []
+    for source in rest:
+        held = state_source(ctx.state, source.source_id) or source
+        if held.status == "revoked" or (held.doc_ids and held.status in ALREADY_STORED):
+            continue
+        set_status(ctx, agent, held, "skipped", error=f"Not fetched: {agent.agent_id} was stopped by the analyst",
+                   level="warn")
+        skipped.append(held.source_id)
+    if skipped:
+        log(ctx, agent, f"{agent.agent_id} was stopped by the analyst: {len(skipped)} source(s) not fetched "
+                        f"({', '.join(skipped)}). They are declared as holes.", level="warn")
+    return skipped
+
+
+def cache_note(source: m.Source, doc: m.Document) -> str:
+    """The fetcher's line for a body served from the document cache, so the label is on screen."""
+    kind = ("archive copy collected before the event" if doc.origin == "archive"
+            else "copy stored by an earlier Axelrod run")
+    return f"{source.source_id} served from the document cache: {kind} ({doc.collected_at})"
 
 
 def blocked_status(exc: Blocked) -> str:
@@ -179,7 +227,10 @@ def spawn_fetcher(ctx: RunContext, target_ids: list[str]) -> m.Agent:
 
 
 def finish_fetcher(ctx: RunContext, agent: m.Agent, status: str) -> None:
+    """The first terminal status wins, so a fetcher the analyst stopped stays stopped."""
     held = ctx.state.agents.get(agent.agent_id, agent)
+    if held.status in TERMINAL:
+        return
     held.status = status
     held.finished_at = now_iso()
     ctx.emit("agent.status", m.AgentStatusData(agent_id=agent.agent_id, status=status, task=agent.task,
