@@ -92,7 +92,7 @@ Rehearsals (fill in with a stopwatch):
 | Rehearsal 1 | | | | |
 | Rehearsal 2 | | | | |
 
-**Open question (5:00 AM):** the recording approved every source in plan order, with nothing revoked. If the drag, the reject or the revoke change the prompts, those model calls miss the recording and show as BLOCKED, and their work becomes holes. The backend session is checking. Until it answers, rehearse once with the exact demo approval and watch Traffic for blocked `model.invoke` lines.
+**Approval changes and the recording (backend session, 5:05 AM):** up to a STOP in extract, the demo clicks are safe, because extractor prompts carry page text and no ids. After extract, the drag, the reject and the revoke change the prompts, so draft, judges and the brief would miss the first recording. A second recording that follows the exact demo path (priority sources approved, S-002 above S-001, S-016 rejected, S-006 revoked at the start of collect, no goon stop) is being made, and both recordings replay. **If the demo runs past extract, either skip the goon stop or press STOP right after it**, because a stopped goon's page has no items and its drafter calls would miss and show as holes. New pacing (`FETCH_PACING`, `VERIFY_PACING`) is coming, aiming for a full run of 2:00 to 2:30, and the final numbers go in `backend/status.md`. Update the table above from there.
 
 If there isn't enough time between beats, ask the build machine to raise `STAGE_PACING` (`bash backend/infra/remote.sh --set-env STAGE_PACING=<seconds>`), and write the new value here.
 
