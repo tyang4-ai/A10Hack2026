@@ -5,8 +5,8 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 ## Now
 
 - Stage: **v2** (docs/BACKEND_V2.md, contract v0.3.0, merged at 11:32 PM). Cutoffs: steps 1 to 6 by 1:45 AM, 7 to 10 by 2:30 AM, R2 by 3:15 AM, G6b and READY FOR INTEGRATION by 4:00 AM.
-- Running: V8-fork, B-fix-score, B-fix-s015.
-- Next: V6-resume (after V3 and V8). Then R2 on EC2 and the G6b webapp rehearsal.
+- Running: V6-resume, B-fix-score, B-fix-s015.
+- Next: deploy, then R2 on EC2 (`CACHE_MODELS=record`) and the G6b webapp rehearsal.
 - Demo run so far: **demo-ok-1 = run_20261108_pin2ve** (EC2, live, 97.1% items pass or fixed, 3 of 6 scored). R2 is compared with it in this file before anything is picked.
 
 ## v2 plans
@@ -18,9 +18,9 @@ Kept by the orchestrator (backend/RUNBOOK.md section 5). Newest state at the top
 | V3-rework | 3, 4, 5 | builder | done | 37 passed (suite 757), 1 live | rerun one agent (extractor, drafter, summarizer, repairer; rerun of a rerun), Bobby at 4 gates (code validates, $0.005 and 2.3 s per gate live), comments resolved by Bobby |
 | V4-archive | 7 | builder + aws-operator | done | 16 passed | uploaded: archive/shl/ 930 objects (988 MB), cache/docs/ 928 entries. Idempotent rerun skipped everything. EC2 role reads and writes the cache already. LSEG and TED CSVs excluded |
 | V5-plan2 | 8 | builder | done | 43 passed (suite 662) | S-011 to S-016: SHL annual reports FY2024, FY2022, FY2020, FY2018 (ten ROTIC years FY2017 to FY2026) and Philips 2025, 2023. 30 new pages, all checked against the PDFs. S-006 now fetches 14th, still before S-009 and S-010 |
-| V6-resume | 9 | builder | todo | | |
+| V6-resume | 9 | builder | running | | resume after STOP through `start_from`, `_set_status` guard |
 | V7-chat | 10 | builder | done | 23 passed, 2 live | chat with any goon or Bobby through the gateway, read only, labeled not checked. About $0.003 (Haiku) and $0.006 (Sonnet), 2 to 4 s |
-| V8-fork | 11 | builder | running | | rerun from a step, model cache, orchestrator.start_from (cut first if late) |
+| V8-fork | 11 | builder | done | 41 passed (suite 798) | rerun from a step (new run, own policy and log, ids kept, parent unchanged), `orchestrator.start_from`, model cache (`CACHE_MODELS=record/replay`, decision first, a hit costs $0, the n-th identical call gets its own record) |
 | pre-R2 | 12 | orchestrator | done | | run_20261108_5zqdvb on EC2, cache_mode documents, 16 sources (13 cache hits, 10 from the archive). 659 items (522 pass, 88 fixed, 49 fail = 92.6%), 52 holes, certainty 93, rollup +0.4 (4 of 6: rotic_level 0, rotic_vs_peers +1, secular_growth +1, leverage -1), brief 2.8 pages, $3.03, 6 min. Bobby: plan escalate, extract rework (S-015 extractors), repair proceed, brief proceed. **Bug: rotic_vs_peers +1 while its text says SHL trails both peers.** Fixes: B-fix-score, B-fix-s015 |
 | R2 / G6b | 12 | orchestrator | todo | | full run on the full corpus, then the 3-minute webapp rehearsal |
 
@@ -51,6 +51,8 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 
 ## Decisions
 
+- Sun 12:46 AM (Gordon may override): `CACHE_MODELS=record` labels a run `documents` (or `off`), since it replays nothing. Only replay sets `documents_and_models`, and replay with the document cache off says so too (the contract has no models-only value), so replayed answers are never hidden.
+- Sun 12:46 AM: a fork keeps `R-stop-<id>` only for agents it copies (they never run again there, and the rule keeps their unfinished work a declared hole). Every other stop rule is dropped, `R-stop-bobby` included. A fork's Bobby doesn't get the rerun instructions: they're for the goons that redo work.
 - Sun 12:28 AM (Gordon may override): judges never see rerun instructions, so no instruction can steer a check, and Bobby can't use a judge rerun to pass a claim.
 - Sun 12:28 AM: pre-R2 on EC2 now with the committed code (steps 1 to 8 and 10, no fork or resume, which don't change a normal run), so problems show before the final R2.
 
@@ -113,3 +115,4 @@ See backend/AWS_RESOURCES.md (resources, delete commands, credentials).
 - Sun 12:28 AM: V3-rework done and committed. contract_smoke picks a goon with a model for the rerun check.
 - Sun 12:30 AM: deployed a4ab693. contract_smoke 76/76 on EC2. Pre-R2 run run_20261108_5zqdvb started (cache_mode documents, 16 sources).
 - Sun 12:37 AM: pre-R2 run done on EC2 ($3.03, 6 min, 4 of 6 scored). Found a judgment score whose sign contradicts its text. Launched B-fix-score and B-fix-s015.
+- Sun 12:46 AM: V8-fork done and committed (fork, start_from, model cache). Two stale stub tests updated. V6-resume started.

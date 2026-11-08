@@ -3,7 +3,10 @@ StopRequested becomes `stopped`, any other exception becomes `failed` with Run.e
 
 Bobby (gates.spawn_bobby) is the run's first agent, spawned right after the first run.status. After plan,
 extract, repair and verify_summary the loop calls gates.after_stage, his gate. A gate never fails the run:
-an error there is logged and the run proceeds, as if he had said proceed."""
+an error there is logged and the run proceeds, as if he had said proceed.
+
+start_from(ctx, stage) runs the same loop from a later stage (a fork from a step, a resume) and skips any
+stage whose result is already in the state."""
 from __future__ import annotations
 
 import asyncio
@@ -16,10 +19,12 @@ from . import gates
 from .contract import m
 from .ids import now_iso
 from .runtime import RunContext, StopRequested
+from .store.events import lock_for
 
 if TYPE_CHECKING:
     from .config import Settings
     from .store import Store
+    from .store.state import RunState
     from .store.vault import Vault
 
 log = logging.getLogger(__name__)
@@ -51,11 +56,58 @@ async def start_run(store: Store, vault: Vault, settings: Settings, req: m.Creat
 
 async def run_pipeline(ctx: RunContext) -> None:
     """Run every stage's `run(ctx)` in order (one asyncio task per run). Never raises, except cancellation."""
+    await _run_stages(ctx, list(STAGES), skip_done=False)
+
+
+async def start_from(ctx: RunContext, stage: str) -> None:
+    """Run the pipeline from `stage` to the end: a fork starts at its rerun_from (V8), a resumed run at the
+    stage STOP cut into (V6). Stages before `stage` are never run, and a stage whose result is already in the
+    state (stage_done) is skipped with its gate, so finished work is never done twice. Inside a stage the
+    stage's own code skips finished work (extract never reads a source twice). Never raises, except
+    cancellation. Raises ValueError for a stage the pipeline doesn't have."""
+    names = [s for s, _ in STAGES]
+    if stage not in names:
+        raise ValueError(f"no pipeline stage {stage!r}")
+    await _run_stages(ctx, list(STAGES[names.index(stage):]), skip_done=True)
+
+
+def stage_done(state: RunState, stage: str) -> bool:
+    """True when the stage's result is already in the state, so start_from must not run it again: the plan is
+    ready, the approval was committed (a policy exists), the report is final, the brief was drafted, or the
+    brief was checked. Other stages always run and skip their own finished work."""
+    if stage == "plan":
+        return state.plan_ready and bool(state.sources)
+    if stage == "approve":
+        return state.policy is not None
+    if stage == "repair":
+        return state.report_ready
+    if stage == "summarize":
+        return state.summary is not None
+    if stage == "verify_summary":
+        return state.summary_ready
+    return False
+
+
+def _bobby_first(ctx: RunContext) -> None:
+    """Bobby leads the agent list. A fork registers its copied goons before he spawns, so move him up."""
+    agents = ctx.state.agents
+    if gates.BOBBY_ID in agents and next(iter(agents)) != gates.BOBBY_ID:
+        with lock_for(ctx.run_id):
+            ctx.state.agents = {gates.BOBBY_ID: agents[gates.BOBBY_ID],
+                                **{k: v for k, v in agents.items() if k != gates.BOBBY_ID}}
+
+
+async def _run_stages(ctx: RunContext, stages: list[tuple[str, str | StageRunner]], *, skip_done: bool) -> None:
+    """The loop shared by run_pipeline and start_from. Never raises, except cancellation."""
     try:
-        for stage, module in STAGES:
+        for stage, module in stages:
             ctx.check_stop()
+            if skip_done and stage_done(ctx.state, stage):
+                log.info("run %s: stage %s already done, skipped", ctx.run_id, stage)
+                continue
             ctx.emit("run.status", {"status": "running", "stage": stage}, stage=stage, message=f"Stage {stage}")
             gates.spawn_bobby(ctx)                  # once: the first agent of the run
+            _bobby_first(ctx)
             await _run_stage(ctx, stage, module)
             if stage in gates.GATE_STAGES:
                 await _gate(ctx, stage)

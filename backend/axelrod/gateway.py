@@ -11,10 +11,15 @@ touches the cache. An allowed fetch is served from the cache on a hit (no networ
 fetched live and stored on a miss (cache "miss"). Each redirect hop is its own entry and is decided again.
 An s3:// URL is an archive copy with no known original URL: it is decided like any URL (the domain is the
 bucket) and only ever served from the cache, so a miss fails clearly instead of going live.
+
+Model cache (v0.2, CACHE_MODELS=record|replay): again the decision comes first. record stores every live
+answer, replay serves a recorded one (cache "hit", cost 0, the tokens as recorded) and calls live on a miss,
+storing that answer too. The key strips run ids, agent ids and timestamps from the prompts (cache.model_key).
 """
 from __future__ import annotations
 
 import asyncio
+import copy
 import ipaddress
 import json
 import re
@@ -271,6 +276,8 @@ class Gateway:
         self._sems: dict[str, asyncio.Semaphore] = {}
         self._reserved = 0.0          # estimated cost of model calls in flight
         self.doc_cache: cache.DocCache | None = None    # built on first use (tests may set their own)
+        self.model_cache: cache.ModelCache | None = None    # CACHE_MODELS record/replay, built on first use
+        self._model_seen: dict[str, int] = {}           # model cache key -> calls with it so far in this run
 
     # -- state ----------------------------------------------------------------
 
@@ -519,7 +526,8 @@ class Gateway:
             bytes=nbytes, tokens_in=tokens_in, tokens_out=tokens_out, cost_usd=cost_usd, cache=cache,
             cached_at=cached_at)
         if action == "model.invoke":
-            detail = f" ({tokens_in} in / {tokens_out} out)" if tokens_in is not None else f": {reason}"
+            note = {"hit": ", model cache hit, $0", "miss": ", recorded"}.get(cache or "", "")
+            detail = f" ({tokens_in} in / {tokens_out} out{note})" if tokens_in is not None else f": {reason}"
             message = f"{agent.agent_id} -> {target} {decision}{detail}"
         else:
             note = {"hit": ", cache hit", "miss": ", cache miss, stored"}.get(cache or "", "")
@@ -693,6 +701,12 @@ class Gateway:
                 self._hold_stopped(agent, rule_id)
                 self._emit_request(agent, rid, "model.invoke", model_id, "blocked", rule_id, reason, t0)
                 raise Blocked(rid, rule_id, reason)
+            # Model cache (v0.2, V8): only an allowed call gets here, so a blocked one never reads or writes it.
+            slot = self._model_slot(model_id, system, user, tool, max_tokens)
+            if slot is not None and settings.cache_models == "replay":
+                rec = await self._models().aget(*slot)
+                if rec is not None:
+                    return self._serve_model_hit(agent, rid, model_id, rule_id, reason, t0, rec)
             self._reserved += est
             try:
                 reply = await bedrock.converse(settings, model_id, system=system, user=user, tool=tool,
@@ -711,14 +725,62 @@ class Gateway:
                 self._hold_stopped(agent, late[0])
             self._emit_request(agent, rid, "model.invoke", model_id, decision, late[0] if late else rule_id,
                                late[1] if late else reason, t0, http_status=None if late else 200,
-                               tokens_in=reply.tokens_in, tokens_out=reply.tokens_out, cost_usd=cost)
+                               tokens_in=reply.tokens_in, tokens_out=reply.tokens_out, cost_usd=cost,
+                               cache="miss" if slot is not None and not late else None)
             usage = self.ctx.state.run.usage
             self.ctx.emit("usage.updated", m.UsageUpdatedData(usage=usage.model_copy()),
                           message=f"Spent ${usage.cost_usd:.4f} so far", agent_id=agent.agent_id)
             if late:
                 raise Blocked(rid, late[0], late[1])
+            if slot is not None:     # record (or replay's miss): store the live answer for the next run
+                await self._models().aput(cache.ModelRecord(
+                    key=slot[0], occurrence=slot[1], model_id=model_id, tool_name=tool.name, max_tokens=max_tokens,
+                    tool_input=reply.tool_input, tokens_in=reply.tokens_in, tokens_out=reply.tokens_out,
+                    stop_reason=reply.stop_reason, recorded_at=now_iso(), run_id=self.ctx.state.run.run_id))
             return InvokeResult(tool_input=reply.tool_input, tokens_in=reply.tokens_in, tokens_out=reply.tokens_out,
                                 cost_usd=cost, request_id=rid, model_id=model_id, stop_reason=reply.stop_reason)
+
+    def _models(self) -> cache.ModelCache:
+        if self.model_cache is None:
+            self.model_cache = cache.ModelCache(self.ctx.settings)
+        return self.model_cache
+
+    def _model_slot(self, model_id: str, system: str, user: str, tool: ToolSpec,
+                    max_tokens: int) -> tuple[str, int] | None:
+        """(key, n) for this allowed call when CACHE_MODELS is record or replay: n counts the calls with the
+        same key in this run, so repeated identical prompts (three judges) each get their own recorded answer.
+        None when the cache is off, or when the key can't be built (the call then just goes live)."""
+        if self.ctx.settings.cache_models not in ("record", "replay"):
+            return None
+        try:
+            key = cache.model_key(model_id, system, user, tool_name=tool.name, tool_description=tool.description,
+                                  input_schema=tool.input_schema, max_tokens=max_tokens)
+        except Exception:  # noqa: BLE001  the cache never fails a call
+            return None
+        n = self._model_seen.get(key, 0) + 1
+        self._model_seen[key] = n
+        return key, n
+
+    def _serve_model_hit(self, agent: m.Agent, rid: str, model_id: str, rule_id: str | None, reason: str,
+                         t0: float, rec: cache.ModelRecord) -> InvokeResult:
+        """A replayed answer: no model call, cost 0, the tokens as recorded. STOP or the agent's stop that
+        landed while the cache was read still discards it."""
+        late = self._late_block(agent)
+        if late:
+            self._hold_stopped(agent, late[0])
+            self._emit_request(agent, rid, "model.invoke", model_id, "blocked", late[0], late[1], t0)
+            raise Blocked(rid, late[0], late[1])
+        self._meter(agent, rec.tokens_in, rec.tokens_out, 0.0)
+        self._emit_request(agent, rid, "model.invoke", model_id, "allowed", rule_id,
+                           f"{reason} Served from the model cache (answer recorded {rec.recorded_at}).", t0,
+                           tokens_in=rec.tokens_in, tokens_out=rec.tokens_out, cost_usd=0.0, cache="hit",
+                           cached_at=rec.recorded_at)
+        usage = self.ctx.state.run.usage
+        self.ctx.emit("usage.updated", m.UsageUpdatedData(usage=usage.model_copy()),
+                      message=f"Spent ${usage.cost_usd:.4f} so far (model cache hit)", agent_id=agent.agent_id)
+        return InvokeResult(tool_input=copy.deepcopy(rec.tool_input), tokens_in=rec.tokens_in,
+                            tokens_out=rec.tokens_out, cost_usd=0.0, request_id=rid, model_id=model_id,
+                            stop_reason=rec.stop_reason)
 
     # -- scan -----------------------------------------------------------------
 

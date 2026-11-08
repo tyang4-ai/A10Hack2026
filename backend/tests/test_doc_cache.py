@@ -129,7 +129,8 @@ def test_run_cache_mode_and_run_create(settings):
     assert cache.run_cache_mode(settings) == "off"
     on = settings.model_copy(update={"cache_documents": True})
     assert cache.run_cache_mode(on) == "documents"
-    assert cache.run_cache_mode(on.model_copy(update={"cache_models": "replay"})) == "documents"  # models: V8
+    assert cache.run_cache_mode(on.model_copy(update={"cache_models": "replay"})) == "documents_and_models"
+    assert cache.run_cache_mode(on.model_copy(update={"cache_models": "record"})) == "documents"  # record replays nothing
     assert Store(on).create_run(SHL).run.cache_mode == "documents"
     assert Store(settings).create_run(SHL).run.cache_mode == "off"
 

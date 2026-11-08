@@ -457,8 +457,8 @@ def test_a_stopped_run_rejects_the_controls_and_bobby_stops_first(api):
                                                                                      "instructions": "x"}), 409)
     assert err(client.post(f"{r}/rerun", json={"from_stage": "repair", "instructions": "x"}), 409) == \
         f"{state.run.run_id} never reached repair"
-    assert err(client.post(f"{r}/rerun", json={"from_stage": "extract", "instructions": "x"}), 409) == \
-        "not built yet (V8-fork)"
+    fork = client.post(f"{r}/rerun", json={"from_stage": "extract", "instructions": "x"})  # V8: a stopped run forks
+    assert fork.status_code == 201 and fork.json()["parent_run_id"] == state.run.run_id
 
 
 def test_routes_return_what_the_real_modules_return(api, monkeypatch, settings):

@@ -352,6 +352,40 @@ class Store:
                 log.exception("skipping unreadable replay folder %s", folder)
         return out
 
+    # -- fork copying (V8) -----------------------------------------------------------------
+
+    def copy_vault_files(self, src_run_id: str, dst_run_id: str, relpaths: list[str]) -> tuple[list[str], list[str]]:
+        """Copy vault files from one run's folder to another's under the same relpaths, so a fork holds its own
+        copy of the documents and transcripts it reuses and its vault drawer opens them. In aws mode S3 copies
+        server side (CopyObject), with a read and write as the fallback (a replay's files live on disk).
+        Returns (copied, missing). Sync: call it from a worker thread."""
+        copied, missing = [], []
+        replay = self._runs.get(src_run_id) is not None and self._runs[src_run_id].run.mode == "replay"
+        for rel in dict.fromkeys(relpaths):
+            try:
+                if self.aws and not replay and self._s3_copy(src_run_id, dst_run_id, rel):
+                    copied.append(rel)
+                    continue
+                self.vault.put_bytes(dst_run_id, rel, self.vault.get_bytes(src_run_id, rel))
+                copied.append(rel)
+            except (KeyError, ValueError):
+                missing.append(rel)
+            except Exception:
+                log.exception("copying vault file %s from %s to %s failed", rel, src_run_id, dst_run_id)
+                missing.append(rel)
+        return copied, missing
+
+    def _s3_copy(self, src_run_id: str, dst_run_id: str, rel: str) -> bool:
+        """Server-side S3 copy of one vault file. False when it didn't work, so the caller reads and writes."""
+        v = self.vault
+        src, dst = f"{v.root(src_run_id)}/{v.rel(src_run_id, rel)}", f"{v.root(dst_run_id)}/{v.rel(dst_run_id, rel)}"
+        try:
+            v.s3().copy_object(Bucket=v.bucket, Key=dst, CopySource={"Bucket": v.bucket, "Key": src})
+            return True
+        except Exception as e:  # NoSuchKey, AccessDenied: fall back to read and write (which raises KeyError)
+            log.debug("S3 copy of %s failed (%s), reading and writing instead", src, type(e).__name__)
+            return False
+
     # -- export -----------------------------------------------------------------------------
 
     def export_run(self, run_id: str, dest: Path) -> None:

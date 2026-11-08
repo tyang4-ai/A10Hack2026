@@ -1,4 +1,5 @@
-"""Document cache: the key, the layout and the store (read a hit, store a miss).
+"""Document cache: the key, the layout and the store (read a hit, store a miss). The model cache
+(CACHE_MODELS, recorded model answers under cache/models/) is at the end and reuses the same storage.
 
 The demo serves fetch bodies from S3 so it is fast and repeatable. The gateway still decides every request
 first; only an allowed fetch may read the cache, and a blocked request never touches it. A document is found
@@ -25,14 +26,16 @@ import asyncio
 import hashlib
 import json
 import logging
+import re
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, get_args
 from urllib.parse import unquote, urlsplit, urlunsplit
 
 from pydantic import BaseModel, ValidationError
 
+from .contract import m
 from .ids import now_iso
 
 if TYPE_CHECKING:
@@ -143,9 +146,14 @@ def local_path(settings: Settings, object_key: str) -> Path:
 
 
 def run_cache_mode(settings: Settings) -> str:
-    """Run.cache_mode for a new run: "documents" when CACHE_DOCUMENTS is on (the gateway serves fetch
-    bodies from the cache), else "off". Model answers are not replayed yet (V8-fork), so a run never claims
-    "documents_and_models" whatever CACHE_MODELS says."""
+    """Run.cache_mode for a new run (CONTRACT.md 13). "documents_and_models" when model answers may be
+    replayed (CACHE_MODELS=replay), "documents" when only fetch bodies come from the cache, else "off".
+
+    CACHE_MODELS=record calls every model live (it only stores the answers), so it adds nothing to the label.
+    The contract has no models-only value, so replay with CACHE_DOCUMENTS off still says
+    "documents_and_models": a replayed answer is never left unlabeled."""
+    if getattr(settings, "cache_models", "off") == "replay":
+        return "documents_and_models"
     return "documents" if settings.cache_documents else "off"
 
 
@@ -350,3 +358,132 @@ class DocCache:
 def storable(http_status: int, location: str | None) -> bool:
     """Only a 2xx body or a redirect with a Location is worth replaying. Errors are always fetched again."""
     return 200 <= http_status < 300 or (http_status in REDIRECT_CODES and bool(location))
+
+
+# ---------------------------------------------------------------------------
+# Model cache (V8, CACHE_MODELS=off|record|replay)
+# ---------------------------------------------------------------------------
+# A recorded model answer, so a rehearsal or the demo can replay a run's model calls at no cost. The gateway
+# decides first (kill switch, stop rule, budget, role scope), and only an allowed call may read or write here.
+# The key is the sha256 of the model id, the system and user prompts, the tool (name, description, schema)
+# and max_tokens, after the parts that change from run to run are stripped from the prompts: run ids, agent
+# ids, request ids, seq numbers and ISO timestamps. Item ids (D-001) stay, since answers cite them.
+#
+# The same prompt can be asked more than once in a run (three judges on one claim see the same evidence), so
+# the n-th call with a key in a run is its own entry: cache/models/<key>.json for the first, <key>.<n>.json
+# after that. A replay then gives back the same set of answers, not one answer three times.
+
+MODEL_PREFIX = "cache/models/"
+MODEL_KEY_VERSION = 1
+
+_RUN_ID = re.compile(r"\brun_\d{8}_[a-z0-9]{6}\b")
+_JUDGE_ID = re.compile(r"\bverifier-[A-Z]+-\d+-\d+(?:\.\d+)*\b")          # verifier-C-005-1
+_AGENT_ID = re.compile(r"\b(?:%s)-\d+(?:\.\d+)*\b" % "|".join(get_args(m.AgentRole)))   # extractor-07, drafter-02.3
+_REQ_ID = re.compile(r"\bREQ-\d{4,}\b")
+_ISO_TS = re.compile(r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?")
+_SEQ = re.compile(r"(\b(?:as_of_seq|last_seq|seq)\b[\"']?\s*[:=]?\s*)\d+")
+
+
+def strip_volatile(text: str) -> str:
+    """The prompt as the key sees it: run ids, agent ids, request ids, seq numbers and ISO timestamps
+    replaced by placeholders. Plain dates ("2026-11-07") and item ids are content and stay."""
+    text = _RUN_ID.sub("<run>", text)
+    text = _JUDGE_ID.sub("<agent>", text)
+    text = _AGENT_ID.sub("<agent>", text)
+    text = _REQ_ID.sub("<req>", text)
+    text = _ISO_TS.sub("<ts>", text)
+    return _SEQ.sub(r"\g<1><seq>", text)
+
+
+def model_key(model_id: str, system: str, user: str, *, tool_name: str, tool_description: str,
+              input_schema: dict, max_tokens: int) -> str:
+    """sha256 hex of everything that decides a model's answer, with the run-specific parts stripped."""
+    body = {"v": MODEL_KEY_VERSION, "model_id": model_id, "system": strip_volatile(system or ""),
+            "user": strip_volatile(user or ""), "max_tokens": int(max_tokens),
+            "tool": {"name": tool_name, "description": strip_volatile(tool_description or ""),
+                     "input_schema": input_schema}}
+    blob = json.dumps(body, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def model_object_key(key: str, occurrence: int = 1) -> str:
+    """cache/models/<key>.json for the first call with this key in a run, <key>.<n>.json for the n-th."""
+    if occurrence < 1:
+        raise ValueError("occurrence counts from 1")
+    suffix = "" if occurrence == 1 else f".{occurrence}"
+    return f"{MODEL_PREFIX}{key}{suffix}{META_SUFFIX}"
+
+
+class ModelRecord(BaseModel):
+    """One recorded answer (cache/models/<key>.json): what the model returned and what it cost in tokens."""
+
+    key: str
+    occurrence: int = 1
+    model_id: str
+    tool_name: str
+    max_tokens: int
+    tool_input: dict
+    tokens_in: int
+    tokens_out: int
+    stop_reason: str = ""
+    recorded_at: str                  # ISO 8601 UTC, shown as gateway.request cached_at on a hit
+    run_id: str | None = None         # the run that recorded it (provenance only, never part of the key)
+
+
+class ModelCache:
+    """Read and write recorded answers in the same place as the document cache: the vault bucket under
+    cache/models/ (aws mode) or DATA_DIR/cache/models/ (local). Never raises: a read error is a miss and a
+    write error is skipped, each logged once. A record that is not about its key is a miss."""
+
+    def __init__(self, settings: Settings, *, s3: Any = None, mode: Literal["local", "aws"] | None = None) -> None:
+        self.settings = settings
+        self._io = DocCache(settings, s3=s3, mode=mode)      # its bucket and DATA_DIR plumbing, reused
+        self._logged: set[str] = set()
+        self._lock = threading.Lock()
+
+    def describe(self) -> str:
+        if self._io.aws:
+            return f"s3://{self.settings.vault_bucket}/{MODEL_PREFIX}"
+        return str(local_path(self.settings, MODEL_PREFIX))
+
+    def _log_once(self, kind: str, text: str) -> None:
+        with self._lock:
+            if kind in self._logged:
+                return
+            self._logged.add(kind)
+        log.warning("model cache (%s): %s", self.describe(), text)
+
+    def get(self, key: str, occurrence: int = 1) -> ModelRecord | None:
+        """The recorded answer for the n-th call with this key, or None. Never raises."""
+        name = model_object_key(key, occurrence)
+        try:
+            raw = self._io._read(name)
+            if raw is None:
+                return None
+            rec = ModelRecord.model_validate_json(raw)
+        except (ValueError, ValidationError) as e:
+            self._log_once("bad-record", f"unreadable record {name} ({type(e).__name__}): treated as a miss")
+            return None
+        except Exception as e:  # noqa: BLE001  never fail the call because of the cache
+            self._log_once(f"read-{type(e).__name__}", f"read failed ({type(e).__name__}: {e}): treated as a miss")
+            return None
+        if rec.key != key or rec.occurrence != occurrence:
+            self._log_once("key-mismatch", f"{name} holds {rec.key} #{rec.occurrence}: treated as a miss")
+            return None
+        return rec
+
+    def put(self, rec: ModelRecord) -> bool:
+        """Store (or replace) one recorded answer. Returns False when nothing was written. Never raises."""
+        try:
+            body = (rec.model_dump_json(indent=2) + "\n").encode("utf-8")
+            self._io._write(model_object_key(rec.key, rec.occurrence), body, "application/json")
+            return True
+        except Exception as e:  # noqa: BLE001  a failed copy never fails the call
+            self._log_once(f"write-{type(e).__name__}", f"write failed ({type(e).__name__}: {e}): not recorded")
+            return False
+
+    async def aget(self, key: str, occurrence: int = 1) -> ModelRecord | None:
+        return await asyncio.to_thread(self.get, key, occurrence)
+
+    async def aput(self, rec: ModelRecord) -> bool:
+        return await asyncio.to_thread(self.put, rec)
